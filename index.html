@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<!--
+  ARUKI
+  ------------------------------------------------------------
+  Cómo se actualiza este archivo:
+  - Cada vez que se pide un cambio, se edita este mismo HTML.
+  - Se sube LATEST_VERSION (ej: "1.1" -> "1.2").
+  - Se agrega un bloque nuevo AL INICIO del array CHANGELOG con
+    fecha, título y una lista de ítems tipo 'nuevo' | 'mejora' | 'correccion'.
+  - El archivo de salida se llama siempre Aruki_VX.X.html.
+  ------------------------------------------------------------
+-->
+<html data-theme="system" lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aruki · Control Facturas</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKIHdpZHRoPSIxMjgwLjAwMDAwMHB0IiBoZWlnaHQ9Ijk2MC4wMDAwMDBwdCIgdmlld0JveD0iMCAwIDEyODAuMDAwMDAwIDk2MC4wMDAwMDAiCiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWlkWU1pZCBtZWV0Ij4KCjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMjgwIiBoZWlnaHQ9Ijk2MCIgcng9IjE5MCIgZmlsbD0iIzAwYTlkNiIvPgo8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLjAwMDAwMCw5NjAuMDAwMDAwKSBzY2FsZSgwLjEwMDAwMCwtMC4xMDAwMDApIgpmaWxsPSIjZmZmZmZmIiBzdHJva2U9Im5vbmUiPgo8cGF0aCBkPSJNMjA5MCA5NTk0IGMtMjAxIC0zNyAtMzQyIC04NSAtNTM5IC0xODMgLTM0NCAtMTczIC03NDYgLTQ4OSAtOTg3Ci03NzUgLTEwNiAtMTI1IC0yNjQgLTM2MSAtMzMxIC00OTIgLTI1OSAtNTA2IC0yOTggLTk4NiAtMTIzIC0xNDg5IDE1MCAtNDM0CjE1MiAtNDM3IDMzMyAtNjM2IDM3IC00MSA4NCAtOTkgMTA1IC0xMjkgNDEgLTYwIDEyOSAtMTMzIDM0NiAtMjkyIDU5MSAtNDMwCjc1NSAtNDk4IDEzMDEgLTU0MyAyMDYgLTE3IDMxNCAtMzYgMzUyIC02MCAzOCAtMjUgODIgLTkyIDE0NCAtMjIwIDM2IC03NCA2NAotMTQ5IDc0IC0xOTUgOSAtNDEgNDUgLTE0NCA4MSAtMjI5IDkwIC0yMTAgMTA4IC0yNjYgMTU5IC00OTEgOTIgLTQwNyAxMTAKLTU1MSAxMDIgLTgwMCAtNyAtMjI0IC00MSAtMzg3IC0xMTYgLTU2MiAtMzkgLTkxIC02NCAtMjI0IC01OCAtMzA2IDggLTEwNwoxMDQgLTQzMiAyMDIgLTY4MiA1MSAtMTMyIDIxMCAtNDU0IDI4NyAtNTgwIDEyMSAtMjAyIDI2OCAtMzk5IDM4MSAtNTEzIDEwMgotMTAyIDIxNiAtMTM4IDUxNyAtMTY2IDIxMCAtMjAgMzIyIC0xMSAzNzUgMzAgMjMgMTkgMjUgMjYgMjMgOTcgLTIgNTYgMiA4NgoxNSAxMDkgOSAxOCAxNyA0MSAxNyA1MyAwIDg1IC0xMzAgMTczIC0zMDUgMjA1IC0xMDYgMjAgLTE1NSA0MyAtMTg4IDg3IC0xMwoxOCAtNTcgOTIgLTk4IDE2MyAtNDAgNzIgLTEwOCAxODcgLTE1MCAyNTYgLTEyMyAyMDEgLTE3OSAzMjQgLTE3OSAzOTQgMCAxMDIKMTMzIDMzMiAyMzggNDEyIDI0IDE4IDQ4IDMzIDUzIDMzIDIyIDAgMTA4IC05NCAyMDIgLTIyMCAxNDkgLTIwMSAyNDYgLTMxMAo1MDcgLTU3MCAyNTUgLTI1NSAzODkgLTM3NSA1NjkgLTUwOCA2NCAtNDcgMTQ1IC0xMTQgMTgxIC0xNDggNDMgLTQxIDc4IC02NgoxMDUgLTczIDQ4IC0xMyA0MzQgLTE0IDYxNiAtMiAxNjEgMTEgMTg4IDIzIDIzNSAxMDQgMjAgMzQgMzggNzYgNDEgOTUgNSAyOQoxIDM4IC0zOCA3NSAtNzQgNzAgLTEzMSAxMTQgLTE4OSAxNDMgLTUzIDI3IC02MiAyOSAtMjM3IDM0IGwtMTgyIDUgLTk3IDEwNQpjLTQ3NCA1MTYgLTU1NCA2MTggLTU1NCA3MDYgMCAxMTAgODQgMjEyIDM4MCA0NjQgMzU4IDMwNSA4MjEgODExIDEwOTEgMTE5NQoyMTAgMjk4IDMxNyAzNDkgNDQ5IDIxNCAxMjEgLTEyNCAyNDIgLTM2NSA0NzEgLTkzNiAyMzEgLTU3NiAyNDQgLTYyNiAyNDQKLTkyMyAwIC0yNDggLTcgLTMwMiAtNzYgLTU4NSAtNzQgLTMwNCAtOTMgLTQyMCAtOTMgLTU3MSBsLTEgLTEzMSAzOCAtNzUgYzQ4Ci05NCAxMDggLTE2MyAxOTQgLTIyMiA4NiAtNTggMTIzIC02NSAxOTggLTM3IDEyMiA0NiAyMjkgMTQ3IDMwOSAyOTEgNjcgMTIyCjkzIDIyMSAxMDYgMzkyIDUgNzAgMjAgMTczIDM0IDIzMCAxNiA2OCAyOCAxNjAgMzUgMjY4IDYgOTEgMTMgMTk3IDE2IDIzNSA5CjEyMyAzNSA4NjUgMzUgMTAxMiAwIDE1NCAzIDE3MyAzMCAxNzMgMzYgMCA2NyAtNTQgODQgLTE0NyAzMyAtMTgyIDg0IC02MzAKMTE2IC0xMDE4IDYgLTcxIDE1IC0xODIgMjAgLTI0NSA1IC02MyAxNCAtMjg4IDIwIC01MDAgMTQgLTUxNCAzNCAtNjM5IDEyMgotNzcwIDQzIC02NSAxMDMgLTExMSAxNjggLTEzMSA5NiAtMjggNTU1IC0xOSA2ODQgMTMgNDMgMTEgNTIgMTggNzMgNTcgNDUgODYKMTggMTkyIC03NCAyOTEgLTU1IDU5IC0xMTQgOTUgLTIyNiAxMzUgLTc4IDI4IC0xMDIgNzEgLTE2MCAyOTUgLTgxIDMxNCAtNzkKMzY0IDQzIDgwNSA3MSAyNjAgNjYgMjM4IDE1MCA2MzYgMTA3IDUwNCAxNTIgNjcxIDI0MSA4NzYgODggMjA2IDE2OCAzMjggMzY5CjU2NCAyNjYgMzExIDUyMiA2ODAgNzkzIDExNDQgMTc3IDMwMyAyNzggNTEzIDI5OCA2MjMgMTQgNzQgNjMgMjAwIDEyOSAzMzIKOTQgMTg4IDE0NyAyNTAgMzAwIDM1NSAxMTAgNzYgMjk3IDI2NCAzODMgMzg1IDc5IDExMSAxODUgMzIxIDIyMSA0MzYgNDggMTU1CjU2IDIzMCA1NSA0ODMgLTEgMjQ3IDEgMjYyIDUwIDQ1NiAxNyA2NiAzNyAxNjcgNDYgMjI1IDE4IDExOCAzMCAxNjggODUgMzU1CjU3IDE5NCA2NCAyMzEgNjUgMzM1IDAgMTg3IC00OSAyMDggLTI2MCAxMTAgLTE1NSAtNzEgLTMyMiAtMTg2IC00OTQgLTM0MAotMTMwIC0xMTYgLTE2MyAtMTQwIC0xOTUgLTE0MCAtMTUgMCAtNzEgMTUgLTEyNSAzNCAtMjAwIDcwIC00NTggOTAgLTcyNiA1NwotMjI4IC0yOCAtMjg2IC0yOCAtMzE5IDIgLTE0IDEyIC01MiA3NiAtODUgMTQyIC0zMyA2NiAtOTAgMTU5IC0xMjUgMjA2IC0xMjMKMTYyIC0zMDggMzMyIC00MDkgMzc0IC00NyAyMCAtNjQgMTkgLTc2IC0zIC0xNyAtMzIgLTMxIC0yMTMgLTQxIC01NTIgLTE0Ci00NTQgLTQ2IC02NjMgLTEyNiAtODIyIC0zMyAtNjYgLTYwIC04MSAtMTMyIC03NiAtNzMgNSAtMTQ0IDQxIC0zNzIgMTg3Ci0yNjMgMTY4IC0zMzEgMTk5IC02MTAgMjcwIC01ODMgMTQ5IC05NTEgMjA4IC0xMzY1IDIxOCAtMzMyIDggLTUyMCAtMTEgLTg3MAotODggLTY4MiAtMTUxIC0xMzEwIC0zNjYgLTE3NTUgLTYwMiAtNDMyIC0yMjkgLTc2MCAtNDYxIC0xMTQ1IC04MTEgLTE0MwotMTMwIC0xOTggLTE3NSAtMjg1IC0yMzEgLTc3IC01MCAtMTE1IC04OSAtMTI0IC0xMjggLTQgLTE4IC02MSAtODQgLTE1MAotMTc1IC03OSAtODEgLTE1MyAtMTY2IC0xNjUgLTE4OSAtMzAgLTU5IC0xNTEgLTIwMSAtMjYyIC0zMDkgLTE0NyAtMTQxIC0yMzgKLTE3MyAtNDA2IC0xNDUgLTMyOSA1NyAtOTI1IDM5OSAtMTE4NiA2ODEgLTIxNCAyMzEgLTMyMCA1MTggLTMwNCA4MjUgMTIgMjMyCjcxIDM4MyAyNjUgNjgwIDE4NSAyODUgMzk0IDU0NiA2MjcgNzg0IDE3NiAxODEgMzIwIDMwOCA1NDAgNDc0IDE4NyAxNDIgMjc1CjIyMiAyNzUgMjQ5IDAgNTggLTY0IDg5IC0xOTAgOTMgLTQ3IDIgLTk2IDEgLTExMCAtMXogbTgzMjMgLTIxMTggYzk1IC0zMgozMzkgLTE0NCA0MTMgLTE4OSAzMyAtMTkgNzMgLTUwIDg5IC02NyAyNiAtMjcgMzAgLTM5IDI5IC04MyAtMSAtNjIgLTIyIC0xMDcKLTY2IC0xMzkgLTI4IC0xOSAtNDUgLTIzIC0xMTMgLTIzIC02NSAwIC05MCA1IC0xMzUgMjYgLTc4IDM3IC0xNTYgMTA0IC0yNDcKMjEzIC04OSAxMDYgLTEzNCAxODIgLTEzNSAyMjYgLTIgNjUgNDcgNzYgMTY1IDM2eiBtMTg1MCAtMjE1IGM3NCAtMjggMTUKLTEzMSAtMTIzIC0yMTMgLTk5IC01OCAtMjY4IC0xMTEgLTM3NiAtMTE2IC0xMDggLTUgLTE0MiA4IC0xNjkgNjUgLTI3IDU3Ci0yNSAxMTYgNSAxNDkgMzEgMzQgMTU2IDkyIDIzNSAxMDkgNzAgMTYgMzkxIDIwIDQyOCA2eiIvPgo8L2c+Cjwvc3ZnPgo=">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   1. TOKENS
+   ============================================================ */
+:root{
+  --bg:#0a0a0b; --bg-elev:#0f1013; --bg-elev-2:#14161b; --bg-soft:#181b21;
+  --line:rgba(255,255,255,.08); --line-strong:rgba(255,255,255,.14);
+  --text:#f3f5f7; --muted:#908e8e; --muted-2:#7d7c82;
+  --cyan:#00ccff; --cyan-soft:rgba(0,204,255,.10); --cyan-soft-2:rgba(0,204,255,.16);
+  --text-cyan-muted:rgba(0,195,240,.72);
+  --green:#15d49c; --green-soft:rgba(21,212,156,.10);
+  --amber:#ffb020; --amber-soft:rgba(255,176,32,.10);
+  --red:#ff637d; --red-soft:rgba(255,99,125,.10);
+  --purple:#a78bfa; --purple-soft:rgba(167,139,250,.12);
+  --glow:0 0 0 3px rgba(0,204,255,.22);
+  --sans:"Inter",system-ui,sans-serif;
+  --display:"Plus Jakarta Sans","Inter",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",monospace;
+  --radius-xs:6px; --radius-sm:10px; --radius:14px; --radius-pill:999px;
+  --shadow-sm:0 1px 3px rgba(0,18,28,.30);
+  --shadow-md:0 4px 14px rgba(0,20,30,.26);
+  --shadow-lg:0 12px 40px rgba(0,26,40,.34), 0 2px 12px rgba(0,204,255,.06);
+  --transition-fast:120ms ease; --transition-base:180ms ease;
+  --sidebar-w:240px; --sidebar-w-collapsed:72px; --topbar-h:56px;
+  --text-white:#ffffff;
+}
+html[data-theme="light"]{
+  --bg:#eeece7; --bg-elev:#f6f4ef; --bg-elev-2:#ffffff; --bg-soft:#ece9e2;
+  --line:rgba(0,0,0,.08); --line-strong:rgba(0,0,0,.13);
+  --text:#17191c; --muted:#5e5a57; --muted-2:#636875;
+  --cyan:#009fc7; --cyan-soft:rgba(0,159,199,.1); --cyan-soft-2:rgba(0,159,199,.16);
+  --text-cyan-muted:rgba(0,140,175,.85);
+  --green:#0c9b6d; --green-soft:rgba(12,155,109,.10);
+  --amber:#c78000; --amber-soft:rgba(199,128,0,.10);
+  --red:#d4485e; --red-soft:rgba(212,72,94,.10);
+  --purple:#7c3aed; --purple-soft:rgba(124,58,237,.12);
+  --shadow-sm:0 1px 3px rgba(16,36,54,.06);
+  --shadow-md:0 4px 14px rgba(16,36,54,.08);
+  --shadow-lg:0 8px 24px rgba(0,80,110,.09), 0 1px 4px rgba(0,80,110,.05);
+}
+
+/* ============================================================
+   2. BASE
+   ============================================================ */
+*{box-sizing:border-box; min-width:0;}
+html,body{overflow-x:clip;}
+*{scrollbar-width:thin; scrollbar-color:var(--line-strong) var(--bg);}
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--line-strong); border-radius:var(--radius-pill); border:2px solid var(--bg);}
+body{
+  margin:0; font:400 14px/1.4 var(--sans); color:var(--text);
+  background:
+    radial-gradient(circle at 72% 8%, rgba(0,204,255,.07), transparent 28%),
+    radial-gradient(circle at 12% 60%, rgba(0,204,255,.04), transparent 22%),
+    var(--bg);
+  min-height:100vh; transition:background var(--transition-base), color var(--transition-base);
+}
+html[data-theme="light"] body{
+  background:
+    radial-gradient(circle at 72% 8%, rgba(0,159,199,.06), transparent 28%),
+    radial-gradient(circle at 12% 60%, rgba(0,159,199,.04), transparent 22%),
+    var(--bg);
+}
+h1,h2,h3{font-family:var(--display); margin:0; color:var(--text);}
+button{font-family:var(--sans);}
+.hidden{display:none !important;}
+
+/* ============================================================
+   3. LOGIN
+   ============================================================ */
+#loginScreen{
+  min-height:100vh; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; padding:24px; gap:22px; text-align:center;
+}
+.login-logo{display:flex; flex-direction:column; align-items:center; gap:6px;}
+.login-mark{
+  width:64px; height:64px; border-radius:18px;
+  background:var(--cyan-soft-2); color:var(--cyan);
+  display:grid; place-items:center; box-shadow:var(--shadow-md);
+}
+.login-mark svg{width:32px; height:32px;}
+.login-title{font:800 26px var(--display); letter-spacing:-.03em; color:var(--text);}
+.login-sub{font:400 13px var(--sans); color:var(--muted);}
+.login-card{
+  width:100%; max-width:360px; background:var(--bg-elev-2);
+  border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-lg); padding:28px; display:flex; flex-direction:column; gap:16px;
+}
+.field{display:flex; flex-direction:column; gap:6px; text-align:left;}
+.field label{font:500 12px var(--sans); color:var(--muted);}
+.ds-input-wrap{position:relative; display:block;}
+.ds-input{
+  width:100%; height:44px; padding:0 14px; background:var(--bg);
+  border:1px solid var(--line); border-radius:var(--radius-sm);
+  color:var(--text); font:400 14px var(--sans); outline:none;
+  transition:border-color 160ms, box-shadow 160ms;
+}
+.ds-input:focus{border-color:var(--cyan); box-shadow:var(--glow);}
+.ds-input.pw{padding-right:42px;}
+.eye-btn{
+  position:absolute; right:8px; top:50%; transform:translateY(-50%);
+  width:30px; height:30px; display:grid; place-items:center;
+  background:none; border:none; color:var(--muted-2); cursor:pointer; border-radius:var(--radius-xs);
+}
+.eye-btn:hover{color:var(--text); background:var(--bg-soft);}
+.remember-row{display:flex; align-items:center; gap:9px; user-select:none;}
+.remember-row input{accent-color:var(--cyan); width:16px; height:16px; cursor:pointer;}
+.remember-row span{font:500 13px var(--sans); color:var(--muted);}
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  padding:11px 16px; border-radius:var(--radius); border:none;
+  font:600 13px var(--sans); cursor:pointer; transition:all var(--transition-base);
+  touch-action:manipulation;
+}
+.btn-primary{background:var(--cyan-soft-2); color:var(--cyan);}
+@media (hover:hover){ .btn-primary:hover{background:var(--cyan); color:#fff;} }
+.btn-secondary{background:var(--bg-elev-2); color:var(--text); box-shadow:var(--shadow-sm);}
+@media (hover:hover){ .btn-secondary:hover{background:var(--bg-soft);} }
+.btn-ghost{background:transparent; color:var(--muted);}
+@media (hover:hover){ .btn-ghost:hover{background:var(--bg-soft); color:var(--text);} }
+.btn-danger{background:var(--red-soft); color:var(--red);}
+.btn-block{width:100%;}
+.auth-status{min-height:18px; text-align:center; font:500 12.5px var(--sans);}
+.auth-status[data-state="idle"]{visibility:hidden;}
+.auth-status[data-state="error"]{color:var(--red); visibility:visible;}
+.login-footer{font:500 11px var(--mono); color:var(--muted-2); letter-spacing:.04em;}
+.login-security-note{
+  max-width:360px; font:400 12px/1.5 var(--sans); color:var(--muted-2);
+  background:var(--bg-soft); border-radius:var(--radius-sm); padding:10px 14px;
+}
+
+/* ============================================================
+   4. APP SHELL
+   ============================================================ */
+#app{min-height:100vh; display:flex; flex-direction:column;}
+.topbar{
+  position:sticky; top:0; z-index:99; display:flex; align-items:center;
+  justify-content:space-between; gap:16px; padding:0 20px; height:var(--topbar-h);
+  background:rgba(12,12,14,.82); backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--line);
+}
+html[data-theme="light"] .topbar{background:rgba(238,236,231,.88);}
+.topbar-l{display:flex; align-items:center; gap:12px;}
+.sidebar-toggle{
+  width:36px; height:36px; display:grid; place-items:center; border:none;
+  background:var(--bg-elev-2); color:var(--muted); border-radius:var(--radius-sm);
+  cursor:pointer; box-shadow:var(--shadow-sm); flex-shrink:0;
+}
+.sidebar-toggle:hover{color:var(--cyan);}
+.brand{display:flex; align-items:center; gap:9px;}
+.brand-mark{width:26px; height:26px; border-radius:8px; background:var(--cyan-soft-2); color:var(--cyan); display:grid; place-items:center;}
+.brand-mark svg{width:15px; height:15px;}
+.brand-name{font:700 14px var(--display); letter-spacing:-.01em; color:var(--text);}
+.t-pill{
+  font:600 10px var(--mono); text-transform:uppercase; letter-spacing:.06em;
+  padding:4px 9px; border-radius:var(--radius-pill); background:var(--bg-elev-2);
+  color:var(--muted); cursor:pointer; box-shadow:var(--shadow-sm); border:none;
+}
+.t-pill:hover{color:var(--cyan);}
+.topbar-r{display:flex; align-items:center; gap:10px;}
+.theme-toggle{display:inline-flex; align-items:center; gap:2px; padding:2px; border-radius:var(--radius-pill); background:var(--bg-elev-2);}
+.theme-opt{
+  padding:6px 11px; font:500 12px var(--sans); color:var(--muted);
+  background:transparent; border:none; border-radius:var(--radius-pill); cursor:pointer;
+}
+.theme-opt.active{background:var(--cyan-soft); color:var(--cyan); font-weight:600;}
+.account-chip{display:flex; align-items:center; gap:8px; padding:4px 10px 4px 4px; border-radius:var(--radius-pill); background:var(--bg-elev-2); box-shadow:var(--shadow-sm);}
+.avatar{
+  width:28px; height:28px; border-radius:50%; display:grid; place-items:center;
+  background:var(--cyan-soft); color:var(--cyan); font:700 11px var(--sans); flex-shrink:0;
+}
+.account-chip span{font:500 12.5px var(--sans); color:var(--text); white-space:nowrap;}
+.btn-exit{width:34px; height:34px; padding:0; display:grid; place-items:center; background:var(--bg-elev-2); color:var(--muted); border:none; border-radius:var(--radius-sm); cursor:pointer; box-shadow:var(--shadow-sm);}
+.btn-exit:hover{color:var(--red); background:var(--red-soft);}
+
+.app-layout{display:flex; flex:1; align-items:stretch;}
+.sidebar{
+  width:var(--sidebar-w); flex-shrink:0; position:sticky; top:var(--topbar-h);
+  height:calc(100vh - var(--topbar-h)); overflow-y:auto; overflow-x:hidden;
+  border-right:1px solid var(--line); padding:18px 12px; display:flex; flex-direction:column; gap:4px;
+  transition:width var(--transition-base), padding var(--transition-base);
+}
+.sidebar.collapsed{width:var(--sidebar-w-collapsed); padding:18px 10px;}
+.nav-kicker{font:700 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted-2); padding:6px 10px 8px;}
+.sidebar.collapsed .nav-kicker{opacity:0; height:0; padding:0; overflow:hidden;}
+.nav-item{
+  display:flex; align-items:center; gap:11px; padding:10px; border-radius:var(--radius-sm);
+  font:500 13px var(--sans); color:var(--muted); cursor:pointer; transition:all var(--transition-base);
+  touch-action:manipulation; white-space:nowrap; overflow:hidden;
+}
+.nav-item svg{flex-shrink:0; width:18px; height:18px;}
+@media (hover:hover){ .nav-item:hover{background:var(--bg-soft); color:var(--text);} }
+.nav-item.active{background:var(--cyan-soft); color:var(--text-cyan-muted); font-weight:600;}
+.sidebar.collapsed .nav-item span{display:none;}
+.sidebar-foot{margin-top:auto; padding:10px; font:400 11px var(--mono); color:var(--muted-2);}
+.sidebar.collapsed .sidebar-foot{display:none;}
+
+.content{flex:1; padding:28px 24px 60px; max-width:1770px; margin:0 auto; width:100%;}
+.page-head{display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:22px;}
+.page-kicker{font:700 10px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--text-cyan-muted); margin-bottom:6px;}
+.page-title{font:800 26px var(--display); letter-spacing:-.02em;}
+
+/* Overlay para sidebar mobile */
+.sidebar-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:98;}
+
+/* ============================================================
+   5. RUNTIME BANNER
+   ============================================================ */
+.runtime-banner{
+  display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  padding:16px 20px; border-radius:var(--radius); background:var(--bg-elev); box-shadow:var(--shadow-sm);
+  margin-bottom:22px;
+}
+.runtime-banner[data-state="mock"]{box-shadow:var(--shadow-sm), 0 0 0 1px var(--cyan-soft);}
+.runtime-banner span{display:block; font:700 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--cyan); margin-bottom:3px;}
+.runtime-banner strong{display:block; font:600 14px var(--sans); color:var(--text); margin-bottom:2px;}
+.runtime-banner p{margin:0; font:400 12.5px var(--sans); color:var(--muted);}
+
+/* ============================================================
+   6. KPIs / CARDS
+   ============================================================ */
+.kpi-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px;}
+.card{padding:18px 20px; border-radius:var(--radius); background:var(--bg-elev); box-shadow:var(--shadow-sm);}
+.card-kicker{font:700 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted-2);}
+.kpi-value{font:700 25px var(--display); letter-spacing:-.02em; color:var(--text); margin-top:8px;}
+.kpi-sub{font:500 11.5px var(--sans); color:var(--muted); margin-top:5px;}
+.kpi-sub.pos{color:var(--green);}
+.kpi-sub.neg{color:var(--red);}
+
+/* ============================================================
+   7. PANEL / TOOLBAR / TABLE
+   ============================================================ */
+.panel{background:var(--bg-elev); border-radius:var(--radius); box-shadow:var(--shadow-sm); padding:20px; display:flex; flex-direction:column; gap:16px;}
+.panel-head{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;}
+.panel-title{font:700 15px var(--sans); color:var(--text);}
+.toolbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+.search-wrap{position:relative; min-width:220px; flex:1;}
+.search-icon{position:absolute; left:12px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--muted-2); pointer-events:none;}
+.search-input{width:100%; height:38px; padding:0 14px 0 36px; background:var(--bg-elev-2); border:1px solid transparent; border-radius:var(--radius-sm); color:var(--text); font:400 13px var(--sans); outline:none;}
+.search-input:focus{border-color:rgba(0,204,255,.3); box-shadow:0 0 0 3px var(--cyan-soft);}
+.range-filter{display:inline-flex; align-items:center; gap:2px; padding:2px; border-radius:var(--radius-pill); background:var(--bg-elev-2); flex-shrink:0;}
+.range-btn{padding:7px 13px; font:500 12.5px var(--sans); color:var(--muted); background:transparent; border:none; border-radius:var(--radius-pill); cursor:pointer; white-space:nowrap;}
+.range-btn.is-active{background:var(--cyan-soft); color:var(--cyan); font-weight:600;}
+
+.table-wrap{overflow-x:hidden;}
+.table{width:100%; border-collapse:collapse; table-layout:fixed; font-size:12.5px;}
+.table th{font:600 10.5px var(--mono); letter-spacing:.04em; text-transform:uppercase; color:var(--muted-2); padding:9px 8px; border-bottom:1px solid var(--line); text-align:left; white-space:normal; overflow-wrap:anywhere;}
+.table td{padding:11px 8px; color:var(--text); border-bottom:1px solid var(--line); white-space:normal; overflow-wrap:anywhere; vertical-align:top;}
+.table th:nth-child(1),.table td:nth-child(1){width:7%; white-space:nowrap;}
+.table th:nth-child(2),.table td:nth-child(2){width:15%;}
+.table th:nth-child(3),.table td:nth-child(3){width:9%;}
+.table th:nth-child(4),.table td:nth-child(4){width:12%;}
+.table th:nth-child(5),.table td:nth-child(5){width:9%;}
+.table th:nth-child(6),.table td:nth-child(6){width:9%;}
+.table th:nth-child(7),.table td:nth-child(7){width:11%;}
+.table th:nth-child(8),.table td:nth-child(8){width:8%; white-space:nowrap;}
+.table th:nth-child(9),.table td:nth-child(9){width:9%; white-space:nowrap;}
+.table th:nth-child(10),.table td:nth-child(10){width:11%;}
+.table td.muted-cell{color:var(--muted);}
+.table tr:last-child td{border-bottom:none;}
+.table tr:hover td{background:var(--bg-soft);}
+.badge{display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:var(--radius-pill); font:600 11px var(--mono); letter-spacing:.03em;}
+.badge-green{background:var(--green-soft); color:var(--green);}
+.badge-amber{background:var(--amber-soft); color:var(--amber);}
+.badge-red{background:var(--red-soft); color:var(--red);}
+.empty-state{text-align:center; padding:36px 20px; color:var(--muted);}
+
+/* ============================================================
+   8. MODAL (Novedades)
+   ============================================================ */
+.modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px;}
+.modal{width:100%; max-width:480px; max-height:80vh; overflow-y:auto; background:var(--bg-elev-2); border-radius:var(--radius); box-shadow:var(--shadow-lg); padding:24px;}
+.modal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+.modal-head h3{font:700 17px var(--display);}
+.close-btn{display:grid; place-items:center; width:34px; height:34px; border:none; border-radius:var(--radius-sm); background:transparent; color:var(--muted); cursor:pointer;}
+.close-btn:hover{color:var(--text); background:var(--bg-soft);}
+.cl-entry{padding:14px 0; border-bottom:1px solid var(--line);}
+.cl-entry:last-child{border-bottom:none;}
+.cl-version{font:700 11px var(--mono); color:var(--cyan); letter-spacing:.04em;}
+.cl-date{font:500 11px var(--sans); color:var(--muted-2); margin-left:6px;}
+.cl-title{font:600 14px var(--sans); color:var(--text); margin:5px 0 8px;}
+.cl-items{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px;}
+.cl-items li{display:flex; align-items:flex-start; gap:8px; font:400 12.5px/1.4 var(--sans); color:var(--muted);}
+.cl-tag{flex-shrink:0; font:700 9.5px var(--mono); text-transform:uppercase; padding:2px 7px; border-radius:var(--radius-pill); margin-top:1px;}
+.cl-tag.nuevo{background:var(--cyan-soft); color:var(--cyan);}
+.cl-tag.mejora{background:var(--green-soft); color:var(--green);}
+.cl-tag.correccion{background:var(--amber-soft); color:var(--amber);}
+
+/* ============================================================
+   9. RESPONSIVE
+   ============================================================ */
+@media (max-width:980px){
+  .sidebar{position:fixed; left:0; top:var(--topbar-h); z-index:99; width:min(80vw,280px); transform:translateX(-100%); transition:transform var(--transition-base); background:var(--bg); box-shadow:var(--shadow-lg);}
+  .sidebar.mobile-open{transform:translateX(0);}
+  .sidebar.collapsed{width:min(80vw,280px);}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .content{padding:20px 16px 50px;}
+  .account-chip span{display:none;}
+}
+@media (max-width:560px){
+  .kpi-grid{grid-template-columns:1fr;}
+  .login-card{padding:22px;}
+}
+
+/* ============================================================
+   10. ARUKI / CONEXIÓN Y PAGINACIÓN
+   ============================================================ */
+.aruki-logo{
+  display:block; width:100%; height:100%; object-fit:contain;
+  filter:invert(1); transition:filter var(--transition-base);
+}
+html[data-theme="light"] .aruki-logo{filter:none;}
+.login-mark{
+  width:112px; height:84px; border-radius:0; background:transparent;
+  box-shadow:none; color:inherit;
+}
+.login-mark .aruki-logo{width:112px; height:84px;}
+.brand-mark{
+  width:34px; height:28px; border-radius:0; background:transparent;
+  color:inherit; overflow:visible;
+}
+.brand-mark .aruki-logo{width:34px; height:28px;}
+.runtime-banner[data-state="loading"]{box-shadow:var(--shadow-sm),0 0 0 1px var(--cyan-soft);}
+.runtime-banner[data-state="connected"]{box-shadow:var(--shadow-sm),0 0 0 1px var(--green-soft);}
+.runtime-banner[data-state="connected"] span{color:var(--green);}
+.runtime-banner[data-state="error"]{box-shadow:var(--shadow-sm),0 0 0 1px var(--red-soft);}
+.runtime-banner[data-state="error"] span{color:var(--red);}
+.runtime-actions{display:flex; align-items:center; gap:8px;}
+.loading-row td{text-align:center; padding:34px 16px; color:var(--muted);}
+.spinner{
+  display:inline-block; width:17px; height:17px; margin-right:8px;
+  border:2px solid var(--line-strong); border-top-color:var(--cyan);
+  border-radius:50%; vertical-align:-4px; animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.badge-cyan{background:var(--cyan-soft); color:var(--cyan);}
+.badge-purple{background:var(--purple-soft); color:var(--purple);}
+.pagination{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  flex-wrap:wrap; padding-top:4px;
+}
+.pagination-info{font:500 12px var(--sans); color:var(--muted);}
+.pagination-info strong{color:var(--text);}
+.pagination-actions{display:flex; align-items:center; gap:6px;}
+.page-number-buttons{display:flex; align-items:center; gap:6px;}
+.page-btn{
+  min-width:36px; height:36px; padding:0 10px; border:none;
+  border-radius:var(--radius-sm); background:var(--bg-elev-2);
+  color:var(--muted); font:600 12px var(--mono); cursor:pointer;
+  box-shadow:var(--shadow-sm);
+}
+.page-btn:hover{color:var(--cyan); background:var(--cyan-soft);}
+.page-btn.active{background:var(--cyan-soft-2); color:var(--cyan);}
+.page-btn:disabled{opacity:.4; cursor:not-allowed;}
+.page-jump{font-size:17px; line-height:1;}
+.runtime-banner[data-state="idle"]{box-shadow:var(--shadow-sm),0 0 0 1px var(--line);}
+.runtime-banner[data-state="idle"] span{color:var(--muted);}
+.pagination .btn{padding:8px 12px;}
+.pagination .btn:disabled{opacity:.42; cursor:not-allowed;}
+.page-head-actions{display:flex; gap:8px;}
+.source-note{font:500 11px var(--mono); color:var(--muted-2);}
+@media (max-width:980px){
+  .table-wrap{overflow-x:auto;}
+  .table{min-width:1250px; table-layout:fixed;}
+}
+@media (max-width:700px){
+  .theme-toggle .theme-opt{padding:6px 8px;}
+  .brand-name{display:none;}
+  .pagination{align-items:stretch;}
+  .pagination-actions{width:100%; justify-content:center; flex-wrap:wrap;}
+  .page-btn{min-width:34px;}
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     LOGIN
+     ============================================================ -->
+<div id="loginScreen">
+  <div class="login-logo">
+    <div class="login-mark">
+      <img class="aruki-logo" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/Pgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDIwMDEwOTA0Ly9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9UUi8yMDAxL1JFQy1TVkctMjAwMTA5MDQvRFREL3N2ZzEwLmR0ZCI+CjxzdmcgdmVyc2lvbj0iMS4wIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiB3aWR0aD0iMTI4MC4wMDAwMDBwdCIgaGVpZ2h0PSI5NjAuMDAwMDAwcHQiIHZpZXdCb3g9IjAgMCAxMjgwLjAwMDAwMCA5NjAuMDAwMDAwIgogcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgbWVldCI+CjxtZXRhZGF0YT4KQ3JlYXRlZCBieSBwb3RyYWNlIDEuMTUsIHdyaXR0ZW4gYnkgUGV0ZXIgU2VsaW5nZXIgMjAwMS0yMDE3CjwvbWV0YWRhdGE+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAuMDAwMDAwLDk2MC4wMDAwMDApIHNjYWxlKDAuMTAwMDAwLC0wLjEwMDAwMCkiCmZpbGw9IiMwMDAwMDAiIHN0cm9rZT0ibm9uZSI+CjxwYXRoIGQ9Ik0yMDkwIDk1OTQgYy0yMDEgLTM3IC0zNDIgLTg1IC01MzkgLTE4MyAtMzQ0IC0xNzMgLTc0NiAtNDg5IC05ODcKLTc3NSAtMTA2IC0xMjUgLTI2NCAtMzYxIC0zMzEgLTQ5MiAtMjU5IC01MDYgLTI5OCAtOTg2IC0xMjMgLTE0ODkgMTUwIC00MzQKMTUyIC00MzcgMzMzIC02MzYgMzcgLTQxIDg0IC05OSAxMDUgLTEyOSA0MSAtNjAgMTI5IC0xMzMgMzQ2IC0yOTIgNTkxIC00MzAKNzU1IC00OTggMTMwMSAtNTQzIDIwNiAtMTcgMzE0IC0zNiAzNTIgLTYwIDM4IC0yNSA4MiAtOTIgMTQ0IC0yMjAgMzYgLTc0IDY0Ci0xNDkgNzQgLTE5NSA5IC00MSA0NSAtMTQ0IDgxIC0yMjkgOTAgLTIxMCAxMDggLTI2NiAxNTkgLTQ5MSA5MiAtNDA3IDExMAotNTUxIDEwMiAtODAwIC03IC0yMjQgLTQxIC0zODcgLTExNiAtNTYyIC0zOSAtOTEgLTY0IC0yMjQgLTU4IC0zMDYgOCAtMTA3CjEwNCAtNDMyIDIwMiAtNjgyIDUxIC0xMzIgMjEwIC00NTQgMjg3IC01ODAgMTIxIC0yMDIgMjY4IC0zOTkgMzgxIC01MTMgMTAyCi0xMDIgMjE2IC0xMzggNTE3IC0xNjYgMjEwIC0yMCAzMjIgLTExIDM3NSAzMCAyMyAxOSAyNSAyNiAyMyA5NyAtMiA1NiAyIDg2CjE1IDEwOSA5IDE4IDE3IDQxIDE3IDUzIDAgODUgLTEzMCAxNzMgLTMwNSAyMDUgLTEwNiAyMCAtMTU1IDQzIC0xODggODcgLTEzCjE4IC01NyA5MiAtOTggMTYzIC00MCA3MiAtMTA4IDE4NyAtMTUwIDI1NiAtMTIzIDIwMSAtMTc5IDMyNCAtMTc5IDM5NCAwIDEwMgoxMzMgMzMyIDIzOCA0MTIgMjQgMTggNDggMzMgNTMgMzMgMjIgMCAxMDggLTk0IDIwMiAtMjIwIDE0OSAtMjAxIDI0NiAtMzEwCjUwNyAtNTcwIDI1NSAtMjU1IDM4OSAtMzc1IDU2OSAtNTA4IDY0IC00NyAxNDUgLTExNCAxODEgLTE0OCA0MyAtNDEgNzggLTY2CjEwNSAtNzMgNDggLTEzIDQzNCAtMTQgNjE2IC0yIDE2MSAxMSAxODggMjMgMjM1IDEwNCAyMCAzNCAzOCA3NiA0MSA5NSA1IDI5CjEgMzggLTM4IDc1IC03NCA3MCAtMTMxIDExNCAtMTg5IDE0MyAtNTMgMjcgLTYyIDI5IC0yMzcgMzQgbC0xODIgNSAtOTcgMTA1CmMtNDc0IDUxNiAtNTU0IDYxOCAtNTU0IDcwNiAwIDExMCA4NCAyMTIgMzgwIDQ2NCAzNTggMzA1IDgyMSA4MTEgMTA5MSAxMTk1CjIxMCAyOTggMzE3IDM0OSA0NDkgMjE0IDEyMSAtMTI0IDI0MiAtMzY1IDQ3MSAtOTM2IDIzMSAtNTc2IDI0NCAtNjI2IDI0NAotOTIzIDAgLTI0OCAtNyAtMzAyIC03NiAtNTg1IC03NCAtMzA0IC05MyAtNDIwIC05MyAtNTcxIGwtMSAtMTMxIDM4IC03NSBjNDgKLTk0IDEwOCAtMTYzIDE5NCAtMjIyIDg2IC01OCAxMjMgLTY1IDE5OCAtMzcgMTIyIDQ2IDIyOSAxNDcgMzA5IDI5MSA2NyAxMjIKOTMgMjIxIDEwNiAzOTIgNSA3MCAyMCAxNzMgMzQgMjMwIDE2IDY4IDI4IDE2MCAzNSAyNjggNiA5MSAxMyAxOTcgMTYgMjM1IDkKMTIzIDM1IDg2NSAzNSAxMDEyIDAgMTU0IDMgMTczIDMwIDE3MyAzNiAwIDY3IC01NCA4NCAtMTQ3IDMzIC0xODIgODQgLTYzMAoxMTYgLTEwMTggNiAtNzEgMTUgLTE4MiAyMCAtMjQ1IDUgLTYzIDE0IC0yODggMjAgLTUwMCAxNCAtNTE0IDM0IC02MzkgMTIyCi03NzAgNDMgLTY1IDEwMyAtMTExIDE2OCAtMTMxIDk2IC0yOCA1NTUgLTE5IDY4NCAxMyA0MyAxMSA1MiAxOCA3MyA1NyA0NSA4NgoxOCAxOTIgLTc0IDI5MSAtNTUgNTkgLTExNCA5NSAtMjI2IDEzNSAtNzggMjggLTEwMiA3MSAtMTYwIDI5NSAtODEgMzE0IC03OQozNjQgNDMgODA1IDcxIDI2MCA2NiAyMzggMTUwIDYzNiAxMDcgNTA0IDE1MiA2NzEgMjQxIDg3NiA4OCAyMDYgMTY4IDMyOCAzNjkKNTY0IDI2NiAzMTEgNTIyIDY4MCA3OTMgMTE0NCAxNzcgMzAzIDI3OCA1MTMgMjk4IDYyMyAxNCA3NCA2MyAyMDAgMTI5IDMzMgo5NCAxODggMTQ3IDI1MCAzMDAgMzU1IDExMCA3NiAyOTcgMjY0IDM4MyAzODUgNzkgMTExIDE4NSAzMjEgMjIxIDQzNiA0OCAxNTUKNTYgMjMwIDU1IDQ4MyAtMSAyNDcgMSAyNjIgNTAgNDU2IDE3IDY2IDM3IDE2NyA0NiAyMjUgMTggMTE4IDMwIDE2OCA4NSAzNTUKNTcgMTk0IDY0IDIzMSA2NSAzMzUgMCAxODcgLTQ5IDIwOCAtMjYwIDExMCAtMTU1IC03MSAtMzIyIC0xODYgLTQ5NCAtMzQwCi0xMzAgLTExNiAtMTYzIC0xNDAgLTE5NSAtMTQwIC0xNSAwIC03MSAxNSAtMTI1IDM0IC0yMDAgNzAgLTQ1OCA5MCAtNzI2IDU3Ci0yMjggLTI4IC0yODYgLTI4IC0zMTkgMiAtMTQgMTIgLTUyIDc2IC04NSAxNDIgLTMzIDY2IC05MCAxNTkgLTEyNSAyMDYgLTEyMwoxNjIgLTMwOCAzMzIgLTQwOSAzNzQgLTQ3IDIwIC02NCAxOSAtNzYgLTMgLTE3IC0zMiAtMzEgLTIxMyAtNDEgLTU1MiAtMTQKLTQ1NCAtNDYgLTY2MyAtMTI2IC04MjIgLTMzIC02NiAtNjAgLTgxIC0xMzIgLTc2IC03MyA1IC0xNDQgNDEgLTM3MiAxODcKLTI2MyAxNjggLTMzMSAxOTkgLTYxMCAyNzAgLTU4MyAxNDkgLTk1MSAyMDggLTEzNjUgMjE4IC0zMzIgOCAtNTIwIC0xMSAtODcwCi04OCAtNjgyIC0xNTEgLTEzMTAgLTM2NiAtMTc1NSAtNjAyIC00MzIgLTIyOSAtNzYwIC00NjEgLTExNDUgLTgxMSAtMTQzCi0xMzAgLTE5OCAtMTc1IC0yODUgLTIzMSAtNzcgLTUwIC0xMTUgLTg5IC0xMjQgLTEyOCAtNCAtMTggLTYxIC04NCAtMTUwCi0xNzUgLTc5IC04MSAtMTUzIC0xNjYgLTE2NSAtMTg5IC0zMCAtNTkgLTE1MSAtMjAxIC0yNjIgLTMwOSAtMTQ3IC0xNDEgLTIzOAotMTczIC00MDYgLTE0NSAtMzI5IDU3IC05MjUgMzk5IC0xMTg2IDY4MSAtMjE0IDIzMSAtMzIwIDUxOCAtMzA0IDgyNSAxMiAyMzIKNzEgMzgzIDI2NSA2ODAgMTg1IDI4NSAzOTQgNTQ2IDYyNyA3ODQgMTc2IDE4MSAzMjAgMzA4IDU0MCA0NzQgMTg3IDE0MiAyNzUKMjIyIDI3NSAyNDkgMCA1OCAtNjQgODkgLTE5MCA5MyAtNDcgMiAtOTYgMSAtMTEwIC0xeiBtODMyMyAtMjExOCBjOTUgLTMyCjMzOSAtMTQ0IDQxMyAtMTg5IDMzIC0xOSA3MyAtNTAgODkgLTY3IDI2IC0yNyAzMCAtMzkgMjkgLTgzIC0xIC02MiAtMjIgLTEwNwotNjYgLTEzOSAtMjggLTE5IC00NSAtMjMgLTExMyAtMjMgLTY1IDAgLTkwIDUgLTEzNSAyNiAtNzggMzcgLTE1NiAxMDQgLTI0NwoyMTMgLTg5IDEwNiAtMTM0IDE4MiAtMTM1IDIyNiAtMiA2NSA0NyA3NiAxNjUgMzZ6IG0xODUwIC0yMTUgYzc0IC0yOCAxNQotMTMxIC0xMjMgLTIxMyAtOTkgLTU4IC0yNjggLTExMSAtMzc2IC0xMTYgLTEwOCAtNSAtMTQyIDggLTE2OSA2NSAtMjcgNTcKLTI1IDExNiA1IDE0OSAzMSAzNCAxNTYgOTIgMjM1IDEwOSA3MCAxNiAzOTEgMjAgNDI4IDZ6Ii8+CjwvZz4KPC9zdmc+Cg==" alt="Logo de Aruki">
+    </div>
+    <div class="login-title">Aruki</div>
+    <div class="login-sub">Gestión interna · Control de facturas</div>
+  </div>
+
+  <form class="login-card" id="loginForm" autocomplete="off">
+    <div class="field">
+      <label for="loginUser">Usuario</label>
+      <div class="ds-input-wrap">
+        <input class="ds-input" id="loginUser" type="text" placeholder="Nombre y apellido" autocomplete="username">
+      </div>
+    </div>
+    <div class="field">
+      <label for="loginPass">Contraseña</label>
+      <div class="ds-input-wrap">
+        <input class="ds-input pw" id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password">
+        <button type="button" class="eye-btn" id="eyeBtn" aria-label="Mostrar contraseña">
+          <svg id="eyeIcon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <label class="remember-row">
+      <input type="checkbox" id="rememberMe" checked>
+      <span>Mantener sesión iniciada</span>
+    </label>
+    <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">Iniciar sesión</button>
+    <div class="auth-status" id="authStatus" data-state="idle">Usuario o contraseña incorrectos.</div>
+  </form>
+
+  <div class="login-security-note">
+    El usuario y la contraseña se validan de forma privada en Cloudflare y no están guardados dentro de este HTML.
+  </div>
+  <div class="login-footer">ARUKI · v<span id="loginVersion">1.1</span></div>
+</div>
+
+<!-- ============================================================
+     APP
+     ============================================================ -->
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="topbar-l">
+      <button class="sidebar-toggle" id="sidebarToggleBtn" aria-label="Contraer/expandir menú">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <div class="brand">
+        <div class="brand-mark">
+          <img class="aruki-logo" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/Pgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDIwMDEwOTA0Ly9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9UUi8yMDAxL1JFQy1TVkctMjAwMTA5MDQvRFREL3N2ZzEwLmR0ZCI+CjxzdmcgdmVyc2lvbj0iMS4wIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiB3aWR0aD0iMTI4MC4wMDAwMDBwdCIgaGVpZ2h0PSI5NjAuMDAwMDAwcHQiIHZpZXdCb3g9IjAgMCAxMjgwLjAwMDAwMCA5NjAuMDAwMDAwIgogcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgbWVldCI+CjxtZXRhZGF0YT4KQ3JlYXRlZCBieSBwb3RyYWNlIDEuMTUsIHdyaXR0ZW4gYnkgUGV0ZXIgU2VsaW5nZXIgMjAwMS0yMDE3CjwvbWV0YWRhdGE+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAuMDAwMDAwLDk2MC4wMDAwMDApIHNjYWxlKDAuMTAwMDAwLC0wLjEwMDAwMCkiCmZpbGw9IiMwMDAwMDAiIHN0cm9rZT0ibm9uZSI+CjxwYXRoIGQ9Ik0yMDkwIDk1OTQgYy0yMDEgLTM3IC0zNDIgLTg1IC01MzkgLTE4MyAtMzQ0IC0xNzMgLTc0NiAtNDg5IC05ODcKLTc3NSAtMTA2IC0xMjUgLTI2NCAtMzYxIC0zMzEgLTQ5MiAtMjU5IC01MDYgLTI5OCAtOTg2IC0xMjMgLTE0ODkgMTUwIC00MzQKMTUyIC00MzcgMzMzIC02MzYgMzcgLTQxIDg0IC05OSAxMDUgLTEyOSA0MSAtNjAgMTI5IC0xMzMgMzQ2IC0yOTIgNTkxIC00MzAKNzU1IC00OTggMTMwMSAtNTQzIDIwNiAtMTcgMzE0IC0zNiAzNTIgLTYwIDM4IC0yNSA4MiAtOTIgMTQ0IC0yMjAgMzYgLTc0IDY0Ci0xNDkgNzQgLTE5NSA5IC00MSA0NSAtMTQ0IDgxIC0yMjkgOTAgLTIxMCAxMDggLTI2NiAxNTkgLTQ5MSA5MiAtNDA3IDExMAotNTUxIDEwMiAtODAwIC03IC0yMjQgLTQxIC0zODcgLTExNiAtNTYyIC0zOSAtOTEgLTY0IC0yMjQgLTU4IC0zMDYgOCAtMTA3CjEwNCAtNDMyIDIwMiAtNjgyIDUxIC0xMzIgMjEwIC00NTQgMjg3IC01ODAgMTIxIC0yMDIgMjY4IC0zOTkgMzgxIC01MTMgMTAyCi0xMDIgMjE2IC0xMzggNTE3IC0xNjYgMjEwIC0yMCAzMjIgLTExIDM3NSAzMCAyMyAxOSAyNSAyNiAyMyA5NyAtMiA1NiAyIDg2CjE1IDEwOSA5IDE4IDE3IDQxIDE3IDUzIDAgODUgLTEzMCAxNzMgLTMwNSAyMDUgLTEwNiAyMCAtMTU1IDQzIC0xODggODcgLTEzCjE4IC01NyA5MiAtOTggMTYzIC00MCA3MiAtMTA4IDE4NyAtMTUwIDI1NiAtMTIzIDIwMSAtMTc5IDMyNCAtMTc5IDM5NCAwIDEwMgoxMzMgMzMyIDIzOCA0MTIgMjQgMTggNDggMzMgNTMgMzMgMjIgMCAxMDggLTk0IDIwMiAtMjIwIDE0OSAtMjAxIDI0NiAtMzEwCjUwNyAtNTcwIDI1NSAtMjU1IDM4OSAtMzc1IDU2OSAtNTA4IDY0IC00NyAxNDUgLTExNCAxODEgLTE0OCA0MyAtNDEgNzggLTY2CjEwNSAtNzMgNDggLTEzIDQzNCAtMTQgNjE2IC0yIDE2MSAxMSAxODggMjMgMjM1IDEwNCAyMCAzNCAzOCA3NiA0MSA5NSA1IDI5CjEgMzggLTM4IDc1IC03NCA3MCAtMTMxIDExNCAtMTg5IDE0MyAtNTMgMjcgLTYyIDI5IC0yMzcgMzQgbC0xODIgNSAtOTcgMTA1CmMtNDc0IDUxNiAtNTU0IDYxOCAtNTU0IDcwNiAwIDExMCA4NCAyMTIgMzgwIDQ2NCAzNTggMzA1IDgyMSA4MTEgMTA5MSAxMTk1CjIxMCAyOTggMzE3IDM0OSA0NDkgMjE0IDEyMSAtMTI0IDI0MiAtMzY1IDQ3MSAtOTM2IDIzMSAtNTc2IDI0NCAtNjI2IDI0NAotOTIzIDAgLTI0OCAtNyAtMzAyIC03NiAtNTg1IC03NCAtMzA0IC05MyAtNDIwIC05MyAtNTcxIGwtMSAtMTMxIDM4IC03NSBjNDgKLTk0IDEwOCAtMTYzIDE5NCAtMjIyIDg2IC01OCAxMjMgLTY1IDE5OCAtMzcgMTIyIDQ2IDIyOSAxNDcgMzA5IDI5MSA2NyAxMjIKOTMgMjIxIDEwNiAzOTIgNSA3MCAyMCAxNzMgMzQgMjMwIDE2IDY4IDI4IDE2MCAzNSAyNjggNiA5MSAxMyAxOTcgMTYgMjM1IDkKMTIzIDM1IDg2NSAzNSAxMDEyIDAgMTU0IDMgMTczIDMwIDE3MyAzNiAwIDY3IC01NCA4NCAtMTQ3IDMzIC0xODIgODQgLTYzMAoxMTYgLTEwMTggNiAtNzEgMTUgLTE4MiAyMCAtMjQ1IDUgLTYzIDE0IC0yODggMjAgLTUwMCAxNCAtNTE0IDM0IC02MzkgMTIyCi03NzAgNDMgLTY1IDEwMyAtMTExIDE2OCAtMTMxIDk2IC0yOCA1NTUgLTE5IDY4NCAxMyA0MyAxMSA1MiAxOCA3MyA1NyA0NSA4NgoxOCAxOTIgLTc0IDI5MSAtNTUgNTkgLTExNCA5NSAtMjI2IDEzNSAtNzggMjggLTEwMiA3MSAtMTYwIDI5NSAtODEgMzE0IC03OQozNjQgNDMgODA1IDcxIDI2MCA2NiAyMzggMTUwIDYzNiAxMDcgNTA0IDE1MiA2NzEgMjQxIDg3NiA4OCAyMDYgMTY4IDMyOCAzNjkKNTY0IDI2NiAzMTEgNTIyIDY4MCA3OTMgMTE0NCAxNzcgMzAzIDI3OCA1MTMgMjk4IDYyMyAxNCA3NCA2MyAyMDAgMTI5IDMzMgo5NCAxODggMTQ3IDI1MCAzMDAgMzU1IDExMCA3NiAyOTcgMjY0IDM4MyAzODUgNzkgMTExIDE4NSAzMjEgMjIxIDQzNiA0OCAxNTUKNTYgMjMwIDU1IDQ4MyAtMSAyNDcgMSAyNjIgNTAgNDU2IDE3IDY2IDM3IDE2NyA0NiAyMjUgMTggMTE4IDMwIDE2OCA4NSAzNTUKNTcgMTk0IDY0IDIzMSA2NSAzMzUgMCAxODcgLTQ5IDIwOCAtMjYwIDExMCAtMTU1IC03MSAtMzIyIC0xODYgLTQ5NCAtMzQwCi0xMzAgLTExNiAtMTYzIC0xNDAgLTE5NSAtMTQwIC0xNSAwIC03MSAxNSAtMTI1IDM0IC0yMDAgNzAgLTQ1OCA5MCAtNzI2IDU3Ci0yMjggLTI4IC0yODYgLTI4IC0zMTkgMiAtMTQgMTIgLTUyIDc2IC04NSAxNDIgLTMzIDY2IC05MCAxNTkgLTEyNSAyMDYgLTEyMwoxNjIgLTMwOCAzMzIgLTQwOSAzNzQgLTQ3IDIwIC02NCAxOSAtNzYgLTMgLTE3IC0zMiAtMzEgLTIxMyAtNDEgLTU1MiAtMTQKLTQ1NCAtNDYgLTY2MyAtMTI2IC04MjIgLTMzIC02NiAtNjAgLTgxIC0xMzIgLTc2IC03MyA1IC0xNDQgNDEgLTM3MiAxODcKLTI2MyAxNjggLTMzMSAxOTkgLTYxMCAyNzAgLTU4MyAxNDkgLTk1MSAyMDggLTEzNjUgMjE4IC0zMzIgOCAtNTIwIC0xMSAtODcwCi04OCAtNjgyIC0xNTEgLTEzMTAgLTM2NiAtMTc1NSAtNjAyIC00MzIgLTIyOSAtNzYwIC00NjEgLTExNDUgLTgxMSAtMTQzCi0xMzAgLTE5OCAtMTc1IC0yODUgLTIzMSAtNzcgLTUwIC0xMTUgLTg5IC0xMjQgLTEyOCAtNCAtMTggLTYxIC04NCAtMTUwCi0xNzUgLTc5IC04MSAtMTUzIC0xNjYgLTE2NSAtMTg5IC0zMCAtNTkgLTE1MSAtMjAxIC0yNjIgLTMwOSAtMTQ3IC0xNDEgLTIzOAotMTczIC00MDYgLTE0NSAtMzI5IDU3IC05MjUgMzk5IC0xMTg2IDY4MSAtMjE0IDIzMSAtMzIwIDUxOCAtMzA0IDgyNSAxMiAyMzIKNzEgMzgzIDI2NSA2ODAgMTg1IDI4NSAzOTQgNTQ2IDYyNyA3ODQgMTc2IDE4MSAzMjAgMzA4IDU0MCA0NzQgMTg3IDE0MiAyNzUKMjIyIDI3NSAyNDkgMCA1OCAtNjQgODkgLTE5MCA5MyAtNDcgMiAtOTYgMSAtMTEwIC0xeiBtODMyMyAtMjExOCBjOTUgLTMyCjMzOSAtMTQ0IDQxMyAtMTg5IDMzIC0xOSA3MyAtNTAgODkgLTY3IDI2IC0yNyAzMCAtMzkgMjkgLTgzIC0xIC02MiAtMjIgLTEwNwotNjYgLTEzOSAtMjggLTE5IC00NSAtMjMgLTExMyAtMjMgLTY1IDAgLTkwIDUgLTEzNSAyNiAtNzggMzcgLTE1NiAxMDQgLTI0NwoyMTMgLTg5IDEwNiAtMTM0IDE4MiAtMTM1IDIyNiAtMiA2NSA0NyA3NiAxNjUgMzZ6IG0xODUwIC0yMTUgYzc0IC0yOCAxNQotMTMxIC0xMjMgLTIxMyAtOTkgLTU4IC0yNjggLTExMSAtMzc2IC0xMTYgLTEwOCAtNSAtMTQyIDggLTE2OSA2NSAtMjcgNTcKLTI1IDExNiA1IDE0OSAzMSAzNCAxNTYgOTIgMjM1IDEwOSA3MCAxNiAzOTEgMjAgNDI4IDZ6Ii8+CjwvZz4KPC9zdmc+Cg==" alt="">
+        </div>
+        <span class="brand-name">Aruki</span>
+      </div>
+      <button class="t-pill" id="changelogBtn" title="Ver novedades">v<span id="topVersion">1.0</span></button>
+    </div>
+    <div class="topbar-r">
+      <div class="theme-toggle" role="group" aria-label="Tema">
+        <button class="theme-opt" data-theme-opt="dark">Oscuro</button>
+        <button class="theme-opt" data-theme-opt="system">Sistema</button>
+        <button class="theme-opt" data-theme-opt="light">Claro</button>
+      </div>
+      <div class="account-chip">
+        <div class="avatar" id="userAvatar">AS</div>
+        <span id="userName">Alex Samandjian</span>
+      </div>
+      <button class="btn-exit" id="logoutBtn" aria-label="Cerrar sesión" title="Cerrar sesión">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <div class="sidebar-backdrop hidden" id="sidebarBackdrop"></div>
+    <nav class="sidebar" id="sidebar">
+      <div class="nav-kicker">Módulos</div>
+      <div class="nav-item active" data-module="facturas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 3h13l3 3v15H4z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/>
+        </svg>
+        <span>Control Facturas</span>
+      </div>
+      <div class="sidebar-foot">Aruki<br>© 2026</div>
+    </nav>
+
+    <main class="content">
+      <!-- MÓDULO: CONTROL FACTURAS -->
+      <section id="view-facturas">
+        <div class="page-head">
+          <div>
+            <div class="page-kicker">Control Facturas</div>
+            <h1 class="page-title">Facturas de venta</h1>
+          </div>
+          <div class="page-head-actions">
+            <button class="btn btn-secondary" id="refreshBtn" type="button" title="Volver a consultar YiQi">
+              Actualizar
+            </button>
+          </div>
+        </div>
+
+        <div class="runtime-banner" id="runtimeBanner" data-state="loading">
+          <div>
+            <span id="runtimeKicker">Conectando</span>
+            <strong id="runtimeTitle">Consultando facturas en YiQi</strong>
+            <p id="runtimeText">Esperá un momento mientras Aruki obtiene la información.</p>
+          </div>
+          <div class="runtime-actions">
+            <button class="btn btn-secondary hidden" id="retryBtn" type="button">Reintentar</button>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="card">
+            <div class="card-kicker">Facturado visible</div>
+            <div class="kpi-value" id="kpiTotal">$0</div>
+            <div class="kpi-sub" id="kpiTotalSub">—</div>
+          </div>
+          <div class="card">
+            <div class="card-kicker">Facturas emitidas</div>
+            <div class="kpi-value" id="kpiCount">0</div>
+            <div class="kpi-sub" id="kpiCountSub">Página actual</div>
+          </div>
+          <div class="card">
+            <div class="card-kicker">Pendiente de cobro</div>
+            <div class="kpi-value" id="kpiPending">$0</div>
+            <div class="kpi-sub" id="kpiPendingSub">—</div>
+          </div>
+          <div class="card">
+            <div class="card-kicker">Promedio por factura</div>
+            <div class="kpi-value" id="kpiAvg">$0</div>
+            <div class="kpi-sub">Sobre las facturas visibles</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Listado de facturas</div>
+            <div class="toolbar">
+              <div class="search-wrap">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input class="search-input" id="searchInput" type="text" placeholder="Buscar en esta página…">
+              </div>
+              <div class="range-filter" id="statusFilter" role="group" aria-label="Estado">
+                <button class="range-btn is-active" data-status="todas">Todas</button>
+                <button class="range-btn" data-status="cobradas">Cobradas</button>
+                <button class="range-btn" data-status="saldo">Con saldo</button>
+                <button class="range-btn" data-status="entregadas">Entregadas</button>
+              </div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Factura</th><th>Cliente</th><th>Emisión</th><th>Punto de venta</th><th>Condición</th><th>Origen</th><th>Vendedor</th><th>Total</th><th>Pendiente</th><th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="facturasBody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state hidden" id="emptyState">No se encontraron facturas con ese filtro.</div>
+          <div class="pagination">
+            <div>
+              <div class="pagination-info">
+                Página <strong id="currentPageLabel">1</strong> de <strong id="totalPagesLabel">—</strong>
+                · <strong id="totalRecordsLabel">—</strong> registros en YiQi
+              </div>
+              <div class="source-note">Seleccioná una página y presioná Actualizar para consultarla en YiQi.</div>
+            </div>
+            <div class="pagination-actions" aria-label="Paginación">
+              <button class="page-btn page-jump" id="firstPageBtn" type="button" title="Ir a la primera página" aria-label="Primera página">«</button>
+              <div class="page-number-buttons" id="pageNumberButtons"></div>
+              <button class="page-btn page-jump" id="lastPageBtn" type="button" title="Ir a la última página" aria-label="Última página">»</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: NOVEDADES / CHANGELOG
+     ============================================================ -->
+<div class="modal-backdrop hidden" id="changelogModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Novedades</h3>
+      <button class="close-btn" id="closeChangelog" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="changelogList"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG: VERSIÓN Y CHANGELOG
+   -----------------------------------------------------------
+   Se actualiza en cada cambio pedido: subir LATEST_VERSION y
+   agregar un bloque nuevo AL PRINCIPIO del array.
+   ============================================================ */
+const LATEST_VERSION = "1.2";
+const CHANGELOG = [
+  {
+    version: "1.2",
+    date: "2026-08-03",
+    title: "Vista ampliada, consulta manual, nueva paginación y acceso seguro",
+    items: [
+      { type: "mejora", text: "El módulo de facturas amplía su ancho máximo un 50% y reorganiza la tabla para aprovechar el espacio disponible" },
+      { type: "mejora", text: "Aruki ya no consulta facturas automáticamente al iniciar sesión; la carga se realiza únicamente al presionar Actualizar" },
+      { type: "mejora", text: "La paginación utiliza cinco botones numéricos y accesos directos a la primera y última página" },
+      { type: "correccion", text: "El usuario y la contraseña de acceso fueron eliminados del HTML y pasan a validarse de forma privada en Cloudflare" }
+    ]
+  },
+  {
+    version: "1.1",
+    date: "2026-08-03",
+    title: "Nueva identidad Aruki y conexión real con YiQi",
+    items: [
+      { type: "nuevo", text: "Conexión en vivo con la smartie de facturas de YiQi mediante el Worker de Cloudflare" },
+      { type: "nuevo", text: "Paginación, actualización manual y estados de carga, conexión y error" },
+      { type: "mejora", text: "La aplicación, el título y el nombre del archivo pasan a llamarse Aruki" },
+      { type: "mejora", text: "El logo SVG de Aruki se utiliza en el acceso, la barra superior y el favicon" },
+      { type: "mejora", text: "Tabla adaptada a las columnas reales devueltas por YiQi" }
+    ]
+  },
+  {
+    version: "1.0",
+    date: "2026-08-01",
+    title: "Primera versión de Aruki",
+    items: [
+      { type: "nuevo", text: "Pantalla de acceso con usuario y contraseña" },
+      { type: "nuevo", text: "Menú lateral desplegable, con posibilidad de contraerlo" },
+      { type: "nuevo", text: "Selector de tema Oscuro / Sistema / Claro" },
+      { type: "nuevo", text: "Módulo Control Facturas con datos de ejemplo (KPIs, búsqueda y filtros)" },
+      { type: "nuevo", text: "Historial de novedades" }
+    ]
+  }
+];
+
+/* ============================================================
+   TEMA — patrón de 3 pasos
+   ============================================================ */
+function resolveTheme(){
+  const s = localStorage.getItem('aruki-theme') || 'system';
+  return s === 'system' ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : s;
+}
+function applyTheme(t){
+  document.documentElement.dataset.theme = t;
+  const s = localStorage.getItem('aruki-theme') || 'system';
+  document.querySelectorAll('.theme-opt').forEach(b => b.classList.toggle('active', b.dataset.themeOpt === s));
+}
+function setTheme(v){
+  localStorage.setItem('aruki-theme', v);
+  applyTheme(v === 'system' ? resolveTheme() : v);
+}
+document.querySelectorAll('.theme-opt').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.themeOpt)));
+window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+  if ((localStorage.getItem('aruki-theme') || 'system') === 'system') applyTheme(resolveTheme());
+});
+applyTheme(resolveTheme());
+
+/* ============================================================
+   LOGIN SEGURO — validado en Cloudflare Worker
+   ============================================================ */
+const WORKER_BASE = "https://aruki.dentalabarg.workers.dev";
+const SESSION_KEY = "aruki_secure_session";
+
+function getStoredSession(){
+  const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+function getAuthToken(){
+  return getStoredSession()?.token || "";
+}
+
+function clearSession(){
+  localStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem("aruki_session");
+  sessionStorage.removeItem("aruki_session");
+  localStorage.removeItem("dentalab_session");
+  sessionStorage.removeItem("dentalab_session");
+}
+
+function showLogin(message = ""){
+  document.getElementById("app").classList.add("hidden");
+  document.getElementById("loginScreen").classList.remove("hidden");
+  const status = document.getElementById("authStatus");
+  status.textContent = message || "Usuario o contraseña incorrectos.";
+  status.dataset.state = message ? "error" : "idle";
+}
+
+async function checkSession(){
+  const saved = getStoredSession();
+  if (!saved?.token) return;
+
+  try {
+    const response = await fetch(`${WORKER_BASE}/auth/session`, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${saved.token}`
+      },
+      cache: "no-store"
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload?.authenticated) throw new Error("Sesión inválida");
+    enterApp(payload.name || saved.name || "Usuario");
+  } catch {
+    clearSession();
+    showLogin("La sesión venció. Volvé a ingresar.");
+  }
+}
+
+function enterApp(name){
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  document.getElementById("userName").textContent = name;
+  document.getElementById("userAvatar").textContent =
+    name.split(" ").map(p => p[0]).join("").slice(0,2).toUpperCase();
+  showAwaitingUpdate(currentPage);
+}
+
+document.getElementById("loginForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+
+  const username = document.getElementById("loginUser").value.trim();
+  const password = document.getElementById("loginPass").value;
+  const remember = document.getElementById("rememberMe").checked;
+  const status = document.getElementById("authStatus");
+  const submit = document.getElementById("loginSubmitBtn");
+
+  status.dataset.state = "idle";
+  submit.disabled = true;
+  submit.textContent = "Verificando…";
+
+  try {
+    const response = await fetch(`${WORKER_BASE}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ username, password, remember }),
+      cache: "no-store"
+    });
+
+    const payload = await response.json();
+    if (!response.ok || !payload?.token) {
+      throw new Error(payload?.error || "Usuario o contraseña incorrectos.");
+    }
+
+    clearSession();
+    const session = JSON.stringify({
+      token: payload.token,
+      name: payload.name || username
+    });
+
+    if (remember) localStorage.setItem(SESSION_KEY, session);
+    else sessionStorage.setItem(SESSION_KEY, session);
+
+    document.getElementById("loginPass").value = "";
+    enterApp(payload.name || username);
+  } catch(error) {
+    status.textContent = String(error?.message || error);
+    status.dataset.state = "error";
+  } finally {
+    submit.disabled = false;
+    submit.textContent = "Iniciar sesión";
+  }
+});
+
+document.getElementById("eyeBtn").addEventListener("click", function(){
+  const input = document.getElementById("loginPass");
+  input.type = input.type === "password" ? "text" : "password";
+});
+
+document.getElementById("logoutBtn").addEventListener("click", function(){
+  clearSession();
+  facturas = [];
+  pageCache.clear();
+  totalFacturas = 0;
+  currentPage = 1;
+  showLogin();
+  document.getElementById("loginForm").reset();
+  document.getElementById("rememberMe").checked = true;
+  resetFacturasView();
+});
+
+/* ============================================================
+   SIDEBAR — contraer / expandir + mobile
+   ============================================================ */
+const sidebar = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+document.getElementById('sidebarToggleBtn').addEventListener('click', function(){
+  if (window.innerWidth <= 980) {
+    sidebar.classList.toggle('mobile-open');
+    sidebarBackdrop.classList.toggle('hidden');
+  } else {
+    sidebar.classList.toggle('collapsed');
+    localStorage.setItem('aruki-sidebar', sidebar.classList.contains('collapsed') ? 'collapsed' : 'open');
+  }
+});
+sidebarBackdrop.addEventListener('click', function(){
+  sidebar.classList.remove('mobile-open');
+  sidebarBackdrop.classList.add('hidden');
+});
+if (localStorage.getItem('aruki-sidebar') === 'collapsed' && window.innerWidth > 980) {
+  sidebar.classList.add('collapsed');
+}
+
+/* ============================================================
+   CHANGELOG MODAL
+   ============================================================ */
+function renderChangelog(){
+  const wrap = document.getElementById('changelogList');
+  wrap.innerHTML = CHANGELOG.map(entry => `
+    <div class="cl-entry">
+      <div><span class="cl-version">v${entry.version}</span><span class="cl-date">${entry.date}</span></div>
+      <div class="cl-title">${entry.title}</div>
+      <ul class="cl-items">
+        ${entry.items.map(it => `<li><span class="cl-tag ${it.type}">${it.type}</span>${it.text}</li>`).join('')}
+      </ul>
+    </div>
+  `).join('');
+}
+document.getElementById('changelogBtn').addEventListener('click', function(){
+  renderChangelog();
+  document.getElementById('changelogModal').classList.remove('hidden');
+});
+document.getElementById('closeChangelog').addEventListener('click', function(){
+  document.getElementById('changelogModal').classList.add('hidden');
+});
+document.getElementById('changelogModal').addEventListener('click', function(e){
+  if (e.target === this) this.classList.add('hidden');
+});
+document.getElementById('topVersion').textContent = LATEST_VERSION;
+document.getElementById('loginVersion').textContent = LATEST_VERSION;
+
+/* ============================================================
+   MÓDULO CONTROL FACTURAS — CONSULTA MANUAL A YIQI
+   ============================================================ */
+const FACTURAS_ENDPOINT = `${WORKER_BASE}/facturas`;
+const moneyFormatter = new Intl.NumberFormat("es-AR", {
+  style: "currency",
+  currency: "ARS",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2
+});
+const numberFormatter = new Intl.NumberFormat("es-AR");
+
+let facturas = [];
+let totalFacturas = 0;
+let currentPage = 1;
+let pageSize = 50;
+let currentStatus = "todas";
+let currentSearch = "";
+let facturasLoading = false;
+const pageCache = new Map();
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function toNumber(value){
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function money(value){
+  return moneyFormatter.format(toNumber(value));
+}
+
+function fmtDateTime(value){
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return escapeHtml(value);
+  return date.toLocaleString("es-AR", {
+    day:"2-digit", month:"2-digit", year:"numeric",
+    hour:"2-digit", minute:"2-digit"
+  });
+}
+
+function invoiceLabel(f){
+  const type = String(f.TIFA_NOMBRE ?? "").trim();
+  const number = String(f.FACT_NUMERO ?? "").trim();
+  return [type, number].filter(Boolean).join(" ") || "—";
+}
+
+function hasPendingBalance(f){
+  return Math.abs(toNumber(f.FACT_PENDIENTE_CANCELACIO)) > 0.10;
+}
+
+function statusBadge(estado){
+  const normalized = String(estado || "Sin estado").toLowerCase();
+  let cls = "badge-amber";
+  if (normalized.includes("cobr")) cls = "badge-green";
+  else if (normalized.includes("entreg")) cls = "badge-cyan";
+  else if (normalized.includes("anul") || normalized.includes("cancel")) cls = "badge-red";
+  else if (normalized.includes("pend")) cls = "badge-purple";
+  return `<span class="badge ${cls}">${escapeHtml(estado || "Sin estado")}</span>`;
+}
+
+function setRuntimeState(state, title, text){
+  const banner = document.getElementById("runtimeBanner");
+  banner.dataset.state = state;
+  const labels = {
+    idle: "Consulta manual",
+    loading: "Conectando",
+    connected: "Conectado a YiQi",
+    error: "Error de conexión"
+  };
+  document.getElementById("runtimeKicker").textContent = labels[state] || "Estado";
+  document.getElementById("runtimeTitle").textContent = title;
+  document.getElementById("runtimeText").textContent = text;
+  document.getElementById("retryBtn").classList.toggle("hidden", state !== "error");
+}
+
+function showLoadingRow(){
+  document.getElementById("emptyState").classList.add("hidden");
+  document.getElementById("facturasBody").innerHTML = `
+    <tr class="loading-row">
+      <td colspan="10"><span class="spinner"></span>Consultando la página ${numberFormatter.format(currentPage)} en YiQi…</td>
+    </tr>`;
+}
+
+function showAwaitingUpdate(page){
+  facturas = pageCache.get(page)?.data || [];
+  const cached = pageCache.has(page);
+
+  if (cached) {
+    renderFacturas();
+    setRuntimeState(
+      "connected",
+      `Página ${numberFormatter.format(page)} disponible`,
+      "Estos datos ya fueron cargados manualmente durante esta sesión. Presioná Actualizar para volver a consultarlos."
+    );
+    return;
+  }
+
+  clearFacturasDisplay(
+    `La página ${numberFormatter.format(page)} todavía no fue consultada. Presioná Actualizar para traerla desde YiQi.`
+  );
+  setRuntimeState(
+    "idle",
+    `Página ${numberFormatter.format(page)} lista para consultar`,
+    "Aruki no realizará ninguna consulta automática. Presioná Actualizar cuando quieras obtener los datos."
+  );
+}
+
+function clearFacturasDisplay(message){
+  facturas = [];
+  const body = document.getElementById("facturasBody");
+  const empty = document.getElementById("emptyState");
+  body.innerHTML = "";
+  empty.textContent = message;
+  empty.classList.remove("hidden");
+
+  document.getElementById("kpiTotal").textContent = money(0);
+  document.getElementById("kpiTotalSub").textContent = "Sin datos cargados en esta página";
+  document.getElementById("kpiCount").textContent = "0";
+  document.getElementById("kpiCountSub").textContent = `Página ${numberFormatter.format(currentPage)}`;
+  document.getElementById("kpiPending").textContent = money(0);
+  document.getElementById("kpiPendingSub").textContent = "Sin datos cargados";
+  document.getElementById("kpiAvg").textContent = money(0);
+  updatePagination();
+}
+
+function getFiltered(){
+  const query = currentSearch.trim().toLowerCase();
+  return facturas.filter(f => {
+    const estado = String(f.DESC_ESTADO || "").toLowerCase();
+    const statusOk =
+      currentStatus === "todas" ||
+      (currentStatus === "cobradas" && estado.includes("cobr")) ||
+      (currentStatus === "saldo" && hasPendingBalance(f)) ||
+      (currentStatus === "entregadas" && estado.includes("entreg"));
+
+    const searchable = [
+      invoiceLabel(f),
+      f.CLIE_RAZON_SOCIAL,
+      f.PUVE_NOMBRE,
+      f.COVE_DESCRIPCION,
+      f.FACT_EXTE_NOMBRE,
+      f.VEHA_NOMBRE,
+      f.DESC_ESTADO
+    ].map(v => String(v ?? "").toLowerCase()).join(" ");
+
+    return statusOk && (!query || searchable.includes(query));
+  });
+}
+
+function renderFacturas(){
+  const rows = getFiltered();
+  const body = document.getElementById("facturasBody");
+  const empty = document.getElementById("emptyState");
+
+  if (!rows.length) {
+    body.innerHTML = "";
+    empty.textContent = facturas.length
+      ? "No se encontraron facturas con ese filtro."
+      : `La página ${numberFormatter.format(currentPage)} no tiene datos cargados.`;
+    empty.classList.remove("hidden");
+  } else {
+    empty.classList.add("hidden");
+    body.innerHTML = rows.map(f => `
+      <tr>
+        <td>${escapeHtml(invoiceLabel(f))}</td>
+        <td>${escapeHtml(f.CLIE_RAZON_SOCIAL || "—")}</td>
+        <td class="muted-cell">${fmtDateTime(f.FACT_FECHA_EMISION)}</td>
+        <td class="muted-cell">${escapeHtml(f.PUVE_NOMBRE || "—")}</td>
+        <td class="muted-cell">${escapeHtml(f.COVE_DESCRIPCION || "—")}</td>
+        <td class="muted-cell">${escapeHtml(f.FACT_EXTE_NOMBRE || "—")}</td>
+        <td class="muted-cell">${escapeHtml(f.VEHA_NOMBRE || "—")}</td>
+        <td>${money(f.FACT_TOTAL)}</td>
+        <td>${money(f.FACT_PENDIENTE_CANCELACIO)}</td>
+        <td>${statusBadge(f.DESC_ESTADO)}</td>
+      </tr>
+    `).join("");
+  }
+
+  const totalVisible = rows.reduce((sum, f) => sum + toNumber(f.FACT_TOTAL), 0);
+  const pendingRows = rows.filter(hasPendingBalance);
+  const pendingVisible = pendingRows.reduce(
+    (sum, f) => sum + toNumber(f.FACT_PENDIENTE_CANCELACIO), 0
+  );
+  const avg = rows.length ? totalVisible / rows.length : 0;
+
+  document.getElementById("kpiTotal").textContent = money(totalVisible);
+  document.getElementById("kpiTotalSub").textContent = "Suma de las facturas visibles";
+  document.getElementById("kpiCount").textContent = numberFormatter.format(rows.length);
+  document.getElementById("kpiCountSub").textContent =
+    `Página ${currentPage} · ${totalFacturas ? numberFormatter.format(totalFacturas) : "—"} registros totales`;
+  document.getElementById("kpiPending").textContent = money(pendingVisible);
+  document.getElementById("kpiPendingSub").textContent =
+    `${numberFormatter.format(pendingRows.length)} factura(s) con saldo visible`;
+  document.getElementById("kpiAvg").textContent = money(avg);
+
+  updatePagination();
+}
+
+function getTotalPages(){
+  return totalFacturas && pageSize
+    ? Math.max(1, Math.ceil(totalFacturas / pageSize))
+    : 5;
+}
+
+function getVisiblePageNumbers(totalPages){
+  const visibleCount = Math.min(5, totalPages);
+  let start = Math.max(1, currentPage - 2);
+  let end = start + visibleCount - 1;
+
+  if (end > totalPages) {
+    end = totalPages;
+    start = Math.max(1, end - visibleCount + 1);
+  }
+
+  return Array.from({length: end - start + 1}, (_, i) => start + i);
+}
+
+function updatePagination(){
+  const totalPages = getTotalPages();
+
+  document.getElementById("currentPageLabel").textContent = numberFormatter.format(currentPage);
+  document.getElementById("totalPagesLabel").textContent =
+    totalFacturas ? numberFormatter.format(totalPages) : "—";
+  document.getElementById("totalRecordsLabel").textContent =
+    totalFacturas ? numberFormatter.format(totalFacturas) : "—";
+
+  const wrap = document.getElementById("pageNumberButtons");
+  wrap.innerHTML = getVisiblePageNumbers(totalPages).map(page => `
+    <button
+      class="page-btn ${page === currentPage ? "active" : ""}"
+      type="button"
+      data-page="${page}"
+      aria-label="Ir a la página ${page}"
+      ${facturasLoading ? "disabled" : ""}
+    >${numberFormatter.format(page)}</button>
+  `).join("");
+
+  wrap.querySelectorAll("[data-page]").forEach(btn => {
+    btn.addEventListener("click", () => selectPage(Number(btn.dataset.page)));
+  });
+
+  document.getElementById("firstPageBtn").disabled =
+    facturasLoading || currentPage <= 1;
+  document.getElementById("lastPageBtn").disabled =
+    facturasLoading || !totalFacturas || currentPage >= totalPages;
+  document.getElementById("refreshBtn").disabled = facturasLoading;
+}
+
+function selectPage(page){
+  const totalPages = getTotalPages();
+  if (!Number.isInteger(page) || page < 1) return;
+  if (totalFacturas && page > totalPages) return;
+
+  currentPage = page;
+  currentSearch = "";
+  document.getElementById("searchInput").value = "";
+  showAwaitingUpdate(page);
+  updatePagination();
+}
+
+async function loadFacturas(page = currentPage){
+  if (facturasLoading || page < 1) return;
+
+  const token = getAuthToken();
+  if (!token) {
+    clearSession();
+    showLogin("La sesión venció. Volvé a ingresar.");
+    return;
+  }
+
+  facturasLoading = true;
+  currentPage = page;
+  updatePagination();
+  showLoadingRow();
+  setRuntimeState(
+    "loading",
+    "Consultando facturas en YiQi",
+    `Cargando manualmente la página ${numberFormatter.format(page)}…`
+  );
+
+  try {
+    const response = await fetch(
+      `${FACTURAS_ENDPOINT}?page=${encodeURIComponent(page)}&_=${Date.now()}`,
+      {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        cache: "no-store"
+      }
+    );
+
+    let payload;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new Error(`El conector respondió con un formato inválido (HTTP ${response.status}).`);
+    }
+
+    if (response.status === 401) {
+      clearSession();
+      showLogin("La sesión venció. Volvé a ingresar.");
+      throw new Error("Sesión vencida.");
+    }
+    if (!response.ok) {
+      throw new Error(payload?.error || `Error HTTP ${response.status}.`);
+    }
+    if (payload?.error) throw new Error(payload.error);
+    if (!Array.isArray(payload?.data)) {
+      throw new Error("La respuesta de YiQi no contiene una lista de facturas válida.");
+    }
+
+    facturas = payload.data;
+    totalFacturas = toNumber(payload.total) || facturas.length;
+    if (facturas.length > 0) pageSize = facturas.length;
+
+    pageCache.set(page, {
+      data: facturas,
+      loadedAt: Date.now()
+    });
+
+    renderFacturas();
+    setRuntimeState(
+      "connected",
+      "Facturas reales cargadas",
+      `${numberFormatter.format(facturas.length)} registros en esta página · ${numberFormatter.format(totalFacturas)} registros informados por YiQi.`
+    );
+  } catch (error) {
+    if (getStoredSession()) {
+      facturas = pageCache.get(page)?.data || [];
+      if (facturas.length) renderFacturas();
+      else clearFacturasDisplay(
+        `No se pudo cargar la página ${numberFormatter.format(page)}. Presioná Reintentar para volver a consultar.`
+      );
+      setRuntimeState(
+        "error",
+        "No se pudieron obtener las facturas",
+        String(error?.message || error)
+      );
+    }
+  } finally {
+    facturasLoading = false;
+    updatePagination();
+  }
+}
+
+function resetFacturasView(){
+  currentPage = 1;
+  facturas = [];
+  totalFacturas = 0;
+  currentSearch = "";
+  currentStatus = "todas";
+  document.getElementById("searchInput").value = "";
+  document.querySelectorAll("#statusFilter .range-btn").forEach((btn, index) => {
+    btn.classList.toggle("is-active", index === 0);
+  });
+  clearFacturasDisplay("Iniciá sesión y presioná Actualizar para consultar las facturas.");
+  setRuntimeState(
+    "idle",
+    "Sin consulta activa",
+    "Aruki no consulta YiQi automáticamente."
+  );
+}
+
+document.getElementById("searchInput").addEventListener("input", function(){
+  currentSearch = this.value;
+  renderFacturas();
+});
+
+document.querySelectorAll("#statusFilter .range-btn").forEach(btn => {
+  btn.addEventListener("click", function(){
+    document.querySelectorAll("#statusFilter .range-btn").forEach(
+      b => b.classList.remove("is-active")
+    );
+    this.classList.add("is-active");
+    currentStatus = this.dataset.status;
+    renderFacturas();
+  });
+});
+
+document.getElementById("refreshBtn").addEventListener("click", () => loadFacturas(currentPage));
+document.getElementById("retryBtn").addEventListener("click", () => loadFacturas(currentPage));
+document.getElementById("firstPageBtn").addEventListener("click", () => selectPage(1));
+document.getElementById("lastPageBtn").addEventListener("click", () => {
+  if (totalFacturas) selectPage(getTotalPages());
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+resetFacturasView();
+checkSession();
+</script>
+</body>
+</html>
