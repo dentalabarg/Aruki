@@ -396,6 +396,10 @@ html[data-theme="light"] .aruki-logo{filter:none;}
 }
 
 
+.load-progress{margin-top:10px; max-width:440px;}
+.load-progress-track{height:6px; border-radius:var(--radius-pill); background:var(--bg-soft); overflow:hidden;}
+.load-progress-fill{height:100%; width:0; background:linear-gradient(90deg,var(--cyan),var(--green)); transition:width .35s ease;}
+
 /* ============================================================
    MÓDULO ARTÍCULOS
    ============================================================ */
@@ -527,7 +531,7 @@ html[data-theme="light"] .aruki-logo{filter:none;}
             <h1 class="page-title">Facturas de venta</h1>
           </div>
           <div class="page-head-actions">
-            <button class="btn btn-secondary" id="refreshBtn" type="button" title="Volver a consultar YiQi">
+            <button class="btn btn-secondary" id="refreshBtn" type="button" title="Volver a cargar todo desde YiQi">
               Actualizar
             </button>
           </div>
@@ -538,8 +542,10 @@ html[data-theme="light"] .aruki-logo{filter:none;}
             <span id="runtimeKicker">Conectando</span>
             <strong id="runtimeTitle">Consultando facturas en YiQi</strong>
             <p id="runtimeText">Esperá un momento mientras Aruki obtiene la información.</p>
+            <div class="load-progress hidden" id="loadProgress"><div class="load-progress-track"><div class="load-progress-fill" id="loadProgressFill"></div></div></div>
           </div>
           <div class="runtime-actions">
+            <button class="btn btn-secondary hidden" id="stopBtn" type="button">Detener</button>
             <button class="btn btn-secondary hidden" id="retryBtn" type="button">Reintentar</button>
           </div>
         </div>
@@ -573,7 +579,7 @@ html[data-theme="light"] .aruki-logo{filter:none;}
             <div class="toolbar">
               <div class="search-wrap">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input class="search-input" id="searchInput" type="text" placeholder="Buscar en esta página…">
+                <input class="search-input" id="searchInput" type="text" placeholder="Buscar en todas las facturas… (cliente, número, origen, etc.)">
               </div>
               <div class="range-filter" id="statusFilter" role="group" aria-label="Estado">
                 <button class="range-btn is-active" data-status="todas">Todas</button>
@@ -598,9 +604,9 @@ html[data-theme="light"] .aruki-logo{filter:none;}
             <div>
               <div class="pagination-info">
                 Página <strong id="currentPageLabel">1</strong> de <strong id="totalPagesLabel">—</strong>
-                · <strong id="totalRecordsLabel">—</strong> registros en YiQi
+                · <strong id="totalRecordsLabel">—</strong> resultados
               </div>
-              <div class="source-note">Seleccioná una página y presioná Actualizar para consultarla en YiQi.</div>
+              <div class="source-note" id="facNote">—</div>
             </div>
             <div class="pagination-actions" aria-label="Paginación">
               <button class="page-btn page-jump" id="firstPageBtn" type="button" title="Ir a la primera página" aria-label="Primera página">«</button>
@@ -618,7 +624,7 @@ html[data-theme="light"] .aruki-logo{filter:none;}
             <h1 class="page-title">Consulta de stock</h1>
           </div>
           <div class="page-head-actions">
-            <button class="btn btn-secondary" id="artRefreshBtn" type="button" title="Volver a consultar YiQi">Actualizar</button>
+            <button class="btn btn-secondary" id="artRefreshBtn" type="button" title="Volver a cargar todo desde YiQi">Actualizar</button>
           </div>
         </div>
 
@@ -626,9 +632,11 @@ html[data-theme="light"] .aruki-logo{filter:none;}
           <div>
             <span id="artKicker">Consulta manual</span>
             <strong id="artTitle">Sin consulta activa</strong>
-            <p id="artText">Presioná Actualizar para traer los artículos desde YiQi.</p>
+            <p id="artText">Aruki carga todos los artículos al abrir este módulo.</p>
+            <div class="load-progress hidden" id="artProgress"><div class="load-progress-track"><div class="load-progress-fill" id="artProgressFill"></div></div></div>
           </div>
           <div class="runtime-actions">
+            <button class="btn btn-secondary hidden" id="artStopBtn" type="button">Detener</button>
             <button class="btn btn-secondary hidden" id="artRetryBtn" type="button">Reintentar</button>
           </div>
         </div>
@@ -639,7 +647,7 @@ html[data-theme="light"] .aruki-logo{filter:none;}
             <div class="toolbar">
               <div class="search-wrap">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input class="search-input" id="artSearch" type="text" placeholder="Buscar SKU o nombre en esta página…">
+                <input class="search-input" id="artSearch" type="text" placeholder="Buscar en todos los artículos… (SKU, nombre, etc.)">
               </div>
             </div>
           </div>
@@ -654,9 +662,9 @@ html[data-theme="light"] .aruki-logo{filter:none;}
             <div>
               <div class="pagination-info">
                 Página <strong id="artCurrentPage">1</strong> de <strong id="artTotalPages">—</strong>
-                · <strong id="artTotalRecords">—</strong> registros en YiQi
+                · <strong id="artTotalRecords">—</strong> resultados
               </div>
-              <div class="source-note">Seleccioná una página y presioná Actualizar para consultarla en YiQi.</div>
+              <div class="source-note" id="artNote">—</div>
             </div>
             <div class="pagination-actions" aria-label="Paginación de artículos">
               <button class="page-btn page-jump" id="artFirstBtn" type="button" aria-label="Primera página">«</button>
@@ -692,8 +700,21 @@ html[data-theme="light"] .aruki-logo{filter:none;}
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "1.3";
+const LATEST_VERSION = "1.4";
 const CHANGELOG = [
+  {
+    version: "1.4",
+    date: "2026-10-06",
+    title: "Carga completa y búsqueda en todos los resultados",
+    items: [
+      { type: "mejora", text: "Control Facturas y Artículos cargan automáticamente todas las páginas de YiQi, sin necesidad de apretar Actualizar" },
+      { type: "mejora", text: "La búsqueda y los filtros ahora recorren todos los registros cargados, no solo los de una página" },
+      { type: "nuevo", text: "Barra de progreso de carga y botón Detener; se puede buscar mientras sigue cargando" },
+      { type: "mejora", text: "La búsqueda ignora mayúsculas y tildes, y acepta varias palabras (por ejemplo: forceps adultos)" },
+      { type: "mejora", text: "Los totales de Control Facturas se calculan sobre todas las facturas que coinciden con la búsqueda" },
+      { type: "mejora", text: "Actualizar vuelve a cargar todo desde YiQi; la paginación inferior ahora es solo para navegar en pantalla" }
+    ]
+  },
   {
     version: "1.3",
     date: "2026-10-06",
@@ -825,7 +846,7 @@ function enterApp(name){
   document.getElementById("userName").textContent = name;
   document.getElementById("userAvatar").textContent =
     name.split(" ").map(p => p[0]).join("").slice(0,2).toUpperCase();
-  showAwaitingUpdate(currentPage);
+  showModule("facturas");
 }
 
 document.getElementById("loginForm").addEventListener("submit", async function(e){
@@ -884,15 +905,11 @@ document.getElementById("eyeBtn").addEventListener("click", function(){
 
 document.getElementById("logoutBtn").addEventListener("click", function(){
   clearSession();
-  facturas = [];
-  pageCache.clear();
-  totalFacturas = 0;
-  currentPage = 1;
   showLogin();
   document.getElementById("loginForm").reset();
   document.getElementById("rememberMe").checked = true;
-  resetFacturasView();
-  artReset();
+  facturasModule.reset();
+  articulosModule.reset();
   showModule("facturas");
 });
 
@@ -948,64 +965,312 @@ document.getElementById('topVersion').textContent = LATEST_VERSION;
 document.getElementById('loginVersion').textContent = LATEST_VERSION;
 
 /* ============================================================
-   MÓDULO CONTROL FACTURAS — CONSULTA MANUAL A YIQI
+   UTILIDADES COMPARTIDAS
    ============================================================ */
-const FACTURAS_ENDPOINT = `${WORKER_BASE}/facturas`;
 const moneyFormatter = new Intl.NumberFormat("es-AR", {
-  style: "currency",
-  currency: "ARS",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2
+  style: "currency", currency: "ARS",
+  minimumFractionDigits: 0, maximumFractionDigits: 2
 });
 const numberFormatter = new Intl.NumberFormat("es-AR");
-
-let facturas = [];
-let totalFacturas = 0;
-let currentPage = 1;
-let pageSize = 50;
-let currentStatus = "todas";
-let currentSearch = "";
-let facturasLoading = false;
-const pageCache = new Map();
+const decimalFormatter = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 });
+const priceFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function escapeHtml(value){
   return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 }
-
 function toNumber(value){
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 }
-
-function money(value){
-  return moneyFormatter.format(toNumber(value));
-}
-
+function money(value){ return moneyFormatter.format(toNumber(value)); }
 function fmtDateTime(value){
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return escapeHtml(value);
   return date.toLocaleString("es-AR", {
-    day:"2-digit", month:"2-digit", year:"numeric",
-    hour:"2-digit", minute:"2-digit"
+    day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit"
   });
 }
+/* Para buscar sin importar mayúsculas ni tildes */
+function foldText(value){
+  return String(value ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
 
+/* ============================================================
+   CARGA COMPLETA DE TODAS LAS PÁGINAS DE UNA SMARTIE
+   ------------------------------------------------------------
+   Trae la página 1, calcula cuántas páginas hay y descarga el resto
+   de a pocas por vez (para no saturar YiQi).
+   ============================================================ */
+const LOAD_CONCURRENCY = 4;
+const LOAD_RETRIES = 2;
+
+class SessionExpired extends Error {}
+
+function sleep(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
+
+async function fetchSmartiePage(endpoint, page, signal){
+  let lastError;
+  for (let attempt = 0; attempt <= LOAD_RETRIES; attempt++) {
+    const token = getAuthToken();
+    if (!token) throw new SessionExpired("Sesión vencida.");
+    try {
+      const response = await fetch(`${endpoint}?page=${encodeURIComponent(page)}&_=${Date.now()}`, {
+        method: "GET",
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+        cache: "no-store",
+        signal
+      });
+      let payload;
+      try { payload = await response.json(); }
+      catch { throw new Error(`El conector respondió con un formato inválido (HTTP ${response.status}).`); }
+      if (response.status === 401) throw new SessionExpired("Sesión vencida.");
+      if (!response.ok) throw new Error(payload?.error || `Error HTTP ${response.status}.`);
+      if (payload?.error) throw new Error(payload.error);
+      if (!Array.isArray(payload?.data)) throw new Error("La respuesta de YiQi no contiene una lista válida.");
+      return payload;
+    } catch (error) {
+      if (error instanceof SessionExpired || signal?.aborted) throw error;
+      lastError = error;
+      if (attempt < LOAD_RETRIES) await sleep(700 * (attempt + 1));
+    }
+  }
+  throw lastError;
+}
+
+async function loadAllPages(endpoint, signal, onProgress){
+  const first = await fetchSmartiePage(endpoint, 1, signal);
+  const pageSize = first.data.length || 1;
+  const total = toNumber(first.total) || first.data.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const pages = new Array(totalPages + 1);
+  pages[1] = first.data;
+  const failed = [];
+  let done = 1;
+  let nextPage = 2;
+
+  const flatten = () => {
+    const rows = [];
+    for (let p = 1; p <= totalPages; p++) if (pages[p]) for (const r of pages[p]) rows.push(r);
+    return rows;
+  };
+  const report = () => onProgress({ done, totalPages, total, columns: first.columns, flatten });
+  report();
+
+  async function worker(){
+    while (!signal.aborted) {
+      const page = nextPage++;
+      if (page > totalPages) return;
+      try {
+        const payload = await fetchSmartiePage(endpoint, page, signal);
+        pages[page] = payload.data;
+      } catch (error) {
+        if (error instanceof SessionExpired) throw error;
+        if (signal.aborted) return;
+        failed.push(page);
+      }
+      done++;
+      report();
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(LOAD_CONCURRENCY, totalPages - 1) }, worker);
+  await Promise.all(workers);
+
+  return {
+    rows: flatten(), columns: first.columns, total, totalPages,
+    failed: failed.sort((a, b) => a - b), aborted: signal.aborted
+  };
+}
+
+/* ============================================================
+   MÓDULO GENÉRICO: carga todo, busca en todo, pagina en pantalla
+   ============================================================ */
+function createDataModule(cfg){
+  const $ = key => document.getElementById(cfg.ids[key]);
+  const m = {
+    rows: [], columns: [], total: 0, viewPage: 1, search: "",
+    loading: false, loaded: false, abort: null, loadId: 0, failed: [], lastRender: 0
+  };
+
+  m.setState = function(state, title, text, progress){
+    const banner = $("banner");
+    banner.dataset.state = state;
+    const labels = { idle: "Sin datos", loading: "Cargando desde YiQi", connected: "Conectado a YiQi", error: "Atención" };
+    $("kicker").textContent = labels[state] || "Estado";
+    $("title").textContent = title;
+    $("text").textContent = text;
+    const showProgress = typeof progress === "number";
+    $("progress").classList.toggle("hidden", !showProgress);
+    if (showProgress) $("progressFill").style.width = `${Math.max(2, Math.min(100, progress * 100))}%`;
+    $("stop").classList.toggle("hidden", state !== "loading");
+    $("retry").classList.toggle("hidden", state !== "error");
+    $("refresh").disabled = m.loading;
+  };
+
+  m.filtered = function(){
+    const terms = foldText(m.search).split(/\s+/).filter(Boolean);
+    return m.rows.filter(row => {
+      if (cfg.filter && !cfg.filter(row)) return false;
+      if (!terms.length) return true;
+      if (row.__s === undefined) row.__s = foldText(cfg.searchText(row, m));
+      return terms.every(t => row.__s.includes(t));
+    });
+  };
+
+  m.render = function(){
+    const filtered = m.filtered();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / cfg.viewSize));
+    if (m.viewPage > totalPages) m.viewPage = totalPages;
+    if (m.viewPage < 1) m.viewPage = 1;
+    const start = (m.viewPage - 1) * cfg.viewSize;
+    const pageRows = filtered.slice(start, start + cfg.viewSize);
+
+    cfg.renderRows(pageRows, filtered, m);
+
+    const empty = $("empty");
+    if (!pageRows.length) {
+      empty.textContent = m.loading
+        ? "Cargando datos desde YiQi…"
+        : (m.rows.length ? "No se encontraron resultados con esa búsqueda o filtro." : cfg.emptyText);
+      empty.classList.remove("hidden");
+    } else {
+      empty.classList.add("hidden");
+    }
+
+    $("currentPage").textContent = numberFormatter.format(m.viewPage);
+    $("totalPages").textContent = numberFormatter.format(totalPages);
+    $("totalRecords").textContent = numberFormatter.format(filtered.length);
+    $("note").textContent = m.rows.length
+      ? `${numberFormatter.format(m.rows.length)} de ${numberFormatter.format(m.total || m.rows.length)} registros de YiQi cargados. La búsqueda y los filtros se aplican sobre todo lo cargado.`
+      : "La búsqueda y los filtros se aplican sobre todo lo cargado desde YiQi.";
+
+    const wrap = $("pageButtons");
+    const count = Math.min(5, totalPages);
+    let from = Math.max(1, m.viewPage - 2);
+    let to = from + count - 1;
+    if (to > totalPages) { to = totalPages; from = Math.max(1, to - count + 1); }
+    wrap.innerHTML = Array.from({ length: to - from + 1 }, (_, i) => from + i).map(p => `
+      <button class="page-btn ${p === m.viewPage ? "active" : ""}" type="button" data-page="${p}"
+        aria-label="Ir a la página ${p}">${numberFormatter.format(p)}</button>`).join("");
+    wrap.querySelectorAll("[data-page]").forEach(btn => {
+      btn.addEventListener("click", () => { m.viewPage = Number(btn.dataset.page); m.render(); });
+    });
+    $("first").disabled = m.viewPage <= 1;
+    $("last").disabled = m.viewPage >= totalPages;
+    $("refresh").disabled = m.loading;
+  };
+
+  m.load = async function(){
+    if (m.loading) return;
+    if (!getAuthToken()) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); return; }
+
+    m.loading = true;
+    m.loadId += 1;
+    const id = m.loadId;
+    m.abort = new AbortController();
+    m.failed = [];
+    m.lastRender = 0;
+    let firstChunk = true;
+    m.setState("loading", cfg.loadingTitle, "Consultando la primera página…", 0.02);
+    m.render();
+
+    try {
+      const result = await loadAllPages(cfg.endpoint, m.abort.signal, snap => {
+        if (id !== m.loadId) return;
+        if (firstChunk) { m.viewPage = 1; firstChunk = false; }
+        m.total = snap.total;
+        m.columns = snap.columns || m.columns;
+        m.setState("loading", cfg.loadingTitle,
+          `Página ${numberFormatter.format(snap.done)} de ${numberFormatter.format(snap.totalPages)} descargada${snap.done === 1 ? "" : "s"}. Ya podés buscar mientras termina.`,
+          snap.done / snap.totalPages);
+        const now = Date.now();
+        if (m.rows.length === 0 || now - m.lastRender > 700) {
+          m.rows = snap.flatten();
+          m.lastRender = now;
+          m.render();
+        }
+      });
+      if (id !== m.loadId) return;
+
+      m.rows = result.rows;
+      m.columns = result.columns || m.columns;
+      m.total = result.total;
+      m.failed = result.failed;
+      m.loaded = !result.aborted;
+      m.loading = false;
+
+      if (result.aborted) {
+        m.setState("idle", "Carga detenida",
+          `Se cargaron ${numberFormatter.format(m.rows.length)} de ${numberFormatter.format(m.total)} registros. Presioná Actualizar para cargar todo.`);
+      } else if (m.failed.length) {
+        m.setState("error", "Carga incompleta",
+          `No se pudieron descargar ${m.failed.length} página(s) (${m.failed.slice(0, 8).join(", ")}${m.failed.length > 8 ? "…" : ""}). Presioná Reintentar para volver a cargar todo.`);
+      } else {
+        m.setState("connected", "Todos los registros cargados",
+          `${numberFormatter.format(m.rows.length)} registros traídos desde YiQi. Actualizá para volver a consultar.`);
+      }
+      m.render();
+    } catch (error) {
+      if (id !== m.loadId) return;
+      m.loading = false;
+      if (error instanceof SessionExpired) {
+        clearSession();
+        showLogin("La sesión venció. Volvé a ingresar.");
+        return;
+      }
+      m.setState("error", "No se pudieron obtener los datos", String(error?.message || error));
+      m.render();
+    }
+  };
+
+  m.stop = function(){ if (m.abort) m.abort.abort(); };
+
+  m.ensureLoaded = function(){
+    if (!m.loaded && !m.loading && getAuthToken()) m.load();
+  };
+
+  m.reset = function(){
+    m.loadId += 1;
+    if (m.abort) m.abort.abort();
+    m.rows = []; m.columns = []; m.total = 0; m.viewPage = 1; m.search = "";
+    m.loading = false; m.loaded = false; m.failed = [];
+    if (cfg.onReset) cfg.onReset(m);
+    $("search").value = "";
+    m.setState("idle", "Sin datos cargados", cfg.idleText);
+    m.render();
+  };
+
+  let searchTimer;
+  $("search").addEventListener("input", function(){
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { m.search = this.value; m.viewPage = 1; m.render(); }, 150);
+  });
+  $("refresh").addEventListener("click", () => m.load());
+  $("retry").addEventListener("click", () => m.load());
+  $("stop").addEventListener("click", () => m.stop());
+  $("first").addEventListener("click", () => { m.viewPage = 1; m.render(); });
+  $("last").addEventListener("click", () => {
+    m.viewPage = Math.max(1, Math.ceil(m.filtered().length / cfg.viewSize));
+    m.render();
+  });
+
+  return m;
+}
+
+/* ============================================================
+   MÓDULO CONTROL FACTURAS
+   ============================================================ */
 function invoiceLabel(f){
   const type = String(f.TIFA_NOMBRE ?? "").trim();
   const number = String(f.FACT_NUMERO ?? "").trim();
   return [type, number].filter(Boolean).join(" ") || "—";
 }
-
 function hasPendingBalance(f){
   return Math.abs(toNumber(f.FACT_PENDIENTE_CANCELACIO)) > 0.10;
 }
-
 function statusBadge(estado){
   const normalized = String(estado || "Sin estado").toLowerCase();
   let cls = "badge-amber";
@@ -1016,109 +1281,35 @@ function statusBadge(estado){
   return `<span class="badge ${cls}">${escapeHtml(estado || "Sin estado")}</span>`;
 }
 
-function setRuntimeState(state, title, text){
-  const banner = document.getElementById("runtimeBanner");
-  banner.dataset.state = state;
-  const labels = {
-    idle: "Consulta manual",
-    loading: "Conectando",
-    connected: "Conectado a YiQi",
-    error: "Error de conexión"
-  };
-  document.getElementById("runtimeKicker").textContent = labels[state] || "Estado";
-  document.getElementById("runtimeTitle").textContent = title;
-  document.getElementById("runtimeText").textContent = text;
-  document.getElementById("retryBtn").classList.toggle("hidden", state !== "error");
-}
+let currentStatus = "todas";
 
-function showLoadingRow(){
-  document.getElementById("emptyState").classList.add("hidden");
-  document.getElementById("facturasBody").innerHTML = `
-    <tr class="loading-row">
-      <td colspan="10"><span class="spinner"></span>Consultando la página ${numberFormatter.format(currentPage)} en YiQi…</td>
-    </tr>`;
-}
-
-function showAwaitingUpdate(page){
-  facturas = pageCache.get(page)?.data || [];
-  const cached = pageCache.has(page);
-
-  if (cached) {
-    renderFacturas();
-    setRuntimeState(
-      "connected",
-      `Página ${numberFormatter.format(page)} disponible`,
-      "Estos datos ya fueron cargados manualmente durante esta sesión. Presioná Actualizar para volver a consultarlos."
-    );
-    return;
-  }
-
-  clearFacturasDisplay(
-    `La página ${numberFormatter.format(page)} todavía no fue consultada. Presioná Actualizar para traerla desde YiQi.`
-  );
-  setRuntimeState(
-    "idle",
-    `Página ${numberFormatter.format(page)} lista para consultar`,
-    "Aruki no realizará ninguna consulta automática. Presioná Actualizar cuando quieras obtener los datos."
-  );
-}
-
-function clearFacturasDisplay(message){
-  facturas = [];
-  const body = document.getElementById("facturasBody");
-  const empty = document.getElementById("emptyState");
-  body.innerHTML = "";
-  empty.textContent = message;
-  empty.classList.remove("hidden");
-
-  document.getElementById("kpiTotal").textContent = money(0);
-  document.getElementById("kpiTotalSub").textContent = "Sin datos cargados en esta página";
-  document.getElementById("kpiCount").textContent = "0";
-  document.getElementById("kpiCountSub").textContent = `Página ${numberFormatter.format(currentPage)}`;
-  document.getElementById("kpiPending").textContent = money(0);
-  document.getElementById("kpiPendingSub").textContent = "Sin datos cargados";
-  document.getElementById("kpiAvg").textContent = money(0);
-  updatePagination();
-}
-
-function getFiltered(){
-  const query = currentSearch.trim().toLowerCase();
-  return facturas.filter(f => {
+const facturasModule = createDataModule({
+  endpoint: `${WORKER_BASE}/facturas`,
+  viewSize: 50,
+  loadingTitle: "Cargando todas las facturas desde YiQi",
+  idleText: "Aruki carga todas las facturas al abrir este módulo.",
+  emptyText: "Todavía no hay facturas cargadas.",
+  ids: {
+    banner: "runtimeBanner", kicker: "runtimeKicker", title: "runtimeTitle", text: "runtimeText",
+    progress: "loadProgress", progressFill: "loadProgressFill",
+    stop: "stopBtn", retry: "retryBtn", refresh: "refreshBtn",
+    search: "searchInput", empty: "emptyState",
+    currentPage: "currentPageLabel", totalPages: "totalPagesLabel", totalRecords: "totalRecordsLabel",
+    note: "facNote", pageButtons: "pageNumberButtons", first: "firstPageBtn", last: "lastPageBtn"
+  },
+  filter(f){
     const estado = String(f.DESC_ESTADO || "").toLowerCase();
-    const statusOk =
-      currentStatus === "todas" ||
+    return currentStatus === "todas" ||
       (currentStatus === "cobradas" && estado.includes("cobr")) ||
       (currentStatus === "saldo" && hasPendingBalance(f)) ||
       (currentStatus === "entregadas" && estado.includes("entreg"));
-
-    const searchable = [
-      invoiceLabel(f),
-      f.CLIE_RAZON_SOCIAL,
-      f.PUVE_NOMBRE,
-      f.COVE_DESCRIPCION,
-      f.FACT_EXTE_NOMBRE,
-      f.VEHA_NOMBRE,
-      f.DESC_ESTADO
-    ].map(v => String(v ?? "").toLowerCase()).join(" ");
-
-    return statusOk && (!query || searchable.includes(query));
-  });
-}
-
-function renderFacturas(){
-  const rows = getFiltered();
-  const body = document.getElementById("facturasBody");
-  const empty = document.getElementById("emptyState");
-
-  if (!rows.length) {
-    body.innerHTML = "";
-    empty.textContent = facturas.length
-      ? "No se encontraron facturas con ese filtro."
-      : `La página ${numberFormatter.format(currentPage)} no tiene datos cargados.`;
-    empty.classList.remove("hidden");
-  } else {
-    empty.classList.add("hidden");
-    body.innerHTML = rows.map(f => `
+  },
+  searchText(f){
+    return [invoiceLabel(f), f.FACT_NUMERO, f.CLIE_RAZON_SOCIAL, f.PUVE_NOMBRE, f.COVE_DESCRIPCION,
+      f.FACT_EXTE_NOMBRE, f.VEHA_NOMBRE, f.DESC_ESTADO, f.FACT_TOTAL].join(" ");
+  },
+  renderRows(pageRows, filtered, m){
+    document.getElementById("facturasBody").innerHTML = pageRows.map(f => `
       <tr>
         <td>${escapeHtml(invoiceLabel(f))}</td>
         <td>${escapeHtml(f.CLIE_RAZON_SOCIAL || "—")}</td>
@@ -1130,220 +1321,34 @@ function renderFacturas(){
         <td>${money(f.FACT_TOTAL)}</td>
         <td>${money(f.FACT_PENDIENTE_CANCELACIO)}</td>
         <td>${statusBadge(f.DESC_ESTADO)}</td>
-      </tr>
-    `).join("");
+      </tr>`).join("");
+
+    const totalVisible = filtered.reduce((sum, f) => sum + toNumber(f.FACT_TOTAL), 0);
+    const pendingRows = filtered.filter(hasPendingBalance);
+    const pendingVisible = pendingRows.reduce((sum, f) => sum + toNumber(f.FACT_PENDIENTE_CANCELACIO), 0);
+    const avg = filtered.length ? totalVisible / filtered.length : 0;
+
+    document.getElementById("kpiTotal").textContent = money(totalVisible);
+    document.getElementById("kpiTotalSub").textContent = "Suma de las facturas que coinciden con la búsqueda";
+    document.getElementById("kpiCount").textContent = numberFormatter.format(filtered.length);
+    document.getElementById("kpiCountSub").textContent =
+      `${numberFormatter.format(m.rows.length)} cargadas · ${m.total ? numberFormatter.format(m.total) : "—"} en YiQi`;
+    document.getElementById("kpiPending").textContent = money(pendingVisible);
+    document.getElementById("kpiPendingSub").textContent =
+      `${numberFormatter.format(pendingRows.length)} factura(s) con saldo`;
+    document.getElementById("kpiAvg").textContent = money(avg);
   }
-
-  const totalVisible = rows.reduce((sum, f) => sum + toNumber(f.FACT_TOTAL), 0);
-  const pendingRows = rows.filter(hasPendingBalance);
-  const pendingVisible = pendingRows.reduce(
-    (sum, f) => sum + toNumber(f.FACT_PENDIENTE_CANCELACIO), 0
-  );
-  const avg = rows.length ? totalVisible / rows.length : 0;
-
-  document.getElementById("kpiTotal").textContent = money(totalVisible);
-  document.getElementById("kpiTotalSub").textContent = "Suma de las facturas visibles";
-  document.getElementById("kpiCount").textContent = numberFormatter.format(rows.length);
-  document.getElementById("kpiCountSub").textContent =
-    `Página ${currentPage} · ${totalFacturas ? numberFormatter.format(totalFacturas) : "—"} registros totales`;
-  document.getElementById("kpiPending").textContent = money(pendingVisible);
-  document.getElementById("kpiPendingSub").textContent =
-    `${numberFormatter.format(pendingRows.length)} factura(s) con saldo visible`;
-  document.getElementById("kpiAvg").textContent = money(avg);
-
-  updatePagination();
-}
-
-function getTotalPages(){
-  return totalFacturas && pageSize
-    ? Math.max(1, Math.ceil(totalFacturas / pageSize))
-    : 5;
-}
-
-function getVisiblePageNumbers(totalPages){
-  const visibleCount = Math.min(5, totalPages);
-  let start = Math.max(1, currentPage - 2);
-  let end = start + visibleCount - 1;
-
-  if (end > totalPages) {
-    end = totalPages;
-    start = Math.max(1, end - visibleCount + 1);
-  }
-
-  return Array.from({length: end - start + 1}, (_, i) => start + i);
-}
-
-function updatePagination(){
-  const totalPages = getTotalPages();
-
-  document.getElementById("currentPageLabel").textContent = numberFormatter.format(currentPage);
-  document.getElementById("totalPagesLabel").textContent =
-    totalFacturas ? numberFormatter.format(totalPages) : "—";
-  document.getElementById("totalRecordsLabel").textContent =
-    totalFacturas ? numberFormatter.format(totalFacturas) : "—";
-
-  const wrap = document.getElementById("pageNumberButtons");
-  wrap.innerHTML = getVisiblePageNumbers(totalPages).map(page => `
-    <button
-      class="page-btn ${page === currentPage ? "active" : ""}"
-      type="button"
-      data-page="${page}"
-      aria-label="Ir a la página ${page}"
-      ${facturasLoading ? "disabled" : ""}
-    >${numberFormatter.format(page)}</button>
-  `).join("");
-
-  wrap.querySelectorAll("[data-page]").forEach(btn => {
-    btn.addEventListener("click", () => selectPage(Number(btn.dataset.page)));
-  });
-
-  document.getElementById("firstPageBtn").disabled =
-    facturasLoading || currentPage <= 1;
-  document.getElementById("lastPageBtn").disabled =
-    facturasLoading || !totalFacturas || currentPage >= totalPages;
-  document.getElementById("refreshBtn").disabled = facturasLoading;
-}
-
-function selectPage(page){
-  const totalPages = getTotalPages();
-  if (!Number.isInteger(page) || page < 1) return;
-  if (totalFacturas && page > totalPages) return;
-
-  currentPage = page;
-  currentSearch = "";
-  document.getElementById("searchInput").value = "";
-  showAwaitingUpdate(page);
-  updatePagination();
-}
-
-async function loadFacturas(page = currentPage){
-  if (facturasLoading || page < 1) return;
-
-  const token = getAuthToken();
-  if (!token) {
-    clearSession();
-    showLogin("La sesión venció. Volvé a ingresar.");
-    return;
-  }
-
-  facturasLoading = true;
-  currentPage = page;
-  updatePagination();
-  showLoadingRow();
-  setRuntimeState(
-    "loading",
-    "Consultando facturas en YiQi",
-    `Cargando manualmente la página ${numberFormatter.format(page)}…`
-  );
-
-  try {
-    const response = await fetch(
-      `${FACTURAS_ENDPOINT}?page=${encodeURIComponent(page)}&_=${Date.now()}`,
-      {
-        method: "GET",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        cache: "no-store"
-      }
-    );
-
-    let payload;
-    try {
-      payload = await response.json();
-    } catch {
-      throw new Error(`El conector respondió con un formato inválido (HTTP ${response.status}).`);
-    }
-
-    if (response.status === 401) {
-      clearSession();
-      showLogin("La sesión venció. Volvé a ingresar.");
-      throw new Error("Sesión vencida.");
-    }
-    if (!response.ok) {
-      throw new Error(payload?.error || `Error HTTP ${response.status}.`);
-    }
-    if (payload?.error) throw new Error(payload.error);
-    if (!Array.isArray(payload?.data)) {
-      throw new Error("La respuesta de YiQi no contiene una lista de facturas válida.");
-    }
-
-    facturas = payload.data;
-    totalFacturas = toNumber(payload.total) || facturas.length;
-    if (facturas.length > 0) pageSize = facturas.length;
-
-    pageCache.set(page, {
-      data: facturas,
-      loadedAt: Date.now()
-    });
-
-    renderFacturas();
-    setRuntimeState(
-      "connected",
-      "Facturas reales cargadas",
-      `${numberFormatter.format(facturas.length)} registros en esta página · ${numberFormatter.format(totalFacturas)} registros informados por YiQi.`
-    );
-  } catch (error) {
-    if (getStoredSession()) {
-      facturas = pageCache.get(page)?.data || [];
-      if (facturas.length) renderFacturas();
-      else clearFacturasDisplay(
-        `No se pudo cargar la página ${numberFormatter.format(page)}. Presioná Reintentar para volver a consultar.`
-      );
-      setRuntimeState(
-        "error",
-        "No se pudieron obtener las facturas",
-        String(error?.message || error)
-      );
-    }
-  } finally {
-    facturasLoading = false;
-    updatePagination();
-  }
-}
-
-function resetFacturasView(){
-  currentPage = 1;
-  facturas = [];
-  totalFacturas = 0;
-  currentSearch = "";
-  currentStatus = "todas";
-  document.getElementById("searchInput").value = "";
-  document.querySelectorAll("#statusFilter .range-btn").forEach((btn, index) => {
-    btn.classList.toggle("is-active", index === 0);
-  });
-  clearFacturasDisplay("Iniciá sesión y presioná Actualizar para consultar las facturas.");
-  setRuntimeState(
-    "idle",
-    "Sin consulta activa",
-    "Aruki no consulta YiQi automáticamente."
-  );
-}
-
-document.getElementById("searchInput").addEventListener("input", function(){
-  currentSearch = this.value;
-  renderFacturas();
 });
 
 document.querySelectorAll("#statusFilter .range-btn").forEach(btn => {
   btn.addEventListener("click", function(){
-    document.querySelectorAll("#statusFilter .range-btn").forEach(
-      b => b.classList.remove("is-active")
-    );
+    document.querySelectorAll("#statusFilter .range-btn").forEach(b => b.classList.remove("is-active"));
     this.classList.add("is-active");
     currentStatus = this.dataset.status;
-    renderFacturas();
+    facturasModule.viewPage = 1;
+    facturasModule.render();
   });
 });
-
-document.getElementById("refreshBtn").addEventListener("click", () => loadFacturas(currentPage));
-document.getElementById("retryBtn").addEventListener("click", () => loadFacturas(currentPage));
-document.getElementById("firstPageBtn").addEventListener("click", () => selectPage(1));
-document.getElementById("lastPageBtn").addEventListener("click", () => {
-  if (totalFacturas) selectPage(getTotalPages());
-});
-
 
 /* ============================================================
    NAVEGACIÓN ENTRE MÓDULOS
@@ -1363,6 +1368,8 @@ function showModule(name){
     sidebarBackdrop.classList.add("hidden");
   }
   window.scrollTo({ top: 0 });
+  if (name === "facturas") facturasModule.ensureLoaded();
+  if (name === "articulos") articulosModule.ensureLoaded();
 }
 
 document.querySelectorAll(".sidebar .nav-item[data-module]").forEach(item => {
@@ -1372,19 +1379,9 @@ document.querySelectorAll(".sidebar .nav-item[data-module]").forEach(item => {
 /* ============================================================
    MÓDULO ARTÍCULOS — CONSULTA DE STOCK (smartie 2377)
    ============================================================ */
-const ARTICULOS_ENDPOINT = `${WORKER_BASE}/articulos`;
-
-let artRows = [];
-let artColumns = [];
-let artTotal = 0;
-let artPage = 1;
-let artPageSize = 50;
-let artSearch = "";
-let artLoading = false;
-const artCache = new Map();
-
 const PRICE_TITLE = /lista|precio|costo|importe|\$/i;
 const RAW_TITLE = /identificador|^id$|sku|c[oó]digo/i;
+const QTY_TITLE = /dep[oó]sito|stock|cantidad/i;
 
 function artColumnKind(col){
   const title = String(col.title || "");
@@ -1395,216 +1392,70 @@ function artColumnKind(col){
 
 function artFormatCell(value, col){
   const kind = artColumnKind(col);
-  if (value === null || value === undefined || value === "") return { text: "", num: kind !== "raw" && kind !== "auto", zero: false };
+  if (value === null || value === undefined || value === "") return { text: "", num: kind === "money", zero: false };
   if (kind === "raw") return { text: String(value), num: typeof value === "number", zero: false };
   if (kind === "money") {
     const n = Number(value);
-    return Number.isFinite(n) ? { text: moneyFormatter.format(n).replace(/^\$\s?/, "$ "), num: true, zero: n === 0 } : { text: String(value), num: false, zero: false };
+    return Number.isFinite(n)
+      ? { text: priceFormatter.format(n).replace(/^\$\s?/, "$ "), num: true, zero: n === 0 }
+      : { text: String(value), num: false, zero: false };
   }
-  if (typeof value === "number") {
-    return { text: new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 }).format(value), num: true, zero: value === 0 };
-  }
+  if (typeof value === "number") return { text: decimalFormatter.format(value), num: true, zero: value === 0 };
   return { text: String(value), num: false, zero: false };
 }
 
-function artResolveColumns(payload){
-  let cols = Array.isArray(payload.columns) ? payload.columns.slice() : [];
-  cols = cols.filter(c => c && c.field);
+function artResolveColumns(columns, rows){
+  let cols = Array.isArray(columns) ? columns.filter(c => c && c.field) : [];
   cols.sort((a, b) => (Number(a.OrdenColumna) || 0) - (Number(b.OrdenColumna) || 0));
   if (cols.length) return cols;
-  const first = (payload.data || [])[0] || {};
+  const first = rows[0] || {};
   return Object.keys(first)
-    .filter(k => !["id", "ckeck", "check"].includes(k))
+    .filter(k => !["id", "ckeck", "check", "__s"].includes(k))
     .map(k => ({ field: k, title: k }));
 }
 
-function artSetState(state, title, text){
-  const banner = document.getElementById("artBanner");
-  banner.dataset.state = state;
-  const labels = { idle: "Consulta manual", loading: "Conectando", connected: "Conectado a YiQi", error: "Error de conexión" };
-  document.getElementById("artKicker").textContent = labels[state] || "Estado";
-  document.getElementById("artTitle").textContent = title;
-  document.getElementById("artText").textContent = text;
-  document.getElementById("artRetryBtn").classList.toggle("hidden", state !== "error");
-}
-
-function artTotalPages(){
-  return artTotal && artPageSize ? Math.max(1, Math.ceil(artTotal / artPageSize)) : 5;
-}
-
-function artVisiblePages(totalPages){
-  const count = Math.min(5, totalPages);
-  let start = Math.max(1, artPage - 2);
-  let end = start + count - 1;
-  if (end > totalPages) { end = totalPages; start = Math.max(1, end - count + 1); }
-  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
-}
-
-function artUpdatePagination(){
-  const totalPages = artTotalPages();
-  document.getElementById("artCurrentPage").textContent = numberFormatter.format(artPage);
-  document.getElementById("artTotalPages").textContent = artTotal ? numberFormatter.format(totalPages) : "—";
-  document.getElementById("artTotalRecords").textContent = artTotal ? numberFormatter.format(artTotal) : "—";
-
-  const wrap = document.getElementById("artPageButtons");
-  wrap.innerHTML = artVisiblePages(totalPages).map(p => `
-    <button class="page-btn ${p === artPage ? "active" : ""}" type="button" data-page="${p}"
-      aria-label="Ir a la página ${p}" ${artLoading ? "disabled" : ""}>${numberFormatter.format(p)}</button>
-  `).join("");
-  wrap.querySelectorAll("[data-page]").forEach(btn => {
-    btn.addEventListener("click", () => artSelectPage(Number(btn.dataset.page)));
-  });
-
-  document.getElementById("artFirstBtn").disabled = artLoading || artPage <= 1;
-  document.getElementById("artLastBtn").disabled = artLoading || !artTotal || artPage >= totalPages;
-  document.getElementById("artRefreshBtn").disabled = artLoading;
-}
-
-function artRender(){
-  const head = document.getElementById("artHead");
-  const body = document.getElementById("artBody");
-  const empty = document.getElementById("artEmpty");
-
-  head.innerHTML = artColumns.map(c => {
-    const num = artColumnKind(c) === "money" || /dep[oó]sito|stock|cantidad/i.test(c.title || "");
-    return `<th class="${num ? "num" : ""}">${escapeHtml(c.title || c.field)}</th>`;
-  }).join("");
-
-  const q = artSearch.trim().toLowerCase();
-  const rows = !q ? artRows : artRows.filter(r =>
-    artColumns.some(c => String(r[c.field] ?? "").toLowerCase().includes(q))
-  );
-
-  if (!rows.length) {
-    body.innerHTML = "";
-    empty.textContent = artRows.length
-      ? "No se encontraron artículos con esa búsqueda."
-      : `La página ${numberFormatter.format(artPage)} no tiene datos cargados.`;
-    empty.classList.remove("hidden");
-  } else {
-    empty.classList.add("hidden");
-    body.innerHTML = rows.map(r => `<tr>${artColumns.map(c => {
+const articulosModule = createDataModule({
+  endpoint: `${WORKER_BASE}/articulos`,
+  viewSize: 100,
+  loadingTitle: "Cargando todos los artículos desde YiQi",
+  idleText: "Aruki carga todos los artículos al abrir este módulo.",
+  emptyText: "Todavía no hay artículos cargados.",
+  ids: {
+    banner: "artBanner", kicker: "artKicker", title: "artTitle", text: "artText",
+    progress: "artProgress", progressFill: "artProgressFill",
+    stop: "artStopBtn", retry: "artRetryBtn", refresh: "artRefreshBtn",
+    search: "artSearch", empty: "artEmpty",
+    currentPage: "artCurrentPage", totalPages: "artTotalPages", totalRecords: "artTotalRecords",
+    note: "artNote", pageButtons: "artPageButtons", first: "artFirstBtn", last: "artLastBtn"
+  },
+  searchText(row, m){
+    const cols = artResolveColumns(m.columns, m.rows);
+    return cols.map(c => row[c.field]).join(" ");
+  },
+  renderRows(pageRows, filtered, m){
+    const cols = artResolveColumns(m.columns, m.rows);
+    document.getElementById("artHead").innerHTML = cols.map(c => {
+      const num = artColumnKind(c) === "money" || QTY_TITLE.test(c.title || "");
+      return `<th class="${num ? "num" : ""}">${escapeHtml(c.title || c.field)}</th>`;
+    }).join("");
+    document.getElementById("artBody").innerHTML = pageRows.map(r => `<tr>${cols.map(c => {
       const cell = artFormatCell(r[c.field], c);
       const isName = /nombre|descripci/i.test(c.title || "");
       const cls = [cell.num ? "num" : "", cell.zero ? "zero" : "", isName ? "name" : ""].filter(Boolean).join(" ");
       return `<td class="${cls}">${escapeHtml(cell.text)}</td>`;
     }).join("")}</tr>`).join("");
+  },
+  onReset(){
+    document.getElementById("artHead").innerHTML = "";
+    document.getElementById("artBody").innerHTML = "";
   }
-  artUpdatePagination();
-}
-
-function artShowAwaiting(page){
-  const cached = artCache.get(page);
-  if (cached) {
-    artRows = cached.data;
-    artColumns = cached.columns;
-    artRender();
-    artSetState("connected", `Página ${numberFormatter.format(page)} disponible`,
-      "Estos datos ya fueron cargados durante esta sesión. Presioná Actualizar para volver a consultarlos.");
-    return;
-  }
-  artRows = [];
-  document.getElementById("artBody").innerHTML = "";
-  const empty = document.getElementById("artEmpty");
-  empty.textContent = `La página ${numberFormatter.format(page)} todavía no fue consultada. Presioná Actualizar para traerla desde YiQi.`;
-  empty.classList.remove("hidden");
-  artSetState("idle", `Página ${numberFormatter.format(page)} lista para consultar`,
-    "Aruki no realiza consultas automáticas. Presioná Actualizar cuando quieras obtener los datos.");
-  artUpdatePagination();
-}
-
-function artSelectPage(page){
-  if (!Number.isInteger(page) || page < 1) return;
-  if (artTotal && page > artTotalPages()) return;
-  artPage = page;
-  artSearch = "";
-  document.getElementById("artSearch").value = "";
-  artShowAwaiting(page);
-}
-
-async function artLoad(page = artPage){
-  if (artLoading || page < 1) return;
-
-  const token = getAuthToken();
-  if (!token) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); return; }
-
-  artLoading = true;
-  artPage = page;
-  artUpdatePagination();
-  document.getElementById("artEmpty").classList.add("hidden");
-  document.getElementById("artBody").innerHTML = `
-    <tr class="loading-row"><td colspan="${Math.max(artColumns.length, 1)}"><span class="spinner"></span>Consultando la página ${numberFormatter.format(page)} en YiQi…</td></tr>`;
-  artSetState("loading", "Consultando artículos en YiQi", `Cargando manualmente la página ${numberFormatter.format(page)}…`);
-
-  try {
-    const response = await fetch(`${ARTICULOS_ENDPOINT}?page=${encodeURIComponent(page)}&_=${Date.now()}`, {
-      method: "GET",
-      headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
-      cache: "no-store"
-    });
-
-    let payload;
-    try { payload = await response.json(); }
-    catch { throw new Error(`El conector respondió con un formato inválido (HTTP ${response.status}).`); }
-
-    if (response.status === 401) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); throw new Error("Sesión vencida."); }
-    if (!response.ok) throw new Error(payload?.error || `Error HTTP ${response.status}.`);
-    if (payload?.error) throw new Error(payload.error);
-    if (!Array.isArray(payload?.data)) throw new Error("La respuesta de YiQi no contiene una lista de artículos válida.");
-
-    artRows = payload.data;
-    artColumns = artResolveColumns(payload);
-    artTotal = toNumber(payload.total) || artRows.length;
-    if (artRows.length > 0) artPageSize = artRows.length;
-
-    artCache.set(page, { data: artRows, columns: artColumns });
-    artRender();
-    artSetState("connected", "Artículos reales cargados",
-      `${numberFormatter.format(artRows.length)} registros en esta página · ${numberFormatter.format(artTotal)} informados por YiQi.`);
-  } catch (error) {
-    if (getStoredSession()) {
-      const cached = artCache.get(page);
-      artRows = cached?.data || [];
-      artColumns = cached?.columns || artColumns;
-      if (artRows.length) artRender();
-      else {
-        document.getElementById("artBody").innerHTML = "";
-        const empty = document.getElementById("artEmpty");
-        empty.textContent = `No se pudo cargar la página ${numberFormatter.format(page)}. Presioná Reintentar para volver a consultar.`;
-        empty.classList.remove("hidden");
-      }
-      artSetState("error", "No se pudieron obtener los artículos", String(error?.message || error));
-    }
-  } finally {
-    artLoading = false;
-    artUpdatePagination();
-  }
-}
-
-function artReset(){
-  artRows = []; artColumns = []; artTotal = 0; artPage = 1; artSearch = "";
-  artCache.clear();
-  document.getElementById("artSearch").value = "";
-  document.getElementById("artHead").innerHTML = "";
-  document.getElementById("artBody").innerHTML = "";
-  const empty = document.getElementById("artEmpty");
-  empty.textContent = "Presioná Actualizar para consultar los artículos.";
-  empty.classList.remove("hidden");
-  artSetState("idle", "Sin consulta activa", "Presioná Actualizar para traer los artículos desde YiQi.");
-  artUpdatePagination();
-}
-
-document.getElementById("artSearch").addEventListener("input", function(){ artSearch = this.value; artRender(); });
-document.getElementById("artRefreshBtn").addEventListener("click", () => artLoad(artPage));
-document.getElementById("artRetryBtn").addEventListener("click", () => artLoad(artPage));
-document.getElementById("artFirstBtn").addEventListener("click", () => artSelectPage(1));
-document.getElementById("artLastBtn").addEventListener("click", () => { if (artTotal) artSelectPage(artTotalPages()); });
+});
 
 /* ============================================================
    INIT
    ============================================================ */
-resetFacturasView();
-artReset();
+facturasModule.reset();
+articulosModule.reset();
 checkSession();
 </script>
 </body>
