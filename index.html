@@ -395,6 +395,25 @@ html[data-theme="light"] .aruki-logo{filter:none;}
   .page-btn{min-width:34px;}
 }
 
+
+/* ============================================================
+   MÓDULO ARTÍCULOS
+   ============================================================ */
+.art-scroll{overflow:auto; max-height:70vh; border-radius:var(--radius-sm);}
+.art-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+.art-table th{
+  position:sticky; top:0; z-index:2; background:var(--bg-elev);
+  font:600 10.5px var(--mono); letter-spacing:.04em; text-transform:uppercase;
+  color:var(--muted-2); padding:10px 12px; border-bottom:1px solid var(--line-strong);
+  text-align:left; white-space:nowrap;
+}
+.art-table td{padding:10px 12px; color:var(--text); border-bottom:1px solid var(--line); vertical-align:top;}
+.art-table th.num,.art-table td.num{text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums;}
+.art-table td.name{min-width:260px; max-width:460px;}
+.art-table td.zero{color:var(--muted-2);}
+.art-table tr:hover td{background:var(--bg-soft);}
+.art-table tr:last-child td{border-bottom:none;}
+
 </style>
 </head>
 <body>
@@ -489,6 +508,12 @@ html[data-theme="light"] .aruki-logo{filter:none;}
           <path d="M4 3h13l3 3v15H4z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/>
         </svg>
         <span>Control Facturas</span>
+      </div>
+      <div class="nav-item" data-module="articulos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><line x1="12" y1="13" x2="12" y2="21"/>
+        </svg>
+        <span>Artículos</span>
       </div>
       <div class="sidebar-foot">Aruki<br>© 2026</div>
     </nav>
@@ -585,6 +610,62 @@ html[data-theme="light"] .aruki-logo{filter:none;}
           </div>
         </div>
       </section>
+      <!-- MÓDULO: ARTÍCULOS -->
+      <section id="view-articulos" class="hidden">
+        <div class="page-head">
+          <div>
+            <div class="page-kicker">Artículos</div>
+            <h1 class="page-title">Consulta de stock</h1>
+          </div>
+          <div class="page-head-actions">
+            <button class="btn btn-secondary" id="artRefreshBtn" type="button" title="Volver a consultar YiQi">Actualizar</button>
+          </div>
+        </div>
+
+        <div class="runtime-banner" id="artBanner" data-state="idle">
+          <div>
+            <span id="artKicker">Consulta manual</span>
+            <strong id="artTitle">Sin consulta activa</strong>
+            <p id="artText">Presioná Actualizar para traer los artículos desde YiQi.</p>
+          </div>
+          <div class="runtime-actions">
+            <button class="btn btn-secondary hidden" id="artRetryBtn" type="button">Reintentar</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Artículos y stock · smartie 2377</div>
+            <div class="toolbar">
+              <div class="search-wrap">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input class="search-input" id="artSearch" type="text" placeholder="Buscar SKU o nombre en esta página…">
+              </div>
+            </div>
+          </div>
+          <div class="art-scroll">
+            <table class="art-table">
+              <thead><tr id="artHead"></tr></thead>
+              <tbody id="artBody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="artEmpty">Presioná Actualizar para consultar los artículos.</div>
+          <div class="pagination">
+            <div>
+              <div class="pagination-info">
+                Página <strong id="artCurrentPage">1</strong> de <strong id="artTotalPages">—</strong>
+                · <strong id="artTotalRecords">—</strong> registros en YiQi
+              </div>
+              <div class="source-note">Seleccioná una página y presioná Actualizar para consultarla en YiQi.</div>
+            </div>
+            <div class="pagination-actions" aria-label="Paginación de artículos">
+              <button class="page-btn page-jump" id="artFirstBtn" type="button" aria-label="Primera página">«</button>
+              <div class="page-number-buttons" id="artPageButtons"></div>
+              <button class="page-btn page-jump" id="artLastBtn" type="button" aria-label="Última página">»</button>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 </div>
@@ -611,8 +692,19 @@ html[data-theme="light"] .aruki-logo{filter:none;}
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "1.2";
+const LATEST_VERSION = "1.3";
 const CHANGELOG = [
+  {
+    version: "1.3",
+    date: "2026-10-06",
+    title: "Nuevo módulo Artículos (Consulta de Stock)",
+    items: [
+      { type: "nuevo", text: "Módulo Artículos en el menú lateral, con la misma tabla de la smartie 2377 de YiQi (Stock > Consulta de Stock)" },
+      { type: "nuevo", text: "Las columnas se arman solas según lo que devuelve YiQi, en el mismo orden que la smartie" },
+      { type: "nuevo", text: "Buscador por SKU o nombre, paginación y botón Actualizar (consulta manual, igual que Facturas)" },
+      { type: "mejora", text: "El menú lateral ahora permite cambiar entre módulos" }
+    ]
+  },
   {
     version: "1.2",
     date: "2026-08-03",
@@ -800,6 +892,8 @@ document.getElementById("logoutBtn").addEventListener("click", function(){
   document.getElementById("loginForm").reset();
   document.getElementById("rememberMe").checked = true;
   resetFacturasView();
+  artReset();
+  showModule("facturas");
 });
 
 /* ============================================================
@@ -1250,10 +1344,267 @@ document.getElementById("lastPageBtn").addEventListener("click", () => {
   if (totalFacturas) selectPage(getTotalPages());
 });
 
+
+/* ============================================================
+   NAVEGACIÓN ENTRE MÓDULOS
+   ============================================================ */
+const MODULES = ["facturas", "articulos"];
+
+function showModule(name){
+  if (!MODULES.includes(name)) return;
+  MODULES.forEach(m => {
+    document.getElementById(`view-${m}`).classList.toggle("hidden", m !== name);
+  });
+  document.querySelectorAll(".sidebar .nav-item[data-module]").forEach(item => {
+    item.classList.toggle("active", item.dataset.module === name);
+  });
+  if (window.innerWidth <= 980) {
+    sidebar.classList.remove("mobile-open");
+    sidebarBackdrop.classList.add("hidden");
+  }
+  window.scrollTo({ top: 0 });
+}
+
+document.querySelectorAll(".sidebar .nav-item[data-module]").forEach(item => {
+  item.addEventListener("click", () => showModule(item.dataset.module));
+});
+
+/* ============================================================
+   MÓDULO ARTÍCULOS — CONSULTA DE STOCK (smartie 2377)
+   ============================================================ */
+const ARTICULOS_ENDPOINT = `${WORKER_BASE}/articulos`;
+
+let artRows = [];
+let artColumns = [];
+let artTotal = 0;
+let artPage = 1;
+let artPageSize = 50;
+let artSearch = "";
+let artLoading = false;
+const artCache = new Map();
+
+const PRICE_TITLE = /lista|precio|costo|importe|\$/i;
+const RAW_TITLE = /identificador|^id$|sku|c[oó]digo/i;
+
+function artColumnKind(col){
+  const title = String(col.title || "");
+  if (RAW_TITLE.test(title)) return "raw";
+  if (PRICE_TITLE.test(title)) return "money";
+  return "auto";
+}
+
+function artFormatCell(value, col){
+  const kind = artColumnKind(col);
+  if (value === null || value === undefined || value === "") return { text: "", num: kind !== "raw" && kind !== "auto", zero: false };
+  if (kind === "raw") return { text: String(value), num: typeof value === "number", zero: false };
+  if (kind === "money") {
+    const n = Number(value);
+    return Number.isFinite(n) ? { text: moneyFormatter.format(n).replace(/^\$\s?/, "$ "), num: true, zero: n === 0 } : { text: String(value), num: false, zero: false };
+  }
+  if (typeof value === "number") {
+    return { text: new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 }).format(value), num: true, zero: value === 0 };
+  }
+  return { text: String(value), num: false, zero: false };
+}
+
+function artResolveColumns(payload){
+  let cols = Array.isArray(payload.columns) ? payload.columns.slice() : [];
+  cols = cols.filter(c => c && c.field);
+  cols.sort((a, b) => (Number(a.OrdenColumna) || 0) - (Number(b.OrdenColumna) || 0));
+  if (cols.length) return cols;
+  const first = (payload.data || [])[0] || {};
+  return Object.keys(first)
+    .filter(k => !["id", "ckeck", "check"].includes(k))
+    .map(k => ({ field: k, title: k }));
+}
+
+function artSetState(state, title, text){
+  const banner = document.getElementById("artBanner");
+  banner.dataset.state = state;
+  const labels = { idle: "Consulta manual", loading: "Conectando", connected: "Conectado a YiQi", error: "Error de conexión" };
+  document.getElementById("artKicker").textContent = labels[state] || "Estado";
+  document.getElementById("artTitle").textContent = title;
+  document.getElementById("artText").textContent = text;
+  document.getElementById("artRetryBtn").classList.toggle("hidden", state !== "error");
+}
+
+function artTotalPages(){
+  return artTotal && artPageSize ? Math.max(1, Math.ceil(artTotal / artPageSize)) : 5;
+}
+
+function artVisiblePages(totalPages){
+  const count = Math.min(5, totalPages);
+  let start = Math.max(1, artPage - 2);
+  let end = start + count - 1;
+  if (end > totalPages) { end = totalPages; start = Math.max(1, end - count + 1); }
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
+
+function artUpdatePagination(){
+  const totalPages = artTotalPages();
+  document.getElementById("artCurrentPage").textContent = numberFormatter.format(artPage);
+  document.getElementById("artTotalPages").textContent = artTotal ? numberFormatter.format(totalPages) : "—";
+  document.getElementById("artTotalRecords").textContent = artTotal ? numberFormatter.format(artTotal) : "—";
+
+  const wrap = document.getElementById("artPageButtons");
+  wrap.innerHTML = artVisiblePages(totalPages).map(p => `
+    <button class="page-btn ${p === artPage ? "active" : ""}" type="button" data-page="${p}"
+      aria-label="Ir a la página ${p}" ${artLoading ? "disabled" : ""}>${numberFormatter.format(p)}</button>
+  `).join("");
+  wrap.querySelectorAll("[data-page]").forEach(btn => {
+    btn.addEventListener("click", () => artSelectPage(Number(btn.dataset.page)));
+  });
+
+  document.getElementById("artFirstBtn").disabled = artLoading || artPage <= 1;
+  document.getElementById("artLastBtn").disabled = artLoading || !artTotal || artPage >= totalPages;
+  document.getElementById("artRefreshBtn").disabled = artLoading;
+}
+
+function artRender(){
+  const head = document.getElementById("artHead");
+  const body = document.getElementById("artBody");
+  const empty = document.getElementById("artEmpty");
+
+  head.innerHTML = artColumns.map(c => {
+    const num = artColumnKind(c) === "money" || /dep[oó]sito|stock|cantidad/i.test(c.title || "");
+    return `<th class="${num ? "num" : ""}">${escapeHtml(c.title || c.field)}</th>`;
+  }).join("");
+
+  const q = artSearch.trim().toLowerCase();
+  const rows = !q ? artRows : artRows.filter(r =>
+    artColumns.some(c => String(r[c.field] ?? "").toLowerCase().includes(q))
+  );
+
+  if (!rows.length) {
+    body.innerHTML = "";
+    empty.textContent = artRows.length
+      ? "No se encontraron artículos con esa búsqueda."
+      : `La página ${numberFormatter.format(artPage)} no tiene datos cargados.`;
+    empty.classList.remove("hidden");
+  } else {
+    empty.classList.add("hidden");
+    body.innerHTML = rows.map(r => `<tr>${artColumns.map(c => {
+      const cell = artFormatCell(r[c.field], c);
+      const isName = /nombre|descripci/i.test(c.title || "");
+      const cls = [cell.num ? "num" : "", cell.zero ? "zero" : "", isName ? "name" : ""].filter(Boolean).join(" ");
+      return `<td class="${cls}">${escapeHtml(cell.text)}</td>`;
+    }).join("")}</tr>`).join("");
+  }
+  artUpdatePagination();
+}
+
+function artShowAwaiting(page){
+  const cached = artCache.get(page);
+  if (cached) {
+    artRows = cached.data;
+    artColumns = cached.columns;
+    artRender();
+    artSetState("connected", `Página ${numberFormatter.format(page)} disponible`,
+      "Estos datos ya fueron cargados durante esta sesión. Presioná Actualizar para volver a consultarlos.");
+    return;
+  }
+  artRows = [];
+  document.getElementById("artBody").innerHTML = "";
+  const empty = document.getElementById("artEmpty");
+  empty.textContent = `La página ${numberFormatter.format(page)} todavía no fue consultada. Presioná Actualizar para traerla desde YiQi.`;
+  empty.classList.remove("hidden");
+  artSetState("idle", `Página ${numberFormatter.format(page)} lista para consultar`,
+    "Aruki no realiza consultas automáticas. Presioná Actualizar cuando quieras obtener los datos.");
+  artUpdatePagination();
+}
+
+function artSelectPage(page){
+  if (!Number.isInteger(page) || page < 1) return;
+  if (artTotal && page > artTotalPages()) return;
+  artPage = page;
+  artSearch = "";
+  document.getElementById("artSearch").value = "";
+  artShowAwaiting(page);
+}
+
+async function artLoad(page = artPage){
+  if (artLoading || page < 1) return;
+
+  const token = getAuthToken();
+  if (!token) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); return; }
+
+  artLoading = true;
+  artPage = page;
+  artUpdatePagination();
+  document.getElementById("artEmpty").classList.add("hidden");
+  document.getElementById("artBody").innerHTML = `
+    <tr class="loading-row"><td colspan="${Math.max(artColumns.length, 1)}"><span class="spinner"></span>Consultando la página ${numberFormatter.format(page)} en YiQi…</td></tr>`;
+  artSetState("loading", "Consultando artículos en YiQi", `Cargando manualmente la página ${numberFormatter.format(page)}…`);
+
+  try {
+    const response = await fetch(`${ARTICULOS_ENDPOINT}?page=${encodeURIComponent(page)}&_=${Date.now()}`, {
+      method: "GET",
+      headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+      cache: "no-store"
+    });
+
+    let payload;
+    try { payload = await response.json(); }
+    catch { throw new Error(`El conector respondió con un formato inválido (HTTP ${response.status}).`); }
+
+    if (response.status === 401) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); throw new Error("Sesión vencida."); }
+    if (!response.ok) throw new Error(payload?.error || `Error HTTP ${response.status}.`);
+    if (payload?.error) throw new Error(payload.error);
+    if (!Array.isArray(payload?.data)) throw new Error("La respuesta de YiQi no contiene una lista de artículos válida.");
+
+    artRows = payload.data;
+    artColumns = artResolveColumns(payload);
+    artTotal = toNumber(payload.total) || artRows.length;
+    if (artRows.length > 0) artPageSize = artRows.length;
+
+    artCache.set(page, { data: artRows, columns: artColumns });
+    artRender();
+    artSetState("connected", "Artículos reales cargados",
+      `${numberFormatter.format(artRows.length)} registros en esta página · ${numberFormatter.format(artTotal)} informados por YiQi.`);
+  } catch (error) {
+    if (getStoredSession()) {
+      const cached = artCache.get(page);
+      artRows = cached?.data || [];
+      artColumns = cached?.columns || artColumns;
+      if (artRows.length) artRender();
+      else {
+        document.getElementById("artBody").innerHTML = "";
+        const empty = document.getElementById("artEmpty");
+        empty.textContent = `No se pudo cargar la página ${numberFormatter.format(page)}. Presioná Reintentar para volver a consultar.`;
+        empty.classList.remove("hidden");
+      }
+      artSetState("error", "No se pudieron obtener los artículos", String(error?.message || error));
+    }
+  } finally {
+    artLoading = false;
+    artUpdatePagination();
+  }
+}
+
+function artReset(){
+  artRows = []; artColumns = []; artTotal = 0; artPage = 1; artSearch = "";
+  artCache.clear();
+  document.getElementById("artSearch").value = "";
+  document.getElementById("artHead").innerHTML = "";
+  document.getElementById("artBody").innerHTML = "";
+  const empty = document.getElementById("artEmpty");
+  empty.textContent = "Presioná Actualizar para consultar los artículos.";
+  empty.classList.remove("hidden");
+  artSetState("idle", "Sin consulta activa", "Presioná Actualizar para traer los artículos desde YiQi.");
+  artUpdatePagination();
+}
+
+document.getElementById("artSearch").addEventListener("input", function(){ artSearch = this.value; artRender(); });
+document.getElementById("artRefreshBtn").addEventListener("click", () => artLoad(artPage));
+document.getElementById("artRetryBtn").addEventListener("click", () => artLoad(artPage));
+document.getElementById("artFirstBtn").addEventListener("click", () => artSelectPage(1));
+document.getElementById("artLastBtn").addEventListener("click", () => { if (artTotal) artSelectPage(artTotalPages()); });
+
 /* ============================================================
    INIT
    ============================================================ */
 resetFacturasView();
+artReset();
 checkSession();
 </script>
 </body>
