@@ -145,6 +145,11 @@ computadoras), con botón de respaldo (descargar/importar).
    renglones por coordenada Y, columnas con TAB si hay hueco grande). `cotRowsToLines()` detecta la fila de títulos
    (descripción / cant / presentación / marca) y genera `cantidad<TAB>descripción presentación marca`.
    PDF sin texto o fotos → mensaje "próxima etapa".
+   v2.1 PDF con títulos: columna por superposición con el título; si no se superpone y arranca en `descX`
+   (x más repetido bajo "Descripción") va a descripción; si no, la más cercana. Artículos de varios renglones:
+   se cierran con hueco > 1,45×alto de letra, nueva cantidad o nueva fila de precios. Cantidad pegada
+   ("4 Cavitador") se separa. Corta en el pie (`COT_PDF_END`: total, condiciones de pago, etc.).
+   Probado con una orden de compra real de Google Sheets (43 artículos, 2 páginas).
 4. Fotos y PDF escaneados con Gemini.
 
 ### Aprendizajes del sistema "Licitaciones" (Google Sheets + Apps Script, del mismo usuario)

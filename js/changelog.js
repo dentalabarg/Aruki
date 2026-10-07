@@ -4,8 +4,19 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "2.0";
+const LATEST_VERSION = "2.1";
 const CHANGELOG = [
+  {
+    version: "2.1",
+    date: "2026-10-07",
+    title: "Cotizaciones: mejor lectura de PDF",
+    items: [
+      { type: "correccion", text: "Se leen bien los PDF con títulos centrados (por ejemplo órdenes de compra hechas en Google Sheets), que antes decían que no había ninguna lista" },
+      { type: "mejora", text: "Los artículos que ocupan varios renglones en el PDF se juntan en uno, con su cantidad" },
+      { type: "mejora", text: "Se separa la cantidad cuando el PDF la trae pegada al texto (\"4 Cavitador…\")" },
+      { type: "mejora", text: "Se ignora el pie de la orden (total, condiciones de pago, lugar de entrega)" }
+    ]
+  },
   {
     version: "2.0",
     date: "2026-10-07",
