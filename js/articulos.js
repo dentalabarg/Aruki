@@ -73,3 +73,28 @@ const articulosModule = createDataModule({
   }
 });
 
+
+/* Catálogo simplificado (SKU, nombre, precios) para Relaciones y Cotizaciones */
+let artCatalogCache = { rows: null, length: -1, value: null };
+function getArticulosCatalog(){
+  const rows = articulosModule.rows;
+  if (artCatalogCache.rows === rows && artCatalogCache.length === rows.length) return artCatalogCache.value;
+  const cols = artResolveColumns(articulosModule.columns, rows);
+  const skuCol = cols.find(c => /sku|c[oó]digo/i.test(c.title || ""));
+  const nameCol = cols.find(c => /nombre|descripci/i.test(c.title || ""));
+  const priceCols = cols.filter(c => artColumnKind(c) === "money");
+  const list = [];
+  const bySku = new Map();
+  if (skuCol) {
+    for (const row of rows) {
+      const sku = String(row[skuCol.field] ?? "").trim();
+      if (!sku) continue;
+      const item = { sku, nombre: nameCol ? String(row[nameCol.field] ?? "") : "", row };
+      list.push(item);
+      bySku.set(sku, item);
+    }
+  }
+  const value = { list, bySku, priceCols };
+  artCatalogCache = { rows, length: rows.length, value };
+  return value;
+}

@@ -16,6 +16,9 @@
   - FACTURAS_SMARTIE_ID
   - ARTICULOS_ENTITY (por defecto CONSULTA_DE_STOCK)
   - ARTICULOS_SMARTIE_ID (por defecto 2377)
+
+  Binding KV (Settings → Bindings):
+  - ARUKI_KV  → guarda las Relaciones y los intentos fallidos de login
   ------------------------------------------------------------
 */
 
@@ -69,9 +72,17 @@ export default {
         return json(data, corsHeaders);
       }
 
+      if (url.pathname === "/relaciones" && request.method === "GET") {
+        return json(await readRelaciones(env), corsHeaders);
+      }
+
+      if (url.pathname === "/relaciones" && request.method === "PUT") {
+        return json(await writeRelaciones(request, env, session), corsHeaders);
+      }
+
       throw new HttpError(
         404,
-        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas o /articulos."
+        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas, /articulos o /relaciones."
       );
     } catch (error) {
       const status = error instanceof HttpError ? error.status : 500;
@@ -97,7 +108,7 @@ function buildCorsHeaders(request, env) {
 
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
@@ -117,6 +128,9 @@ async function handleLogin(request, env, corsHeaders) {
     throw new HttpError(400, "La solicitud de acceso no tiene un formato válido.");
   }
 
+  const ip = request.headers.get("CF-Connecting-IP") || "desconocida";
+  await checkLoginLock(env, ip);
+
   const username = String(body?.username || "").trim();
   const password = String(body?.password || "");
   const remember = Boolean(body?.remember);
@@ -125,8 +139,10 @@ async function handleLogin(request, env, corsHeaders) {
   const validPassword = timingSafeEqual(password, String(env.ARUKI_PASSWORD));
 
   if (!validUser || !validPassword) {
+    await registerLoginFailure(env, ip);
     throw new HttpError(401, "Usuario o contraseña incorrectos.");
   }
+  await clearLoginFailures(env, ip);
 
   const now = Math.floor(Date.now() / 1000);
   const ttl = remember
@@ -277,6 +293,104 @@ function base64UrlDecodeToBytes(value) {
 
 function base64UrlDecodeToText(value) {
   return new TextDecoder().decode(base64UrlDecodeToBytes(value));
+}
+
+/* ---------- Bloqueo por intentos fallidos (usa ARUKI_KV) ---------- */
+
+const LOGIN_MAX_FAILS = 5;
+const LOGIN_LOCK_SECONDS = 15 * 60;
+
+async function checkLoginLock(env, ip) {
+  if (!env.ARUKI_KV) return;
+  const fails = Number(await env.ARUKI_KV.get(`login-fail:${ip}`)) || 0;
+  if (fails >= LOGIN_MAX_FAILS) {
+    throw new HttpError(429, "Demasiados intentos fallidos. Esperá 15 minutos y volvé a probar.");
+  }
+}
+
+async function registerLoginFailure(env, ip) {
+  if (!env.ARUKI_KV) return;
+  const key = `login-fail:${ip}`;
+  const fails = (Number(await env.ARUKI_KV.get(key)) || 0) + 1;
+  await env.ARUKI_KV.put(key, String(fails), { expirationTtl: LOGIN_LOCK_SECONDS });
+}
+
+async function clearLoginFailures(env, ip) {
+  if (!env.ARUKI_KV) return;
+  await env.ARUKI_KV.delete(`login-fail:${ip}`);
+}
+
+/* ---------- Relaciones (usa ARUKI_KV) ---------- */
+
+const RELACIONES_KEY = "relaciones";
+const RELACIONES_MAX = 20000;
+
+function requireKv(env) {
+  if (!env.ARUKI_KV) {
+    throw new HttpError(
+      500,
+      "Falta conectar la base de datos: en Cloudflare agregá el binding KV llamado ARUKI_KV al Worker."
+    );
+  }
+}
+
+async function readRelaciones(env) {
+  requireKv(env);
+  const stored = await env.ARUKI_KV.get(RELACIONES_KEY, "json");
+  return {
+    relaciones: Array.isArray(stored?.relaciones) ? stored.relaciones : [],
+    version: stored?.version || 0,
+    updatedBy: stored?.updatedBy || null,
+  };
+}
+
+function cleanRelacion(item) {
+  const texto = String(item?.texto || "").trim().slice(0, 500);
+  const skus = Array.isArray(item?.skus)
+    ? [...new Set(item.skus.map(s => String(s || "").trim()).filter(Boolean))].slice(0, 20)
+    : [];
+  if (!texto || !skus.length) return null;
+  return {
+    id: String(item?.id || crypto.randomUUID()).slice(0, 64),
+    texto,
+    skus,
+    nota: String(item?.nota || "").trim().slice(0, 300),
+    creado: Number(item?.creado) || Date.now(),
+    actualizado: Number(item?.actualizado) || Date.now(),
+  };
+}
+
+async function writeRelaciones(request, env, session) {
+  requireKv(env);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    throw new HttpError(400, "Los datos enviados no tienen un formato válido.");
+  }
+  if (!Array.isArray(body?.relaciones)) {
+    throw new HttpError(400, "Falta la lista de relaciones.");
+  }
+  if (body.relaciones.length > RELACIONES_MAX) {
+    throw new HttpError(400, `Se permiten hasta ${RELACIONES_MAX} relaciones.`);
+  }
+
+  const current = await readRelaciones(env);
+  if (Number(body.baseVersion) !== Number(current.version)) {
+    throw new HttpError(
+      409,
+      "Las relaciones cambiaron desde otra computadora. Se recargaron: revisá y volvé a guardar."
+    );
+  }
+
+  const relaciones = body.relaciones.map(cleanRelacion).filter(Boolean);
+  const next = {
+    relaciones,
+    version: Date.now(),
+    updatedBy: session?.name || null,
+  };
+  await env.ARUKI_KV.put(RELACIONES_KEY, JSON.stringify(next));
+  return next;
 }
 
 /* ---------- Autenticación con YiQi ---------- */

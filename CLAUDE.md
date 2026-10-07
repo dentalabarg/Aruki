@@ -18,7 +18,8 @@ css/styles.css      Estilos (sistema de diseño YiQi, tema claro/oscuro)
 js/changelog.js     LATEST_VERSION + array CHANGELOG (panel "Novedades")
 js/core.js          Tema, login, menú lateral, utilidades, carga de smarties y createDataModule()
 js/facturas.js      Módulo Control Facturas
-js/articulos.js     Módulo Artículos
+js/articulos.js     Módulo Artículos + getArticulosCatalog() (SKU, nombre, columnas de precio)
+js/relaciones.js    Presupuestos › Relaciones (CRUD contra /relaciones) + getRelacionesIndex()
 js/main.js          Navegación entre módulos (MODULES) + inicio
 worker/aruki-worker.js  Copia del conector de Cloudflare (ver abajo)
 ```
@@ -50,7 +51,12 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
 - Valida el login de Aruki (`/auth/login`, `/auth/session`) con token firmado.
 - Guarda como secretos: `YIQI_USER`, `YIQI_PASSWORD`, `ARUKI_USER`, `ARUKI_PASSWORD`, `SESSION_SECRET`.
   **Nunca** poner credenciales en el HTML/JS del repo (el repo es público).
-- Rutas de datos (requieren `Authorization: Bearer <token>`): `/facturas?page=N`, `/articulos?page=N`.
+- Rutas de datos (requieren `Authorization: Bearer <token>`): `/facturas?page=N`, `/articulos?page=N`,
+  `GET /relaciones` → `{ relaciones, version }` y `PUT /relaciones` con `{ relaciones, baseVersion }`
+  (lista completa; 409 si `baseVersion` no coincide → recargar).
+- Binding KV **`ARUKI_KV`**: clave `relaciones` y claves `login-fail:<ip>` (bloqueo de 15 min tras 5 intentos fallidos).
+- Relación: `{ id, texto, skus: [..], nota, creado, actualizado }`. Comparar textos con `relKey()` (sin tildes/mayúsculas).
+- Evento `aruki:loaded` (`detail.endpoint`) se dispara en `document` cuando un módulo de datos termina de cargar.
 - `ALLOWED_ORIGIN` debe ser `https://dentalabarg.github.io` (no `*`). Variables opcionales: `SCHEMA_ID`, `FACTURAS_ENTITY`, `FACTURAS_SMARTIE_ID`,
   `ARTICULOS_ENTITY`, `ARTICULOS_SMARTIE_ID`.
 
@@ -114,7 +120,7 @@ computadoras), con botón de respaldo (descargar/importar).
 3. **Renglones dudosos**: opcionalmente Gemini, mandando solo ese renglón + ~10 candidatos (nunca el catálogo entero).
 
 ### Etapas
-1. Relaciones (KV + pantalla de alta/baja/edición + respaldo).
+1. ✅ Relaciones (v1.6). Cotizaciones ya tiene su lugar en el menú con un aviso "En construcción".
 2. Cotizaciones con texto pegado: búsqueda, tabla editable, arrastrar, lista de precios, exportar Excel.
 3. Lectura de Excel, Word y PDF con texto.
 4. Fotos y PDF escaneados con Gemini.

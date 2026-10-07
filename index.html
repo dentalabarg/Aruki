@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=1.5">
+<link rel="stylesheet" href="css/styles.css?v=1.6">
 </head>
 <body>
 
@@ -115,6 +115,19 @@
           <path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><line x1="12" y1="13" x2="12" y2="21"/>
         </svg>
         <span>Artículos</span>
+      </div>
+      <div class="nav-kicker">Presupuestos</div>
+      <div class="nav-item sub" data-module="cotizaciones" title="Cotizaciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/>
+        </svg>
+        <span>Cotizaciones</span>
+      </div>
+      <div class="nav-item sub" data-module="relaciones" title="Relaciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>
+        </svg>
+        <span>Relaciones</span>
       </div>
       <div class="sidebar-foot">Aruki<br>© 2026</div>
     </nav>
@@ -271,6 +284,94 @@
           </div>
         </div>
       </section>
+      <!-- PRESUPUESTOS › COTIZACIONES (Etapa 2) -->
+      <section id="view-cotizaciones" class="hidden">
+        <div class="page-head">
+          <div>
+            <div class="page-kicker">Presupuestos</div>
+            <h1 class="page-title">Cotizaciones</h1>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">En construcción</div>
+          <p class="source-note">Acá vas a pegar o subir la lista que manda el cliente, y Aruki va a armar el presupuesto con los artículos y la lista de precios que elijas. Mientras tanto, podés ir cargando Relaciones: son las que va a usar primero para encontrar cada artículo.</p>
+        </div>
+      </section>
+
+      <!-- PRESUPUESTOS › RELACIONES -->
+      <section id="view-relaciones" class="hidden">
+        <div class="page-head">
+          <div>
+            <div class="page-kicker">Presupuestos</div>
+            <h1 class="page-title">Relaciones</h1>
+          </div>
+          <div class="page-head-actions">
+            <button class="btn btn-ghost" id="relExportBtn" type="button" title="Descargar una copia de todas las relaciones">Descargar respaldo</button>
+            <button class="btn btn-ghost" id="relImportBtn" type="button" title="Sumar relaciones desde un respaldo">Importar respaldo</button>
+            <input type="file" id="relImportFile" accept=".json,application/json" class="hidden">
+            <button class="btn btn-primary" id="relNewBtn" type="button">Nueva relación</button>
+          </div>
+        </div>
+
+        <div class="runtime-banner" id="relBanner" data-state="idle">
+          <div>
+            <span id="relKicker">Relaciones</span>
+            <strong id="relTitle">Relaciones manuales</strong>
+            <p id="relText">Se cargan al abrir este módulo.</p>
+          </div>
+          <div class="runtime-actions">
+            <button class="btn btn-secondary hidden" id="relRetryBtn" type="button">Reintentar</button>
+          </div>
+        </div>
+
+        <div class="panel rel-form hidden" id="relForm">
+          <div class="panel-title" id="relFormTitle">Nueva relación</div>
+          <div class="rel-form-grid">
+            <div class="field">
+              <label for="relTexto">Cuando el cliente escribe…</label>
+              <input class="ds-input" id="relTexto" type="text" maxlength="500" placeholder="Ej.: algodón en rollos pack x500" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="relNota">Nota (opcional)</label>
+              <input class="ds-input" id="relNota" type="text" maxlength="300" placeholder="Ej.: ofrecer primero la marca Ultra" autocomplete="off">
+            </div>
+          </div>
+          <div class="field">
+            <label for="relSkuSearch">…el artículo es (podés elegir más de uno)</label>
+            <div class="rel-picker">
+              <input class="ds-input" id="relSkuSearch" type="text" placeholder="Buscá por SKU o nombre y elegí con Enter o con un clic" autocomplete="off">
+              <div class="rel-results hidden" id="relSkuResults"></div>
+            </div>
+            <div class="chips" id="relChips"></div>
+          </div>
+          <div class="rel-form-foot">
+            <span class="rel-form-error" id="relFormError"></span>
+            <div class="rel-form-actions">
+              <button class="btn btn-ghost" id="relCancelBtn" type="button">Cancelar</button>
+              <button class="btn btn-primary" id="relSaveBtn" type="button">Guardar relación</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Relaciones guardadas · <span id="relCount">0</span> de <span id="relTotal">0</span></div>
+            <div class="toolbar">
+              <div class="search-wrap">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input class="search-input" id="relSearch" type="text" placeholder="Buscar por texto del cliente, SKU o nombre…">
+              </div>
+            </div>
+          </div>
+          <div class="art-scroll">
+            <table class="art-table">
+              <thead><tr><th>Cuando el cliente escribe</th><th>Artículo(s)</th><th>Nota</th><th class="num">Actualizada</th><th></th></tr></thead>
+              <tbody id="relBody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="relEmpty">Todavía no hay relaciones.</div>
+        </div>
+      </section>
     </main>
   </div>
 </div>
@@ -290,10 +391,11 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=1.5"></script>
-<script src="js/core.js?v=1.5"></script>
-<script src="js/facturas.js?v=1.5"></script>
-<script src="js/articulos.js?v=1.5"></script>
-<script src="js/main.js?v=1.5"></script>
+<script src="js/changelog.js?v=1.6"></script>
+<script src="js/core.js?v=1.6"></script>
+<script src="js/facturas.js?v=1.6"></script>
+<script src="js/articulos.js?v=1.6"></script>
+<script src="js/relaciones.js?v=1.6"></script>
+<script src="js/main.js?v=1.6"></script>
 </body>
 </html>

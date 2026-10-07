@@ -145,6 +145,7 @@ document.getElementById("logoutBtn").addEventListener("click", function(){
   document.getElementById("rememberMe").checked = true;
   facturasModule.reset();
   articulosModule.reset();
+  relacionesModule.reset();
   showModule("facturas");
 });
 
@@ -448,6 +449,7 @@ function createDataModule(cfg){
           `${numberFormatter.format(m.rows.length)} registros traídos desde YiQi. Actualizá para volver a consultar.`);
       }
       m.render();
+      document.dispatchEvent(new CustomEvent("aruki:loaded", { detail: { endpoint: cfg.endpoint } }));
     } catch (error) {
       if (id !== m.loadId) return;
       m.loading = false;

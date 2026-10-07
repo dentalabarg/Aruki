@@ -4,8 +4,20 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "1.5";
+const LATEST_VERSION = "1.6";
 const CHANGELOG = [
+  {
+    version: "1.6",
+    date: "2026-10-07",
+    title: "Presupuestos: módulo Relaciones",
+    items: [
+      { type: "nuevo", text: "Nuevo grupo Presupuestos en el menú, con los submódulos Cotizaciones (en construcción) y Relaciones" },
+      { type: "nuevo", text: "Relaciones: indicá que cuando un cliente escribe algo, el artículo es uno o varios SKU, buscándolos por SKU o nombre" },
+      { type: "nuevo", text: "Las relaciones se guardan en Cloudflare y se ven igual desde cualquier computadora" },
+      { type: "nuevo", text: "Botones para descargar un respaldo de las relaciones e importarlo" },
+      { type: "mejora", text: "El acceso se bloquea 15 minutos después de 5 contraseñas incorrectas" }
+    ]
+  },
   {
     version: "1.5",
     date: "2026-10-07",
