@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=1.6">
+<link rel="stylesheet" href="css/styles.css?v=1.7">
 </head>
 <body>
 
@@ -291,11 +291,69 @@
             <div class="page-kicker">Presupuestos</div>
             <h1 class="page-title">Cotizaciones</h1>
           </div>
+          <div class="page-head-actions">
+            <button class="btn btn-ghost" id="cotNewBtn" type="button" title="Borrar todo y empezar una cotización nueva">Nueva cotización</button>
+            <button class="btn btn-primary" id="cotExportBtn" type="button" disabled>Exportar a Excel</button>
+          </div>
         </div>
-        <div class="panel">
-          <div class="panel-title">En construcción</div>
-          <p class="source-note">Acá vas a pegar o subir la lista que manda el cliente, y Aruki va a armar el presupuesto con los artículos y la lista de precios que elijas. Mientras tanto, podés ir cargando Relaciones: son las que va a usar primero para encontrar cada artículo.</p>
+
+        <div class="runtime-banner" id="cotBanner" data-state="idle">
+          <div>
+            <span id="cotKicker">Cotizaciones</span>
+            <strong id="cotTitle">Preparando</strong>
+            <p id="cotText">Se cargan los artículos y las relaciones al abrir este módulo.</p>
+          </div>
         </div>
+
+        <div class="panel" id="cotInputPanel">
+          <div class="panel-title">1. Pegá la lista del cliente</div>
+          <div class="cot-grid">
+            <div class="field">
+              <label for="cotCliente">Cliente (opcional)</label>
+              <input class="ds-input" id="cotCliente" type="text" maxlength="200" placeholder="Ej.: Consultorio Dr. Pérez" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="cotLista">Lista de precios</label>
+              <select class="ds-input" id="cotLista"></select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="cotTexto">Lista de artículos (un artículo por renglón; podés pegar desde WhatsApp, un mail o un Excel)</label>
+            <textarea class="ds-input cot-textarea" id="cotTexto" rows="8" placeholder="Ej.:&#10;10 guantes de látex talle M x 100&#10;Composite Z350 A2 x 3&#10;Algodón en rollos - 5"></textarea>
+          </div>
+          <div class="rel-form-foot">
+            <span class="source-note" id="cotInputHint">Aruki busca primero en Relaciones y después por parecido en todos los artículos.</span>
+            <button class="btn btn-primary" id="cotProcessBtn" type="button">Armar presupuesto</button>
+          </div>
+        </div>
+
+        <div class="panel hidden" id="cotResultPanel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">2. Revisá el presupuesto · <span id="cotRowCount">0</span> renglones</div>
+              <div class="cot-summary" id="cotSummary"></div>
+            </div>
+            <div class="toolbar">
+              <div class="rel-picker cot-add">
+                <input class="ds-input" id="cotAddSearch" type="text" placeholder="Agregar artículo: buscá por SKU o nombre" autocomplete="off">
+                <div class="rel-results hidden" id="cotAddResults"></div>
+              </div>
+            </div>
+          </div>
+          <p class="source-note">Arrastrá desde ⠿ para cambiar el orden. Podés editar el SKU, el texto adicional y la cantidad. Cuando hay dudas aparecen varias opciones para el mismo renglón: elegí una con ✓ o borrá las que no sirvan.</p>
+          <div class="art-scroll">
+            <table class="art-table cot-table">
+              <thead><tr>
+                <th></th><th>Solicitado</th><th>SKU</th><th>Nombre del artículo</th><th>Texto adicional</th>
+                <th class="num">Cantidad</th><th class="num" id="cotPriceHead">Precio</th><th class="num">Subtotal</th><th></th>
+              </tr></thead>
+              <tbody id="cotBody"></tbody>
+              <tfoot><tr><td colspan="7" class="num cot-total-label">Total</td><td class="num cot-total" id="cotTotal">$ 0</td><td></td></tr></tfoot>
+            </table>
+          </div>
+          <div class="cot-status" id="cotStatus"></div>
+        </div>
+        <div class="rel-results cot-floating hidden" id="cotSkuResults"></div>
       </section>
 
       <!-- PRESUPUESTOS › RELACIONES -->
@@ -391,11 +449,12 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=1.6"></script>
-<script src="js/core.js?v=1.6"></script>
-<script src="js/facturas.js?v=1.6"></script>
-<script src="js/articulos.js?v=1.6"></script>
-<script src="js/relaciones.js?v=1.6"></script>
-<script src="js/main.js?v=1.6"></script>
+<script src="js/changelog.js?v=1.7"></script>
+<script src="js/core.js?v=1.7"></script>
+<script src="js/facturas.js?v=1.7"></script>
+<script src="js/articulos.js?v=1.7"></script>
+<script src="js/relaciones.js?v=1.7"></script>
+<script src="js/cotizaciones.js?v=1.7"></script>
+<script src="js/main.js?v=1.7"></script>
 </body>
 </html>

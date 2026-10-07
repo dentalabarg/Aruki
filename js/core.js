@@ -146,6 +146,7 @@ document.getElementById("logoutBtn").addEventListener("click", function(){
   facturasModule.reset();
   articulosModule.reset();
   relacionesModule.reset();
+  cotizacionesModule.reset();
   showModule("facturas");
 });
 

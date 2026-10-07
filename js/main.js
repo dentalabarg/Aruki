@@ -19,6 +19,7 @@ function showModule(name){
   if (name === "facturas") facturasModule.ensureLoaded();
   if (name === "articulos") articulosModule.ensureLoaded();
   if (name === "relaciones") relacionesModule.ensureLoaded();
+  if (name === "cotizaciones") cotizacionesModule.ensureLoaded();
 }
 
 document.querySelectorAll(".sidebar .nav-item[data-module]").forEach(item => {

@@ -4,8 +4,23 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "1.6";
+const LATEST_VERSION = "1.7";
 const CHANGELOG = [
+  {
+    version: "1.7",
+    date: "2026-10-07",
+    title: "Presupuestos: Cotizaciones con texto pegado",
+    items: [
+      { type: "nuevo", text: "Cotizaciones: pegá la lista que manda el cliente y Aruki arma el presupuesto con los artículos que encuentra" },
+      { type: "nuevo", text: "Busca primero en Relaciones y después por parecido, dando más peso a medidas, colores y códigos" },
+      { type: "nuevo", text: "Cuando hay dudas muestra varias opciones para el mismo renglón: elegí una con ✓ o borrá las que no sirvan" },
+      { type: "nuevo", text: "Tabla editable: cambiar SKU (con buscador), texto adicional y cantidad, agregar y eliminar renglones, arrastrar para ordenar" },
+      { type: "nuevo", text: "Elegí la lista de precios; el total se recalcula solo" },
+      { type: "nuevo", text: "Botón para guardar un renglón como relación, así la próxima vez lo encuentra solo" },
+      { type: "nuevo", text: "Exportar el presupuesto a Excel" },
+      { type: "mejora", text: "El presupuesto en curso queda guardado en este navegador aunque cierres la página" }
+    ]
+  },
   {
     version: "1.6",
     date: "2026-10-07",

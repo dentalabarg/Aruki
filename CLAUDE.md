@@ -20,6 +20,7 @@ js/core.js          Tema, login, menú lateral, utilidades, carga de smarties y 
 js/facturas.js      Módulo Control Facturas
 js/articulos.js     Módulo Artículos + getArticulosCatalog() (SKU, nombre, columnas de precio)
 js/relaciones.js    Presupuestos › Relaciones (CRUD contra /relaciones) + getRelacionesIndex()
+js/cotizaciones.js  Presupuestos › Cotizaciones (lectura de lista, búsqueda, tabla editable, Excel)
 js/main.js          Navegación entre módulos (MODULES) + inicio
 worker/aruki-worker.js  Copia del conector de Cloudflare (ver abajo)
 ```
@@ -120,8 +121,17 @@ computadoras), con botón de respaldo (descargar/importar).
 3. **Renglones dudosos**: opcionalmente Gemini, mandando solo ese renglón + ~10 candidatos (nunca el catálogo entero).
 
 ### Etapas
-1. ✅ Relaciones (v1.6). Cotizaciones ya tiene su lugar en el menú con un aviso "En construcción".
-2. Cotizaciones con texto pegado: búsqueda, tabla editable, arrastrar, lista de precios, exportar Excel.
+1. ✅ Relaciones (v1.6).
+2. ✅ Cotizaciones con texto pegado (v1.7). Detalles de `js/cotizaciones.js`:
+   - `cotParseLine()` lee cada renglón: columnas con tab o " | " (Excel/Word) o texto libre; cantidad al
+     principio ("10 guantes"), al final con "-", ":", "(n)", "cant", unidad ("2 cajas") o "x n" solo si n ≤ 20
+     (más grande se toma como presentación: "algodón x 500"). Sin cantidad → 1. Saltea encabezados.
+   - `cotSearch()`: índice de palabras del catálogo (excluye discontinuado / mercadolibre / "rep "), peso tipo IDF,
+     palabras con números ×1,5, prefijos 0,75, plurales simples, penaliza medidas distintas (4g vs 2g),
+     excluye artículos con precio 0 en la lista elegida.
+   - `cotResolve()`: Relación (texto exacto con `relKey`) → "relacion"; score ≥ 0,75 y 0,08 de ventaja → "buena";
+     ≥ 0,4 → hasta 4 opciones "dudosa" (mismo `grupo`); si no, "sin". Umbrales a ajustar con listas reales.
+   - Excel con SheetJS desde cdnjs (se carga al exportar). Borrador en localStorage `aruki-cotizacion`.
 3. Lectura de Excel, Word y PDF con texto.
 4. Fotos y PDF escaneados con Gemini.
 
