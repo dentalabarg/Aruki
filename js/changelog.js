@@ -4,8 +4,20 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "2.1";
+const LATEST_VERSION = "2.2";
 const CHANGELOG = [
+  {
+    version: "2.2",
+    date: "2026-10-07",
+    title: "Cotizaciones: lectura de pliegos de licitación en PDF",
+    items: [
+      { type: "mejora", text: "Reconoce tablas con columnas R (renglón), Denominación, U.M. (unidad de medida) y Cantidad" },
+      { type: "mejora", text: "Junta bien los artículos cuya descripción ocupa varias líneas arriba del número de renglón" },
+      { type: "correccion", text: "Ya no agrega como artículos el membrete y el pie de página que se repiten en cada hoja" },
+      { type: "correccion", text: "Ya no agrega como artículos los textos y aclaraciones que aparecen después de la tabla" },
+      { type: "mejora", text: "La unidad de medida se suma al texto solicitado, salvo cuando dice solo \"U\"" }
+    ]
+  },
   {
     version: "2.1",
     date: "2026-10-07",

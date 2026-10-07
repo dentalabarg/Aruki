@@ -35,11 +35,14 @@ function cotLoadScript(url, globalName){
 
 /* ---------- Tablas → renglones ---------- */
 const COT_COL = {
-  desc: /descrip|detalle|producto|art[ií]culo|insumo|material|nombre|concepto/i,
+  desc: /descrip|denominaci|detalle|producto|art[ií]culo|insumo|material|nombre|concepto/i,
   qty: /^\s*(cant|cantidad|ctd|qty|unidades solicitadas|pedido)\b/i,
-  pres: /presentaci/i,
-  marca: /marca/i
+  pres: /presentaci|^u\.?\s?m\.?$|^u\/m$|unidad de medida|^unidad$/i,
+  marca: /marca/i,
+  item: /^(r|rengl[oó]n|[ií]tem|it\.?|n[°º]|nro\.?|orden)$/i
 };
+/* Unidad sola ("U", "Unidad"): no aporta nada al texto solicitado */
+const COT_BARE_UNIT = /^(u|un|unid|unidad|und|uds?)\.?$/i;
 
 function cotCell(v){
   return String(v ?? "").replace(/\s+/g, " ").trim();
@@ -134,6 +137,7 @@ async function cotLoadPdf(){
        centrada abajo, precios en otro renglón) se juntan en uno solo.
    Si no hay títulos, se separan columnas donde hay un hueco grande. */
 function cotPdfRole(title){
+  if (COT_COL.item.test(title.trim())) return "item";
   if (COT_COL.qty.test(title)) return "qty";
   if (COT_COL.desc.test(title)) return "desc";
   if (COT_COL.pres.test(title)) return "pres";
@@ -157,7 +161,110 @@ function cotPdfColumn(cell, cols, descX){
   return best;
 }
 
+/* Membrete y pie de página: renglones que se repiten arriba (o abajo) en la mayoría de
+   las hojas ("MINISTERIO…", "PLIEG-…", "Página 3 de 9"). Se sacan de arriba y de abajo de
+   cada hoja junto con los renglones de solo símbolos (*****) y los números de página. */
+function cotPdfStripPageChrome(pages){
+  if (pages.length < 2) return;
+  const K = 8;
+  const rowText = r => r.items.map(it => it.s).join(" ");
+  const norm = r => foldText(rowText(r)).replace(/\d+/g, "#").replace(/\s+/g, " ").trim();
+  const letters = r => (rowText(r).match(/\p{L}/gu) || []).length;
+  const count = rows => {
+    const m = {};
+    pages.forEach(p => new Set(rows(p).map(norm)).forEach(t => { m[t] = (m[t] || 0) + 1; }));
+    return m;
+  };
+  const need = Math.max(2, Math.ceil(pages.length / 2));
+  const top = count(p => p.slice(0, K));
+  const bottom = count(p => p.slice(-K));
+  const junk = r => !/[\p{L}\d]/u.test(rowText(r));
+  const pageNo = r => /^(p[aá]g(ina)?\.?\s*)?\d+(\s*(de|\/)\s*\d+)?$/i.test(rowText(r).trim());
+  pages.forEach(rows => {
+    while (rows.length && (junk(rows[0]) || (letters(rows[0]) >= 6 && top[norm(rows[0])] >= need))) rows.shift();
+    while (rows.length) {
+      const r = rows[rows.length - 1];
+      if (junk(r) || pageNo(r) || (letters(r) >= 6 && bottom[norm(r)] >= need)) rows.pop();
+      else break;
+    }
+  });
+}
+
 const COT_PDF_END = /condiciones de pago|forma de pago|son pesos|sub\s*total|^total\b|importe total|observaciones|firma\b|lugar de entrega/i;
+
+/* Párrafo que cruza de la columna de descripción hasta las columnas de la derecha:
+   ya no es parte de la tabla (condiciones, aclaraciones, etc.). Solo con columna de renglón. */
+function cotPdfIsProse(items, cols){
+  if (!cols.some(c => c.role === "item")) return false;
+  const d = cols.find(c => c.role === "desc");
+  const right = cols.filter(c => c.role === "pres" || c.role === "qty").sort((a, b) => a.x - b.x)[0];
+  if (!d || !right) return false;
+  return items.some(it => it.x < d.x + d.w / 2 && it.x + it.w > right.x + right.w);
+}
+
+/* Planillas con columna de renglón (R / Ítem / N°): cada artículo termina en el renglón
+   que trae número o cantidad. La descripción puede estar arriba de ese renglón (varias
+   líneas) o en la misma línea. Una línea que empieza con una palabra en MAYÚSCULAS es un
+   artículo nuevo; si empieza en minúscula, número o símbolo, sigue el anterior. */
+function cotPdfGroupByItem(marked, descX){
+  const out = [];
+  let pending = null;
+  const startsNew = text => {
+    const w = (text.match(/^[\p{L}]+/u) || [""])[0];
+    return w.length >= 2 && w === w.toUpperCase() && w !== w.toLowerCase();
+  };
+  const flush = () => {
+    if (pending && pending.desc.length && (pending.qty || pending.item)) {
+      const texto = [...pending.desc, ...pending.extra].join(" ")
+        .replace(/(\p{L})- (\p{Ll})/gu, "$1$2")          // "es- malte" → "esmalte"
+        .replace(/\s+/g, " ").trim();
+      const q = pending.qty;
+      if (q && /^\d+([.,]\d+)?$/.test(q)) out.push(`${q}\t${texto}`);
+      else if (q) out.push(`${texto} - ${q}`);
+      else out.push(texto);
+    }
+    pending = null;
+  };
+  for (const m of marked) {
+    if (m.header) continue;
+    const v = { item: [], qty: [], desc: [], pres: [], marca: [], other: [] };
+    for (const { role, it } of m.parts) {
+      const glued = it.s.match(/^(\d{1,4})\s+(.*\p{L}.*)$/u);
+      if (glued && (role === "item" || (role === "desc" && Number.isFinite(descX) && it.x < descX - 3))) {
+        v.item.push(glued[1]); v.desc.push(glued[2]);    // número de renglón pegado al texto
+      } else {
+        v[role].push(it.s);
+      }
+    }
+    const item = v.item.join(" ").trim();
+    const qty = v.qty.join(" ").trim();
+    const desc = v.desc.join(" ").trim();
+    const extra = [...v.pres.filter(p => !COT_BARE_UNIT.test(p.trim())), ...v.marca].join(" ").trim();
+    if (!item && !qty && !desc && !extra) continue;
+
+    if (item || qty) {                                   // renglón que cierra un artículo
+      if (pending && !pending.closed) {
+        if (desc) pending.desc.push(desc);
+      } else {
+        flush();
+        pending = { desc: desc ? [desc] : [], extra: [] };
+      }
+      if (extra) pending.extra.push(extra);
+      if (qty) pending.qty = qty;
+      if (item) pending.item = item;
+      pending.closed = true;
+    } else if (desc) {
+      if (pending && pending.closed && startsNew(desc)) flush();
+      if (!pending) pending = { desc: [], extra: [], closed: false };
+      pending.desc.push(desc);
+      if (extra) pending.extra.push(extra);
+    } else if (pending && extra) {
+      pending.extra.push(extra);
+    }
+  }
+  flush();
+  return out;
+}
 
 async function cotReadPdf(file){
   const pdfjs = await cotLoadPdf();
@@ -182,6 +289,7 @@ async function cotReadPdf(file){
     rows.forEach(r => r.items.sort((a, b) => a.x - b.x));
     pages.push(rows);
   }
+  cotPdfStripPageChrome(pages);
   if (chars < 15) {
     throw new Error("Este PDF parece escaneado (es una imagen, no tiene texto). Las fotos y los PDF escaneados se van a poder leer en la próxima etapa, con Gemini.");
   }
@@ -238,6 +346,7 @@ async function cotReadPdf(file){
       }
       if (ended) continue;
       if (r.items.some(it => COT_PDF_END.test(it.s))) { ended = true; continue; }   // pie de la orden
+      if (cotPdfIsProse(r.items, cols)) { ended = true; continue; }               // texto corrido después de la tabla
       const h = Math.max(...r.items.map(it => it.h));
       marked.push({ page: pi, y: r.y, h, cols, parts: r.items.map(it => ({ role: cols[cotPdfColumn(it, cols, descX)].role, it })) });
     }
@@ -250,6 +359,7 @@ async function cotReadPdf(file){
 
 
   // 3) Armar los artículos (juntando los que ocupan varios renglones)
+  if (marked.some(m => m.cols && m.cols.some(c => c.role === "item"))) return cotPdfGroupByItem(marked, descX);
   const out = [];
   let pending = null, last = null;
   const flush = () => {
@@ -266,7 +376,7 @@ async function cotReadPdf(file){
   for (const m of marked) {
     if (m.header) { flush(); last = null; continue; }
     if (last && last.page !== m.page) { flush(); last = null; }
-    const v = { qty: [], desc: [], pres: [], marca: [], other: [] };
+    const v = { qty: [], desc: [], pres: [], marca: [], other: [], item: [] };
     for (const { role, it } of m.parts) {
       const glued = it.s.match(/^(\d+(?:[.,]\d+)?)\s+(.*\p{L}.*)$/u);
       if (glued && (role === "qty" || (role === "desc" && Number.isFinite(descX) && it.x < descX - 3))) {
