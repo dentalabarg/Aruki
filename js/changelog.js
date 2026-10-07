@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "1.9";
+const LATEST_VERSION = "2.0";
 const CHANGELOG = [
+  {
+    version: "2.0",
+    date: "2026-10-07",
+    title: "Cotizaciones: lectura de Excel, Word y PDF",
+    items: [
+      { type: "nuevo", text: "Subí el archivo del cliente (o arrastralo) y Aruki arma el presupuesto solo: Excel, Word, PDF con texto y archivos de texto" },
+      { type: "nuevo", text: "En tablas con títulos (Descripción, Cantidad, Presentación, Marca) toma cada columna por separado" },
+      { type: "mejora", text: "Lo leído queda en el cuadro de texto para corregirlo y volver a armar si hace falta" }
+    ]
+  },
   {
     version: "1.9",
     date: "2026-10-07",

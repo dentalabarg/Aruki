@@ -21,6 +21,7 @@ js/facturas.js      Módulo Control Facturas
 js/articulos.js     Módulo Artículos + getArticulosCatalog() (SKU, nombre, columnas de precio)
 js/relaciones.js    Presupuestos › Relaciones (CRUD contra /relaciones) + getRelacionesIndex()
 js/cotizaciones.js  Presupuestos › Cotizaciones (lectura de lista, búsqueda, tabla editable, Excel)
+js/cot-archivos.js  Cotizaciones: lectura de archivos (Excel/Word/PDF/txt) → texto en el cuadro → cotProcess()
 js/main.js          Navegación entre módulos (MODULES) + inicio
 worker/aruki-worker.js  Copia del conector de Cloudflare (ver abajo)
 ```
@@ -139,7 +140,11 @@ computadoras), con botón de respaldo (descargar/importar).
    - v1.9: Rehacer (`cot.redo`; `cotApplyRel()` revierte o reaplica la relación), barra `.cot-actions` debajo de la
      tabla (Agregar artículo → Deshacer → Rehacer), aviso flotante `#cotToast` 5 s con Deshacer (`cotShowToast()`).
    - Tipografía: los datos (tablas, listas, chips, resultados) van 1px más grandes que la interfaz fija.
-3. Lectura de Excel, Word y PDF con texto.
+3. ✅ Lectura de Excel, Word y PDF con texto (v2.0, `js/cot-archivos.js`). Librerías desde cdnjs, cargadas al usarse:
+   SheetJS 0.18.5, mammoth 1.13.0 (docx → HTML: tablas fila por fila, párrafos), pdf.js 3.11.174 (worker vía blob;
+   renglones por coordenada Y, columnas con TAB si hay hueco grande). `cotRowsToLines()` detecta la fila de títulos
+   (descripción / cant / presentación / marca) y genera `cantidad<TAB>descripción presentación marca`.
+   PDF sin texto o fotos → mensaje "próxima etapa".
 4. Fotos y PDF escaneados con Gemini.
 
 ### Aprendizajes del sistema "Licitaciones" (Google Sheets + Apps Script, del mismo usuario)

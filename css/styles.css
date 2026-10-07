@@ -512,3 +512,11 @@ select.ds-input{cursor:pointer;}
 .cot-toast-close{border:none; background:none; color:var(--muted); width:26px; height:26px; border-radius:50%; font-size:17px; line-height:1; cursor:pointer;}
 .cot-toast-close:hover{background:var(--bg-soft); color:var(--text);}
 @keyframes cotToastIn{from{opacity:0; transform:translate(-50%, 8px);} to{opacity:1; transform:translate(-50%, 0);}}
+
+.cot-file{display:flex; align-items:center; gap:14px; padding:14px 16px; border:1.5px dashed var(--line-strong); border-radius:var(--radius-sm); color:var(--cyan); transition:background var(--transition-fast), border-color var(--transition-fast);}
+.cot-file.is-over{background:var(--cyan-soft); border-color:var(--cyan);}
+.cot-file.is-busy{opacity:.7; pointer-events:none;}
+.cot-file-text{display:flex; flex-direction:column; gap:2px; flex:1; min-width:0;}
+.cot-file-text strong{font:600 13.5px var(--sans); color:var(--text);}
+.cot-file-text span{font:400 12.5px var(--sans); color:var(--muted);}
+@media (max-width:700px){ .cot-file{flex-wrap:wrap;} }

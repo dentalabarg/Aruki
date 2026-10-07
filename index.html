@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=1.9">
+<link rel="stylesheet" href="css/styles.css?v=2.0">
 </head>
 <body>
 
@@ -306,7 +306,7 @@
         </div>
 
         <div class="panel" id="cotInputPanel">
-          <div class="panel-title">1. Pegá la lista del cliente</div>
+          <div class="panel-title">1. Cargá la lista del cliente</div>
           <div class="cot-grid">
             <div class="field">
               <label for="cotCliente">Cliente (opcional)</label>
@@ -317,8 +317,17 @@
               <select class="ds-input" id="cotLista"></select>
             </div>
           </div>
+          <div class="cot-file" id="cotDrop">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+            <div class="cot-file-text">
+              <strong>Subí el archivo del cliente o arrastralo acá</strong>
+              <span>Excel, Word, PDF o texto. Aruki lo lee y arma el presupuesto solo.</span>
+            </div>
+            <button class="btn btn-secondary" id="cotFileBtn" type="button">Elegir archivo</button>
+            <input type="file" id="cotFile" class="hidden" accept=".xlsx,.xls,.xlsm,.ods,.csv,.docx,.pdf,.txt,.jpg,.jpeg,.png">
+          </div>
           <div class="field">
-            <label for="cotTexto">Lista de artículos (un artículo por renglón; podés pegar desde WhatsApp, un mail o un Excel)</label>
+            <label for="cotTexto">… o pegá la lista acá (un artículo por renglón; desde WhatsApp, un mail o un Excel)</label>
             <textarea class="ds-input cot-textarea" id="cotTexto" rows="8" placeholder="Ej.:&#10;10 guantes de látex talle M x 100&#10;Composite Z350 A2 x 3&#10;Algodón en rollos - 5"></textarea>
           </div>
           <div class="rel-form-foot">
@@ -457,12 +466,13 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=1.9"></script>
-<script src="js/core.js?v=1.9"></script>
-<script src="js/facturas.js?v=1.9"></script>
-<script src="js/articulos.js?v=1.9"></script>
-<script src="js/relaciones.js?v=1.9"></script>
-<script src="js/cotizaciones.js?v=1.9"></script>
-<script src="js/main.js?v=1.9"></script>
+<script src="js/changelog.js?v=2.0"></script>
+<script src="js/core.js?v=2.0"></script>
+<script src="js/facturas.js?v=2.0"></script>
+<script src="js/articulos.js?v=2.0"></script>
+<script src="js/relaciones.js?v=2.0"></script>
+<script src="js/cotizaciones.js?v=2.0"></script>
+<script src="js/cot-archivos.js?v=2.0"></script>
+<script src="js/main.js?v=2.0"></script>
 </body>
 </html>
