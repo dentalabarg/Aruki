@@ -17,7 +17,7 @@ const COT_SIZE_UNITS = /^(?:gr|grs|g|gramos?|ml|cc|mm|cm|kg|kgs|mts?|lts?|l)\b/i
 
 const cot = {
   rows: [], seq: 0, cliente: "", priceField: "", texto: "",
-  activeSkuInput: null, skuActive: 0, addActive: 0, dragId: null, undo: []
+  activeSkuInput: null, skuActive: 0, addActive: 0, dragId: null, undo: [], redo: []
 };
 
 function cotEl(id){ return document.getElementById(id); }
@@ -304,7 +304,7 @@ function cotProcess(){
   const t0 = performance.now();
   const newRows = items.flatMap(it => cotResolve(it, relIndex));
   const replace = !cot.rows.length || confirm("Ya hay un presupuesto armado. ¿Reemplazarlo? (Cancelar = agregar estos renglones al final)");
-  cot.undo = [];
+  cot.undo = []; cot.redo = [];
   cot.rows = replace ? newRows : [...cot.rows, ...newRows];
   cotRender();
   cotSave();
@@ -409,34 +409,81 @@ function cotRender(){
     .map(k => `<span class="badge ${COT_BADGES[k][0]}">${counts[k]} ${names[k]}</span>`).join("");
 }
 
-/* ---------- Deshacer ---------- */
+/* ---------- Deshacer / Rehacer ----------
+   Cada acción guarda las filas de antes. Al deshacer se guardan las de después en "rehacer".
+   Si la acción fue guardar una relación, también se revierte (o se vuelve a aplicar) en Relaciones. */
+const cloneRows = rows => JSON.parse(JSON.stringify(rows));
+
 function cotPushUndo(label, extra){
-  cot.undo.push({ label, rows: JSON.parse(JSON.stringify(cot.rows)), ...(extra || {}) });
+  cot.undo.push({ label, rows: cloneRows(cot.rows), ...(extra || {}) });
   if (cot.undo.length > 30) cot.undo.shift();
+  cot.redo = [];
 }
 
 function cotRenderUndo(){
-  const btn = cotEl("cotUndoBtn");
-  const last = cot.undo[cot.undo.length - 1];
-  btn.disabled = !last;
-  btn.title = last ? `Deshacer: ${last.label} (Ctrl+Z)` : "No hay nada para deshacer";
+  const u = cot.undo[cot.undo.length - 1], r = cot.redo[cot.redo.length - 1];
+  const ub = cotEl("cotUndoBtn"), rb = cotEl("cotRedoBtn");
+  ub.disabled = !u; rb.disabled = !r;
+  ub.title = u ? `Deshacer: ${u.label} (Ctrl+Z)` : "No hay nada para deshacer";
+  rb.title = r ? `Rehacer: ${r.label} (Ctrl+Y)` : "No hay nada para rehacer";
+}
+
+/* Aplica la relación hacia atrás (undo) o hacia adelante (redo) */
+async function cotApplyRel(relInfo, forward){
+  const now = Date.now();
+  let next;
+  if (relInfo.type === "created") {
+    next = forward
+      ? [{ ...relInfo.obj, actualizado: now }, ...rel.items.filter(r => r.id !== relInfo.id)]
+      : rel.items.filter(r => r.id !== relInfo.id);
+  } else {
+    const skus = forward ? relInfo.newSkus : relInfo.prevSkus;
+    next = rel.items.map(r => r.id === relInfo.id ? { ...r, skus: [...skus], actualizado: now } : r);
+  }
+  return relSave(next, forward ? "Relación guardada de nuevo" : "Relación deshecha");
 }
 
 async function cotUndo(){
   const u = cot.undo.pop();
   if (!u) return;
+  cotHideToast();
   if (u.rel) {
-    const now = Date.now();
-    const next = u.rel.type === "created"
-      ? rel.items.filter(r => r.id !== u.rel.id)
-      : rel.items.map(r => r.id === u.rel.id ? { ...r, skus: u.rel.prevSkus, actualizado: now } : r);
     cotStatus("Deshaciendo la relación…");
-    const ok = await relSave(next, "Relación deshecha");
-    if (!ok) { cot.undo.push(u); cotRenderUndo(); cotStatus("No se pudo deshacer la relación. Revisá el aviso en el módulo Relaciones.", "error"); return; }
+    if (!(await cotApplyRel(u.rel, false))) { cot.undo.push(u); cotRenderUndo(); cotStatus("No se pudo deshacer la relación. Revisá el aviso en el módulo Relaciones.", "error"); return; }
   }
+  cot.redo.push({ label: u.label, rows: cloneRows(cot.rows), rel: u.rel });
   cot.rows = u.rows;
   cotRender(); cotSave();
   cotStatus(`Se deshizo: ${u.label}.`, "ok");
+}
+
+async function cotRedo(){
+  const r = cot.redo.pop();
+  if (!r) return;
+  cotHideToast();
+  if (r.rel) {
+    cotStatus("Guardando la relación de nuevo…");
+    if (!(await cotApplyRel(r.rel, true))) { cot.redo.push(r); cotRenderUndo(); cotStatus("No se pudo rehacer la relación. Revisá el aviso en el módulo Relaciones.", "error"); return; }
+  }
+  cot.undo.push({ label: r.label, rows: cloneRows(cot.rows), rel: r.rel });
+  cot.rows = r.rows;
+  cotRender(); cotSave();
+  cotStatus(`Se rehízo: ${r.label}.`, "ok");
+}
+
+/* ---------- Aviso flotante (5 segundos) con Deshacer ---------- */
+let cotToastTimer = null;
+function cotShowToast(text){
+  cotEl("cotToastText").textContent = text;
+  const t = cotEl("cotToast");
+  t.classList.remove("hidden");
+  t.style.animation = "none"; void t.offsetWidth; t.style.animation = "";
+  clearTimeout(cotToastTimer);
+  cotToastTimer = setTimeout(cotHideToast, 5000);
+}
+function cotHideToast(){
+  clearTimeout(cotToastTimer);
+  cotEl("cotToast").classList.add("hidden");
 }
 
 function cotMoney(n){
@@ -520,6 +567,8 @@ function cotRenderAddResults(){
   box.innerHTML = results.length
     ? results.map((a, i) => cotResultHtml(a, i === cot.addActive)).join("")
     : `<div class="rel-result-empty">No se encontraron artículos con esa búsqueda.</div>`;
+  const r = cotEl("cotAddSearch").getBoundingClientRect();
+  box.classList.toggle("open-up", window.innerHeight - r.bottom < 300 && r.top > window.innerHeight - r.bottom);
   box.classList.remove("hidden");
   box.querySelectorAll("[data-sku]").forEach(el => {
     el.addEventListener("mousedown", e => { e.preventDefault(); cotAddRow(el.dataset.sku); });
@@ -544,23 +593,26 @@ async function cotSaveRelation(row){
   const key = relKey(row.solicitado);
   const existing = rel.items.find(r => relKey(r.texto) === key);
   const now = Date.now();
-  let next, undoRel;
+  let next, undoRel, newRel;
   if (existing) {
     if (existing.skus.length === 1 && existing.skus[0] === row.sku) { cotStatus("Esa relación ya estaba guardada.", "ok"); return; }
     if (!confirm(`Ya existe una relación para "${existing.texto}" → ${existing.skus.join(", ")}.\n\n¿Reemplazarla por ${row.sku}?`)) return;
     next = rel.items.map(r => r.id === existing.id ? { ...r, skus: [row.sku], actualizado: now } : r);
-    undoRel = { type: "updated", id: existing.id, prevSkus: [...existing.skus] };
+    undoRel = { type: "updated", id: existing.id, prevSkus: [...existing.skus], newSkus: [row.sku] };
   } else {
     const id = crypto.randomUUID();
-    next = [{ id, texto: row.solicitado, nota: "Creada desde Cotizaciones", skus: [row.sku], creado: now, actualizado: now }, ...rel.items];
-    undoRel = { type: "created", id };
+    newRel = { id, texto: row.solicitado, nota: "Creada desde Cotizaciones", skus: [row.sku], creado: now, actualizado: now };
+    next = [newRel, ...rel.items];
+    undoRel = { type: "created", id, obj: newRel };
   }
   const snapshot = JSON.parse(JSON.stringify(cot.rows));
   cotStatus("Guardando relación…");
   const ok = await relSave(next, existing ? "Relación actualizada" : "Relación creada");
   if (ok) {
     cot.undo.push({ label: `guardar la relación "${row.solicitado}"`, rows: snapshot, rel: undoRel });
-    cotStatus(`Relación guardada: "${row.solicitado}" → ${row.sku}. La próxima vez se encuentra sola. (Podés deshacerlo)`, "ok");
+    cot.redo = [];
+    cotStatus(`Relación guardada: "${row.solicitado}" → ${row.sku}. La próxima vez se encuentra sola.`, "ok");
+    cotShowToast(`Relación guardada: ${row.sku}`);
     // Si era una opción, queda elegida
     cot.rows = cot.rows.filter(r => r.grupo !== row.grupo || r.id === row.id);
     row.estado = "relacion";
@@ -674,7 +726,7 @@ function cotRestore(){
 
 function cotClear(){
   if (cot.rows.length && !confirm("¿Borrar el presupuesto actual y empezar uno nuevo?")) return;
-  cot.rows = []; cot.undo = [];
+  cot.rows = []; cot.undo = []; cot.redo = [];
   cotEl("cotCliente").value = "";
   cotEl("cotTexto").value = "";
   try { localStorage.removeItem(COT_DRAFT_KEY); } catch {}
@@ -690,7 +742,7 @@ const cotizacionesModule = {
     cotRender();
   },
   reset(){
-    cot.rows = []; cot.undo = []; cot.priceField = "";
+    cot.rows = []; cot.undo = []; cot.redo = []; cot.priceField = "";
     cotEl("cotCliente").value = "";
     cotEl("cotTexto").value = "";
     try { localStorage.removeItem(COT_DRAFT_KEY); } catch {}
@@ -705,12 +757,19 @@ cotEl("cotProcessBtn").addEventListener("click", cotProcess);
 cotEl("cotNewBtn").addEventListener("click", cotClear);
 cotEl("cotExportBtn").addEventListener("click", cotExport);
 cotEl("cotUndoBtn").addEventListener("click", cotUndo);
+cotEl("cotRedoBtn").addEventListener("click", cotRedo);
+cotEl("cotToastUndo").addEventListener("click", cotUndo);
+cotEl("cotToastClose").addEventListener("click", cotHideToast);
 document.addEventListener("keydown", e => {
-  if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== "z") return;
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const k = e.key.toLowerCase();
+  const isUndo = k === "z" && !e.shiftKey;
+  const isRedo = k === "y" || (k === "z" && e.shiftKey);
+  if (!isUndo && !isRedo) return;
   if (cotEl("view-cotizaciones").classList.contains("hidden")) return;
   if (e.target.closest("input, textarea, select, [contenteditable]")) return;   // ahí Ctrl+Z deshace lo escrito
   e.preventDefault();
-  cotUndo();
+  isUndo ? cotUndo() : cotRedo();
 });
 cotEl("cotCliente").addEventListener("input", cotSave);
 cotEl("cotTexto").addEventListener("input", cotSave);
@@ -800,13 +859,15 @@ cotBody.addEventListener("click", e => {
     cotPushUndo(`eliminar "${row.solicitado || row.sku || "renglón"}"`);
     cot.rows = cot.rows.filter(r => r.id !== row.id);
     cotRender(); cotSave();
-    cotStatus("Renglón eliminado. Podés deshacerlo con el botón Deshacer.", "ok");
+    cotStatus("");
+    cotShowToast("Renglón eliminado");
   } else if (e.target.closest("[data-pick]")) {
     cotPushUndo(`elegir la opción ${row.sku}`);
     cot.rows = cot.rows.filter(r => r.grupo !== row.grupo || r.id === row.id);
     row.estado = "manual";
     cotRender(); cotSave();
-    cotStatus(`Te quedaste con ${row.sku}. Podés deshacerlo con el botón Deshacer.`, "ok");
+    cotStatus("");
+    cotShowToast(`Te quedaste con ${row.sku}`);
   } else if (e.target.closest("[data-relate]")) {
     cotSaveRelation(row);
   }

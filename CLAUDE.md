@@ -136,6 +136,8 @@ computadoras), con botón de respaldo (descargar/importar).
      revierte también la relación creada/actualizada), anchos de columna en localStorage `aruki-cot-colw`
      (`colgroup` + `table-layout:fixed`), recuadro por grupo (`box`, `is-option` amarillo / `is-none` rojo),
      columna Marca (`getArticulosCatalog()` toma la columna cuyo título contiene "marca").
+   - v1.9: Rehacer (`cot.redo`; `cotApplyRel()` revierte o reaplica la relación), barra `.cot-actions` debajo de la
+     tabla (Agregar artículo → Deshacer → Rehacer), aviso flotante `#cotToast` 5 s con Deshacer (`cotShowToast()`).
    - Tipografía: los datos (tablas, listas, chips, resultados) van 1px más grandes que la interfaz fija.
 3. Lectura de Excel, Word y PDF con texto.
 4. Fotos y PDF escaneados con Gemini.

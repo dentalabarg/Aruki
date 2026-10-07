@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "1.8";
+const LATEST_VERSION = "1.9";
 const CHANGELOG = [
+  {
+    version: "1.9",
+    date: "2026-10-07",
+    title: "Cotizaciones: Rehacer y aviso con Deshacer",
+    items: [
+      { type: "nuevo", text: "Botón Rehacer (y Ctrl+Y) para volver a aplicar lo que deshiciste" },
+      { type: "nuevo", text: "Al eliminar un renglón, elegir una opción o guardar una relación aparece un aviso abajo al centro durante 5 segundos, con Deshacer y una x para cerrarlo" },
+      { type: "mejora", text: "Agregar artículo, Deshacer y Rehacer ahora están debajo del presupuesto, a la izquierda" }
+    ]
+  },
   {
     version: "1.8",
     date: "2026-10-07",
