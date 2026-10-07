@@ -4,8 +4,22 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "1.7";
+const LATEST_VERSION = "1.8";
 const CHANGELOG = [
+  {
+    version: "1.8",
+    date: "2026-10-07",
+    title: "Cotizaciones: mejoras en la tabla del presupuesto",
+    items: [
+      { type: "correccion", text: "Ahora también se puede buscar el artículo tocando el Nombre (no solo el SKU); al elegirlo se completan SKU, nombre, marca y precio" },
+      { type: "nuevo", text: "Botón Deshacer (y Ctrl+Z) para volver atrás si eliminás un renglón, elegís una opción o guardás una relación" },
+      { type: "nuevo", text: "Se puede cambiar el ancho de cada columna arrastrando el borde del título; doble clic vuelve al ancho original" },
+      { type: "nuevo", text: "Columna Marca en Cotizaciones (y en el Excel), leída de la consulta de stock de YiQi" },
+      { type: "mejora", text: "Los renglones con varias opciones quedan encerrados en un recuadro amarillo, y los sin coincidencia en rojo" },
+      { type: "mejora", text: "Cuando hay una sola opción posible se marca como Coincide" },
+      { type: "mejora", text: "Letra un punto más grande en tablas, listas y resultados en todo Aruki" }
+    ]
+  },
   {
     version: "1.7",
     date: "2026-10-07",

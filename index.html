@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=1.7">
+<link rel="stylesheet" href="css/styles.css?v=1.8">
 </head>
 <body>
 
@@ -334,21 +334,25 @@
               <div class="cot-summary" id="cotSummary"></div>
             </div>
             <div class="toolbar">
+              <button class="btn btn-secondary" id="cotUndoBtn" type="button" disabled title="Deshacer la última acción">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Deshacer
+              </button>
               <div class="rel-picker cot-add">
                 <input class="ds-input" id="cotAddSearch" type="text" placeholder="Agregar artículo: buscá por SKU o nombre" autocomplete="off">
                 <div class="rel-results hidden" id="cotAddResults"></div>
               </div>
             </div>
           </div>
-          <p class="source-note">Arrastrá desde ⠿ para cambiar el orden. Podés editar el SKU, el texto adicional y la cantidad. Cuando hay dudas aparecen varias opciones para el mismo renglón: elegí una con ✓ o borrá las que no sirvan.</p>
+          <p class="source-note">Arrastrá desde ⠿ para cambiar el orden. Para cambiar un artículo tocá el SKU o el nombre y buscá. Podés editar el texto adicional y la cantidad. Para cambiar el ancho de una columna arrastrá el borde del título (doble clic vuelve al ancho original). Cuando hay dudas aparecen varias opciones para el mismo renglón: elegí una con ✓ o borrá las que no sirvan.</p>
           <div class="art-scroll">
-            <table class="art-table cot-table">
+            <table class="art-table cot-table" id="cotTable">
+              <colgroup><col><col><col><col><col><col><col><col><col><col></colgroup>
               <thead><tr>
-                <th></th><th>Solicitado</th><th>SKU</th><th>Nombre del artículo</th><th>Texto adicional</th>
+                <th></th><th>Solicitado</th><th>SKU</th><th>Nombre del artículo</th><th>Texto adicional</th><th>Marca</th>
                 <th class="num">Cantidad</th><th class="num" id="cotPriceHead">Precio</th><th class="num">Subtotal</th><th></th>
               </tr></thead>
               <tbody id="cotBody"></tbody>
-              <tfoot><tr><td colspan="7" class="num cot-total-label">Total</td><td class="num cot-total" id="cotTotal">$ 0</td><td></td></tr></tfoot>
+              <tfoot><tr><td colspan="8" class="num cot-total-label">Total</td><td class="num cot-total" id="cotTotal">$ 0</td><td></td></tr></tfoot>
             </table>
           </div>
           <div class="cot-status" id="cotStatus"></div>
@@ -449,12 +453,12 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=1.7"></script>
-<script src="js/core.js?v=1.7"></script>
-<script src="js/facturas.js?v=1.7"></script>
-<script src="js/articulos.js?v=1.7"></script>
-<script src="js/relaciones.js?v=1.7"></script>
-<script src="js/cotizaciones.js?v=1.7"></script>
-<script src="js/main.js?v=1.7"></script>
+<script src="js/changelog.js?v=1.8"></script>
+<script src="js/core.js?v=1.8"></script>
+<script src="js/facturas.js?v=1.8"></script>
+<script src="js/articulos.js?v=1.8"></script>
+<script src="js/relaciones.js?v=1.8"></script>
+<script src="js/cotizaciones.js?v=1.8"></script>
+<script src="js/main.js?v=1.8"></script>
 </body>
 </html>

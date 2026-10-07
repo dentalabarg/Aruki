@@ -17,7 +17,7 @@ const COT_SIZE_UNITS = /^(?:gr|grs|g|gramos?|ml|cc|mm|cm|kg|kgs|mts?|lts?|l)\b/i
 
 const cot = {
   rows: [], seq: 0, cliente: "", priceField: "", texto: "",
-  activeSkuInput: null, skuActive: 0, addActive: 0, dragId: null
+  activeSkuInput: null, skuActive: 0, addActive: 0, dragId: null, undo: []
 };
 
 function cotEl(id){ return document.getElementById(id); }
@@ -195,7 +195,7 @@ function cotIndex(){
   const inv = new Map();
   for (const a of cat.list) {
     if (COT_EXCLUDE.test(a.nombre) || /^rep /i.test(a.sku) || /^rep /i.test(a.nombre)) continue;
-    const toks = [...new Set(cotTokens(`${a.sku} ${a.nombre}`))];
+    const toks = [...new Set(cotTokens(`${a.sku} ${a.nombre} ${a.marca || ""}`))];
     const i = items.length;
     items.push({ a, toks });
     for (const t of toks) {
@@ -287,6 +287,8 @@ function cotResolve(item, relIndex){
     return [cotMakeRow({ ...base, sku: top.a.sku, estado: "buena" })];
   }
   const options = found.filter(r => r.score >= top.score * 0.8).slice(0, 4);
+  // Una sola opción posible: se muestra como "Coincide"
+  if (options.length === 1) return [cotMakeRow({ ...base, sku: top.a.sku, estado: "buena" })];
   return options.map(r => cotMakeRow({ ...base, sku: r.a.sku, estado: "dudosa" }));
 }
 
@@ -302,6 +304,7 @@ function cotProcess(){
   const t0 = performance.now();
   const newRows = items.flatMap(it => cotResolve(it, relIndex));
   const replace = !cot.rows.length || confirm("Ya hay un presupuesto armado. ¿Reemplazarlo? (Cancelar = agregar estos renglones al final)");
+  cot.undo = [];
   cot.rows = replace ? newRows : [...cot.rows, ...newRows];
   cotRender();
   cotSave();
@@ -330,28 +333,51 @@ function cotGroupInfo(){
   return info;
 }
 
+/* Estado que se muestra: una "opción" que quedó sola se ve como "Coincide" */
+function cotShownEstado(r, groups){
+  const siblings = groups.get(r.grupo) || [r.id];
+  return r.estado === "dudosa" && siblings.length < 2 ? "buena" : r.estado;
+}
+
 function cotRender(){
   const cat = getArticulosCatalog();
   const groups = cotGroupInfo();
   const body = cotEl("cotBody");
   let total = 0;
-  body.innerHTML = cot.rows.map(r => {
+  const kinds = cot.rows.map(r => {
+    const e = cotShownEstado(r, groups);
+    return e === "dudosa" ? "is-option" : e === "sin" ? "is-none" : "";
+  });
+  body.innerHTML = cot.rows.map((r, idx) => {
     const item = r.sku ? cat.bySku.get(r.sku) : null;
     const missing = r.sku && !item && cat.list.length > 0;
     const price = r.sku ? cotPrice(r.sku) : null;
     const sub = price !== null ? price * (Number(r.cantidad) || 0) : null;
     if (sub !== null) total += sub;
     const siblings = groups.get(r.grupo) || [r.id];
-    const isOption = siblings.length > 1 && r.estado === "dudosa";
-    const [badgeCls, badgeTxt] = COT_BADGES[r.estado] || COT_BADGES.manual;
+    const estado = cotShownEstado(r, groups);
+    const kind = kinds[idx];
+    const isOption = kind === "is-option";
+    // Recuadro: abre cuando cambia el grupo respecto del renglón anterior y cierra respecto del siguiente
+    const prev = cot.rows[idx - 1], next = cot.rows[idx + 1];
+    const boxFirst = kind && !(prev && prev.grupo === r.grupo && kinds[idx - 1] === kind);
+    const boxLast = kind && !(next && next.grupo === r.grupo && kinds[idx + 1] === kind);
+    const trCls = [kind, kind ? "box" : "", boxFirst ? "box-first" : "", boxLast ? "box-last" : ""].filter(Boolean).join(" ");
+    const [badgeCls, badgeTxt] = COT_BADGES[estado] || COT_BADGES.manual;
     const label = isOption ? `Opción ${siblings.indexOf(r.id) + 1} de ${siblings.length}` : badgeTxt;
+    const nameHtml = item ? escapeHtml(item.nombre)
+      : (missing ? "<span class=\"missing\">No está en Artículos</span>" : "<span class=\"source-note\">Buscá por nombre o SKU</span>");
     return `
-      <tr data-id="${r.id}" class="${isOption ? "is-option" : ""}">
+      <tr data-id="${r.id}" class="${trCls}">
         <td><span class="cot-handle" draggable="true" title="Arrastrar para ordenar">⠿</span></td>
         <td class="cot-sol">${escapeHtml(r.solicitado) || "<span class=\"source-note\">(agregado a mano)</span>"}<div><span class="badge ${badgeCls}">${label}</span></div></td>
         <td><input class="cell-input sku ${missing ? "is-missing" : ""}" data-field="sku" value="${escapeHtml(r.sku)}" placeholder="SKU" autocomplete="off"></td>
-        <td class="cot-name">${item ? escapeHtml(item.nombre) : (missing ? "<span class=\"missing\">No está en Artículos</span>" : "<span class=\"source-note\">Escribí o buscá el SKU</span>")}</td>
+        <td class="cot-name">
+          <div class="name-view" tabindex="0" title="Tocá para buscar otro artículo">${nameHtml}</div>
+          <input class="cell-input name hidden" data-field="nombre" value="${escapeHtml(item ? item.nombre : "")}" placeholder="Buscá por nombre o SKU" autocomplete="off">
+        </td>
         <td><input class="cell-input extra" data-field="extra" value="${escapeHtml(r.extra)}" placeholder="—" maxlength="300"></td>
+        <td class="cot-marca">${item && item.marca ? escapeHtml(item.marca) : "—"}</td>
         <td class="num"><input class="cell-input qty" data-field="cantidad" type="number" min="0" step="any" value="${escapeHtml(r.cantidad)}"></td>
         <td class="num">${price !== null ? escapeHtml(cotMoney(price)) : "—"}</td>
         <td class="num" data-sub>${sub !== null ? escapeHtml(cotMoney(sub)) : "—"}</td>
@@ -371,15 +397,46 @@ function cotRender(){
   cotEl("cotPriceHead").textContent = cotPriceTitle();
   cotEl("cotResultPanel").classList.toggle("hidden", !cot.rows.length);
   cotEl("cotExportBtn").disabled = !cot.rows.length;
+  cotRenderUndo();
 
   // Resumen por estado (contando renglones pedidos, no filas)
   const byGroup = new Map();
-  cot.rows.forEach(r => { if (!byGroup.has(r.grupo)) byGroup.set(r.grupo, r.estado); });
+  cot.rows.forEach(r => { if (!byGroup.has(r.grupo)) byGroup.set(r.grupo, cotShownEstado(r, groups)); });
   const counts = {};
   byGroup.forEach(e => { counts[e] = (counts[e] || 0) + 1; });
   const names = { relacion: "por relación", buena: "coinciden", dudosa: "con opciones", sin: "sin coincidencia", manual: "manuales" };
   cotEl("cotSummary").innerHTML = Object.keys(names).filter(k => counts[k])
     .map(k => `<span class="badge ${COT_BADGES[k][0]}">${counts[k]} ${names[k]}</span>`).join("");
+}
+
+/* ---------- Deshacer ---------- */
+function cotPushUndo(label, extra){
+  cot.undo.push({ label, rows: JSON.parse(JSON.stringify(cot.rows)), ...(extra || {}) });
+  if (cot.undo.length > 30) cot.undo.shift();
+}
+
+function cotRenderUndo(){
+  const btn = cotEl("cotUndoBtn");
+  const last = cot.undo[cot.undo.length - 1];
+  btn.disabled = !last;
+  btn.title = last ? `Deshacer: ${last.label} (Ctrl+Z)` : "No hay nada para deshacer";
+}
+
+async function cotUndo(){
+  const u = cot.undo.pop();
+  if (!u) return;
+  if (u.rel) {
+    const now = Date.now();
+    const next = u.rel.type === "created"
+      ? rel.items.filter(r => r.id !== u.rel.id)
+      : rel.items.map(r => r.id === u.rel.id ? { ...r, skus: u.rel.prevSkus, actualizado: now } : r);
+    cotStatus("Deshaciendo la relación…");
+    const ok = await relSave(next, "Relación deshecha");
+    if (!ok) { cot.undo.push(u); cotRenderUndo(); cotStatus("No se pudo deshacer la relación. Revisá el aviso en el módulo Relaciones.", "error"); return; }
+  }
+  cot.rows = u.rows;
+  cotRender(); cotSave();
+  cotStatus(`Se deshizo: ${u.label}.`, "ok");
 }
 
 function cotMoney(n){
@@ -415,27 +472,34 @@ function cotSetSku(row, value){
   return true;
 }
 
-/* ---------- Autocompletado del SKU (lista flotante) ---------- */
+/* ---------- Autocompletado del SKU / nombre (lista flotante) ---------- */
+function cotResultHtml(a, active){
+  return `<div class="rel-result ${active ? "is-active" : ""}" data-sku="${escapeHtml(a.sku)}">
+    <span class="sku">${escapeHtml(a.sku)}</span><span>${escapeHtml(a.nombre)}</span>${a.marca ? `<span class="marca">${escapeHtml(a.marca)}</span>` : ""}
+  </div>`;
+}
 function cotShowSkuResults(input){
   const box = cotEl("cotSkuResults");
   const query = input.value.trim();
   if (!query) { box.classList.add("hidden"); return; }
-  const results = relSearchArticulos(query, 10);
+  const results = relSearchArticulos(query, 12);
   if (!results.length) { box.classList.add("hidden"); return; }
   cot.skuActive = Math.min(cot.skuActive, results.length - 1);
-  box.innerHTML = results.map((a, i) => `
-    <div class="rel-result ${i === cot.skuActive ? "is-active" : ""}" data-sku="${escapeHtml(a.sku)}">
-      <span class="sku">${escapeHtml(a.sku)}</span><span>${escapeHtml(a.nombre)}</span>
-    </div>`).join("");
+  box.innerHTML = results.map((a, i) => cotResultHtml(a, i === cot.skuActive)).join("");
+  cotPositionBox(input);
+  box.classList.remove("hidden");
+  box.querySelectorAll("[data-sku]").forEach(el => {
+    el.addEventListener("mousedown", e => { e.preventDefault(); cotCommitSku(input, el.dataset.sku); });
+  });
+}
+
+function cotPositionBox(input){
+  const box = cotEl("cotSkuResults");
   const rect = input.getBoundingClientRect();
   const below = window.innerHeight - rect.bottom > 260;
   box.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 470))}px`;
   box.style.top = below ? `${rect.bottom + 4}px` : "auto";
   box.style.bottom = below ? "auto" : `${window.innerHeight - rect.top + 4}px`;
-  box.classList.remove("hidden");
-  box.querySelectorAll("[data-sku]").forEach(el => {
-    el.addEventListener("mousedown", e => { e.preventDefault(); cotCommitSku(input, el.dataset.sku); });
-  });
 }
 
 function cotCommitSku(input, sku){
@@ -444,7 +508,7 @@ function cotCommitSku(input, sku){
   const row = tr && cotRowById(tr.dataset.id);
   if (!row) return;
   if (cotSetSku(row, sku)) { cotRender(); cotSave(); }
-  else input.value = row.sku;
+  else cotCloseName(input, row);
 }
 
 /* ---------- Agregar renglón a mano ---------- */
@@ -454,10 +518,7 @@ function cotRenderAddResults(){
   if (!query) { box.classList.add("hidden"); box.innerHTML = ""; return; }
   const results = relSearchArticulos(query, 12);
   box.innerHTML = results.length
-    ? results.map((a, i) => `
-      <div class="rel-result ${i === cot.addActive ? "is-active" : ""}" data-sku="${escapeHtml(a.sku)}">
-        <span class="sku">${escapeHtml(a.sku)}</span><span>${escapeHtml(a.nombre)}</span>
-      </div>`).join("")
+    ? results.map((a, i) => cotResultHtml(a, i === cot.addActive)).join("")
     : `<div class="rel-result-empty">No se encontraron artículos con esa búsqueda.</div>`;
   box.classList.remove("hidden");
   box.querySelectorAll("[data-sku]").forEach(el => {
@@ -483,18 +544,23 @@ async function cotSaveRelation(row){
   const key = relKey(row.solicitado);
   const existing = rel.items.find(r => relKey(r.texto) === key);
   const now = Date.now();
-  let next;
+  let next, undoRel;
   if (existing) {
     if (existing.skus.length === 1 && existing.skus[0] === row.sku) { cotStatus("Esa relación ya estaba guardada.", "ok"); return; }
     if (!confirm(`Ya existe una relación para "${existing.texto}" → ${existing.skus.join(", ")}.\n\n¿Reemplazarla por ${row.sku}?`)) return;
     next = rel.items.map(r => r.id === existing.id ? { ...r, skus: [row.sku], actualizado: now } : r);
+    undoRel = { type: "updated", id: existing.id, prevSkus: [...existing.skus] };
   } else {
-    next = [{ id: crypto.randomUUID(), texto: row.solicitado, nota: "Creada desde Cotizaciones", skus: [row.sku], creado: now, actualizado: now }, ...rel.items];
+    const id = crypto.randomUUID();
+    next = [{ id, texto: row.solicitado, nota: "Creada desde Cotizaciones", skus: [row.sku], creado: now, actualizado: now }, ...rel.items];
+    undoRel = { type: "created", id };
   }
+  const snapshot = JSON.parse(JSON.stringify(cot.rows));
   cotStatus("Guardando relación…");
   const ok = await relSave(next, existing ? "Relación actualizada" : "Relación creada");
   if (ok) {
-    cotStatus(`Relación guardada: "${row.solicitado}" → ${row.sku}. La próxima vez se encuentra sola.`, "ok");
+    cot.undo.push({ label: `guardar la relación "${row.solicitado}"`, rows: snapshot, rel: undoRel });
+    cotStatus(`Relación guardada: "${row.solicitado}" → ${row.sku}. La próxima vez se encuentra sola. (Podés deshacerlo)`, "ok");
     // Si era una opción, queda elegida
     cot.rows = cot.rows.filter(r => r.grupo !== row.grupo || r.id === row.id);
     row.estado = "relacion";
@@ -544,26 +610,26 @@ async function cotExport(){
       ["Fecha", fecha],
       ["Lista de precios", cotPriceTitle()],
       [],
-      ["Solicitado", "SKU", "Nombre del artículo", "Texto adicional", "Cantidad", "Precio unitario", "Subtotal"]
+      ["Solicitado", "SKU", "Nombre del artículo", "Texto adicional", "Marca", "Cantidad", "Precio unitario", "Subtotal"]
     ];
     const firstData = aoa.length + 1;
     cot.rows.forEach((r, i) => {
       const item = r.sku ? cat.bySku.get(r.sku) : null;
       const price = r.sku ? cotPrice(r.sku) : null;
       const rowNum = firstData + i;
-      aoa.push([r.solicitado, r.sku, item ? item.nombre : "", r.extra, Number(r.cantidad) || 0,
-        price ?? "", price !== null ? { t: "n", f: `E${rowNum}*F${rowNum}`, v: price * (Number(r.cantidad) || 0) } : ""]);
+      aoa.push([r.solicitado, r.sku, item ? item.nombre : "", r.extra, item ? item.marca : "", Number(r.cantidad) || 0,
+        price ?? "", price !== null ? { t: "n", f: `F${rowNum}*G${rowNum}`, v: price * (Number(r.cantidad) || 0) } : ""]);
     });
     const lastData = firstData + cot.rows.length - 1;
     const total = cot.rows.reduce((s, r) => { const p = r.sku ? cotPrice(r.sku) : null; return s + (p !== null ? p * (Number(r.cantidad) || 0) : 0); }, 0);
     aoa.push([]);
-    aoa.push(["", "", "", "", "", "Total", { t: "n", f: `SUM(G${firstData}:G${lastData})`, v: total }]);
+    aoa.push(["", "", "", "", "", "", "Total", { t: "n", f: `SUM(H${firstData}:H${lastData})`, v: total }]);
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = [{ wch: 40 }, { wch: 14 }, { wch: 52 }, { wch: 28 }, { wch: 10 }, { wch: 16 }, { wch: 16 }];
+    ws["!cols"] = [{ wch: 40 }, { wch: 14 }, { wch: 52 }, { wch: 28 }, { wch: 18 }, { wch: 10 }, { wch: 16 }, { wch: 16 }];
     const fmt = '"$" #,##0.00';
     for (let r = firstData; r <= lastData + 2; r++) {
-      ["F", "G"].forEach(c => { const cell = ws[`${c}${r}`]; if (cell && (typeof cell.v === "number")) cell.z = fmt; });
+      ["G", "H"].forEach(c => { const cell = ws[`${c}${r}`]; if (cell && (typeof cell.v === "number")) cell.z = fmt; });
     }
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Presupuesto");
@@ -608,7 +674,7 @@ function cotRestore(){
 
 function cotClear(){
   if (cot.rows.length && !confirm("¿Borrar el presupuesto actual y empezar uno nuevo?")) return;
-  cot.rows = [];
+  cot.rows = []; cot.undo = [];
   cotEl("cotCliente").value = "";
   cotEl("cotTexto").value = "";
   try { localStorage.removeItem(COT_DRAFT_KEY); } catch {}
@@ -624,7 +690,7 @@ const cotizacionesModule = {
     cotRender();
   },
   reset(){
-    cot.rows = []; cot.priceField = "";
+    cot.rows = []; cot.undo = []; cot.priceField = "";
     cotEl("cotCliente").value = "";
     cotEl("cotTexto").value = "";
     try { localStorage.removeItem(COT_DRAFT_KEY); } catch {}
@@ -638,6 +704,14 @@ const cotizacionesModule = {
 cotEl("cotProcessBtn").addEventListener("click", cotProcess);
 cotEl("cotNewBtn").addEventListener("click", cotClear);
 cotEl("cotExportBtn").addEventListener("click", cotExport);
+cotEl("cotUndoBtn").addEventListener("click", cotUndo);
+document.addEventListener("keydown", e => {
+  if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== "z") return;
+  if (cotEl("view-cotizaciones").classList.contains("hidden")) return;
+  if (e.target.closest("input, textarea, select, [contenteditable]")) return;   // ahí Ctrl+Z deshace lo escrito
+  e.preventDefault();
+  cotUndo();
+});
 cotEl("cotCliente").addEventListener("input", cotSave);
 cotEl("cotTexto").addEventListener("input", cotSave);
 cotEl("cotTexto").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); cotProcess(); } });
@@ -652,27 +726,48 @@ cotBody.addEventListener("input", e => {
   if (!input) return;
   const row = cotRowById(input.closest("tr").dataset.id);
   if (!row) return;
-  if (input.dataset.field === "sku") { cot.skuActive = 0; cotShowSkuResults(input); return; }
+  if (input.dataset.field === "sku" || input.dataset.field === "nombre") { cot.skuActive = 0; cotShowSkuResults(input); return; }
   if (input.dataset.field === "extra") row.extra = input.value;
   if (input.dataset.field === "cantidad") { row.cantidad = input.value === "" ? 0 : Number(input.value); cotUpdateTotals(); }
   cotSave();
 });
+const COT_PICK_FIELDS = '[data-field="sku"],[data-field="nombre"]';
+
+/* Nombre: se muestra como texto; al tocarlo aparece el buscador */
+function cotOpenName(view){
+  const input = view.parentElement.querySelector('[data-field="nombre"]');
+  view.classList.add("hidden");
+  input.classList.remove("hidden");
+  input.focus();
+}
+function cotCloseName(input, row){
+  if (input.dataset.field === "sku") { input.value = row ? row.sku : input.value; return; }
+  const item = row && row.sku ? getArticulosCatalog().bySku.get(row.sku) : null;
+  input.value = item ? item.nombre : "";
+  input.classList.add("hidden");
+  const view = input.parentElement.querySelector(".name-view");
+  if (view) view.classList.remove("hidden");
+}
+
 cotBody.addEventListener("focusin", e => {
-  if (e.target.matches('[data-field="sku"]')) { cot.activeSkuInput = e.target; cot.skuActive = 0; e.target.select(); }
+  if (e.target.matches(COT_PICK_FIELDS)) { cot.activeSkuInput = e.target; cot.skuActive = 0; e.target.select(); }
+  else if (e.target.matches(".name-view")) cotOpenName(e.target);
 });
 cotBody.addEventListener("focusout", e => {
-  if (!e.target.matches('[data-field="sku"]')) return;
+  if (!e.target.matches(COT_PICK_FIELDS)) return;
   const input = e.target;
   setTimeout(() => {
-    if (!document.body.contains(input)) return;
+    if (!document.body.contains(input) || document.activeElement === input) return;
     cotEl("cotSkuResults").classList.add("hidden");
     const row = cotRowById(input.closest("tr").dataset.id);
-    if (row && input.value.trim() !== row.sku) cotCommitSku(input, input.value);
-  }, 120);
+    // En el SKU, lo escrito se toma como código; en el nombre solo cuenta lo elegido de la lista
+    if (input.dataset.field === "sku" && row && input.value.trim() !== row.sku) cotCommitSku(input, input.value);
+    else cotCloseName(input, row);
+  }, 150);
 });
 cotBody.addEventListener("keydown", e => {
   const input = e.target;
-  if (input.matches('[data-field="sku"]')) {
+  if (input.matches(COT_PICK_FIELDS)) {
     const box = cotEl("cotSkuResults");
     const items = box.classList.contains("hidden") ? [] : box.querySelectorAll("[data-sku]");
     if ((e.key === "ArrowDown" || e.key === "ArrowUp") && items.length) {
@@ -681,11 +776,15 @@ cotBody.addEventListener("keydown", e => {
       cotShowSkuResults(input);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      cotCommitSku(input, items[cot.skuActive] ? items[cot.skuActive].dataset.sku : input.value);
+      const picked = items[cot.skuActive] ? items[cot.skuActive].dataset.sku : null;
+      if (picked) cotCommitSku(input, picked);
+      else if (input.dataset.field === "nombre" && input.value.trim()) { cot.skuActive = 0; cotShowSkuResults(input); }
+      else if (input.dataset.field === "sku") cotCommitSku(input, input.value);
+      else { box.classList.add("hidden"); input.blur(); }
     } else if (e.key === "Escape") {
       box.classList.add("hidden");
-      const row = cotRowById(input.closest("tr").dataset.id);
-      if (row) input.value = row.sku;
+      cotCloseName(input, cotRowById(input.closest("tr").dataset.id));
+      if (input.dataset.field === "nombre") input.blur();
     }
   } else if (e.key === "Enter" && input.matches(".cell-input")) {
     e.preventDefault(); input.blur();
@@ -696,16 +795,18 @@ cotBody.addEventListener("click", e => {
   if (!tr) return;
   const row = cotRowById(tr.dataset.id);
   if (!row) return;
+  if (e.target.closest(".name-view")) { cotOpenName(e.target.closest(".name-view")); return; }
   if (e.target.closest("[data-delete]")) {
+    cotPushUndo(`eliminar "${row.solicitado || row.sku || "renglón"}"`);
     cot.rows = cot.rows.filter(r => r.id !== row.id);
-    // Si queda una sola opción del grupo, pasa a ser la elegida
-    const rest = cot.rows.filter(r => r.grupo === row.grupo);
-    if (rest.length === 1 && rest[0].estado === "dudosa") rest[0].estado = "manual";
     cotRender(); cotSave();
+    cotStatus("Renglón eliminado. Podés deshacerlo con el botón Deshacer.", "ok");
   } else if (e.target.closest("[data-pick]")) {
+    cotPushUndo(`elegir la opción ${row.sku}`);
     cot.rows = cot.rows.filter(r => r.grupo !== row.grupo || r.id === row.id);
     row.estado = "manual";
     cotRender(); cotSave();
+    cotStatus(`Te quedaste con ${row.sku}. Podés deshacerlo con el botón Deshacer.`, "ok");
   } else if (e.target.closest("[data-relate]")) {
     cotSaveRelation(row);
   }
@@ -767,9 +868,15 @@ cotAdd.addEventListener("keydown", e => {
   }
 });
 
+/* Al hacer scroll, la lista flotante sigue al campo (o se oculta si el campo ya no está a la vista) */
 window.addEventListener("scroll", e => {
-  if (e.target === cotEl("cotSkuResults")) return;
-  cotEl("cotSkuResults").classList.add("hidden");
+  const box = cotEl("cotSkuResults");
+  if (e.target === box || box.classList.contains("hidden")) return;
+  const input = cot.activeSkuInput;
+  if (!input || !document.body.contains(input) || document.activeElement !== input) { box.classList.add("hidden"); return; }
+  const r = input.getBoundingClientRect();
+  if (r.bottom < 0 || r.top > window.innerHeight) box.classList.add("hidden");
+  else cotPositionBox(input);
 }, true);
 document.addEventListener("aruki:loaded", e => {
   if (e.detail?.endpoint !== `${WORKER_BASE}/articulos`) return;
@@ -783,5 +890,53 @@ setInterval(() => {
     if (btnWasDisabled || articulosModule.loading) cotRefreshState();
   }
 }, 1000);
+
+/* ---------- Ancho de columnas a mano ---------- */
+const COT_COLW_KEY = "aruki-cot-colw";
+function cotLoadWidths(){
+  try { const w = JSON.parse(localStorage.getItem(COT_COLW_KEY) || "null"); return Array.isArray(w) && w.length === 10 ? w : null; }
+  catch { return null; }
+}
+function cotApplyWidths(w){
+  const table = cotEl("cotTable");
+  const cols = table.querySelectorAll("colgroup col");
+  table.classList.toggle("is-resized", !!w);
+  cols.forEach((c, i) => { c.style.width = w ? `${w[i]}px` : ""; });
+  table.style.width = w ? `${w.reduce((a, b) => a + b, 0)}px` : "";
+  table.style.minWidth = w ? "0" : "";
+}
+(function cotInitResize(){
+  const ths = cotEl("cotTable").querySelectorAll("thead th");
+  ths.forEach((th, i) => {
+    if (i === 0) return;                                   // la columna del ⠿ no se cambia
+    const handle = document.createElement("span");
+    handle.className = "col-resizer";
+    handle.title = "Arrastrá para cambiar el ancho · doble clic: ancho original";
+    th.appendChild(handle);
+    handle.addEventListener("pointerdown", e => {
+      e.preventDefault(); e.stopPropagation();
+      // Primera vez: se toman los anchos que se ven ahora como punto de partida
+      const w = cotLoadWidths() || [...ths].map(t => Math.round(t.getBoundingClientRect().width));
+      const startX = e.clientX, startW = w[i];
+      handle.classList.add("active");
+      handle.setPointerCapture(e.pointerId);
+      const move = ev => { w[i] = Math.max(44, Math.round(startW + ev.clientX - startX)); cotApplyWidths(w); };
+      const up = () => {
+        handle.classList.remove("active");
+        handle.removeEventListener("pointermove", move);
+        handle.removeEventListener("pointerup", up);
+        try { localStorage.setItem(COT_COLW_KEY, JSON.stringify(w)); } catch {}
+      };
+      handle.addEventListener("pointermove", move);
+      handle.addEventListener("pointerup", up);
+    });
+    handle.addEventListener("dblclick", e => {
+      e.stopPropagation();
+      try { localStorage.removeItem(COT_COLW_KEY); } catch {}
+      cotApplyWidths(null);
+    });
+  });
+  cotApplyWidths(cotLoadWidths());
+})();
 
 cotRestore();

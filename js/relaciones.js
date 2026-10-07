@@ -135,7 +135,7 @@ function relSearchArticulos(query, limit = 12){
   const out = [];
   for (const a of cat.list) {
     const skuF = foldText(a.sku);
-    if (a.__rs === undefined) a.__rs = foldText(`${a.sku} ${a.nombre}`);
+    if (a.__rs === undefined) a.__rs = foldText(`${a.sku} ${a.nombre} ${a.marca || ""}`);
     if (!terms.every(t => a.__rs.includes(t))) continue;
     const score = skuF === q ? 0 : skuF.startsWith(q) ? 1 : 2;
     out.push({ a, score });

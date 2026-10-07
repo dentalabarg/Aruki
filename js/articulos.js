@@ -74,7 +74,7 @@ const articulosModule = createDataModule({
 });
 
 
-/* Catálogo simplificado (SKU, nombre, precios) para Relaciones y Cotizaciones */
+/* Catálogo simplificado (SKU, nombre, marca, precios) para Relaciones y Cotizaciones */
 let artCatalogCache = { rows: null, length: -1, value: null };
 function getArticulosCatalog(){
   const rows = articulosModule.rows;
@@ -82,6 +82,7 @@ function getArticulosCatalog(){
   const cols = artResolveColumns(articulosModule.columns, rows);
   const skuCol = cols.find(c => /sku|c[oó]digo/i.test(c.title || ""));
   const nameCol = cols.find(c => /nombre|descripci/i.test(c.title || ""));
+  const marcaCol = cols.find(c => /marca/i.test(c.title || ""));
   const priceCols = cols.filter(c => artColumnKind(c) === "money");
   const list = [];
   const bySku = new Map();
@@ -89,7 +90,7 @@ function getArticulosCatalog(){
     for (const row of rows) {
       const sku = String(row[skuCol.field] ?? "").trim();
       if (!sku) continue;
-      const item = { sku, nombre: nameCol ? String(row[nameCol.field] ?? "") : "", row };
+      const item = { sku, nombre: nameCol ? String(row[nameCol.field] ?? "") : "", marca: marcaCol ? String(row[marcaCol.field] ?? "").trim() : "", row };
       list.push(item);
       bySku.set(sku, item);
     }

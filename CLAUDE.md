@@ -132,6 +132,11 @@ computadoras), con botón de respaldo (descargar/importar).
    - `cotResolve()`: Relación (texto exacto con `relKey`) → "relacion"; score ≥ 0,75 y 0,08 de ventaja → "buena";
      ≥ 0,4 → hasta 4 opciones "dudosa" (mismo `grupo`); si no, "sin". Umbrales a ajustar con listas reales.
    - Excel con SheetJS desde cdnjs (se carga al exportar). Borrador en localStorage `aruki-cotizacion`.
+   - v1.8: nombre buscable (`.name-view` → input `data-field="nombre"`), Deshacer (`cot.undo`, snapshots de filas;
+     revierte también la relación creada/actualizada), anchos de columna en localStorage `aruki-cot-colw`
+     (`colgroup` + `table-layout:fixed`), recuadro por grupo (`box`, `is-option` amarillo / `is-none` rojo),
+     columna Marca (`getArticulosCatalog()` toma la columna cuyo título contiene "marca").
+   - Tipografía: los datos (tablas, listas, chips, resultados) van 1px más grandes que la interfaz fija.
 3. Lectura de Excel, Word y PDF con texto.
 4. Fotos y PDF escaneados con Gemini.
 
