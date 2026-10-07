@@ -51,7 +51,7 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
 - Guarda como secretos: `YIQI_USER`, `YIQI_PASSWORD`, `ARUKI_USER`, `ARUKI_PASSWORD`, `SESSION_SECRET`.
   **Nunca** poner credenciales en el HTML/JS del repo (el repo es público).
 - Rutas de datos (requieren `Authorization: Bearer <token>`): `/facturas?page=N`, `/articulos?page=N`.
-- Variables opcionales: `ALLOWED_ORIGIN`, `SCHEMA_ID`, `FACTURAS_ENTITY`, `FACTURAS_SMARTIE_ID`,
+- `ALLOWED_ORIGIN` debe ser `https://dentalabarg.github.io` (no `*`). Variables opcionales: `SCHEMA_ID`, `FACTURAS_ENTITY`, `FACTURAS_SMARTIE_ID`,
   `ARTICULOS_ENTITY`, `ARTICULOS_SMARTIE_ID`.
 
 ## API de YiQi (lo que ya está confirmado)
@@ -59,7 +59,7 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
 - schemaId: `GET https://api.yiqi.com.ar/api/accountapi/GetLoginInformation` → `{ userId, userName, schemaName, host, schemaId }`.
 - Smartie: `GET https://api.yiqi.com.ar/api/public/{ENTIDAD}/smartie?smartieId=&schemaId=&page=` (página base 1,
   ~50 filas) → `{ data: [...], total, columns: [{ title, field, dataType, OrdenColumna, … }] }`.
-- Facturas: entidad `FACTURA`, smartie "Z. Facturas Github" (ID en la variable `FACTURAS_SMARTIE_ID`;
+- Facturas: entidad `FACTURA`, smartie "Z. Facturas Github" (ID **2355**, en la variable `FACTURAS_SMARTIE_ID`;
   ~40.000 registros). Campos: `CLIE_RAZON_SOCIAL, PUVE_NOMBRE, TIFA_NOMBRE, FACT_NUMERO, COVE_DESCRIPCION,
   FACT_EXTE_NOMBRE, VEHA_NOMBRE, FACT_PENDIENTE_CANCELACIO, FACT_TOTAL, FACT_FECHA_EMISION, DESC_ESTADO, id`.
 - Artículos: entidad `CONSULTA_DE_STOCK`, smartie **2377**. Columnas: Identificador, SKU, Nombre,
