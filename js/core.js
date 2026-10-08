@@ -81,7 +81,7 @@ function enterApp(name){
   document.getElementById("userName").textContent = name;
   document.getElementById("userAvatar").textContent =
     name.split(" ").map(p => p[0]).join("").slice(0,2).toUpperCase();
-  showModule("facturas");
+  showModule("cotizaciones");
 }
 
 document.getElementById("loginForm").addEventListener("submit", async function(e){
@@ -147,7 +147,7 @@ document.getElementById("logoutBtn").addEventListener("click", function(){
   articulosModule.reset();
   relacionesModule.reset();
   cotizacionesModule.reset();
-  showModule("facturas");
+  showModule("cotizaciones");
 });
 
 /* ============================================================

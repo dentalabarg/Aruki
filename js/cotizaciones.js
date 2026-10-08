@@ -212,7 +212,39 @@ const COT_ALIAS = {
   termocurable: "termo"
 };
 
+/* Equivalencias cargadas en Relaciones (tipo "Palabra equivalente"). Se aplican igual al pedido y
+   al catálogo. Pueden ser de una palabra ("autocurable" → "auto") o de varias ("fosfato de zinc" → "fosfato"). */
+let cotUserAliasCache = { ver: null, single: new Map(), multi: [] };
+function cotUserAliases(){
+  const ver = `${rel.version}:${rel.items.length}`;
+  if (cotUserAliasCache.ver === ver) return cotUserAliasCache;
+  const single = new Map(), multi = [];
+  for (const r of rel.items) {
+    if (!relEsPalabra(r)) continue;
+    const from = cotBaseTokens(r.texto), to = cotBaseTokens(r.reemplazo);
+    if (!from.length || !to.length) continue;
+    if (from.length === 1) single.set(from[0], to); else multi.push({ from, to });
+  }
+  multi.sort((a, b) => b.from.length - a.from.length);
+  cotUserAliasCache = { ver, single, multi };
+  return cotUserAliasCache;
+}
+
 function cotTokens(text){
+  const base = cotBaseTokens(text);
+  const { single, multi } = cotUserAliases();
+  if (!single.size && !multi.length) return base;
+  const out = [];
+  for (let i = 0; i < base.length; i++) {
+    const phrase = multi.find(p => p.from.every((t, j) => base[i + j] === t));
+    if (phrase) { out.push(...phrase.to); i += phrase.from.length - 1; continue; }
+    const to = single.get(base[i]);
+    if (to) out.push(...to); else out.push(base[i]);
+  }
+  return out;
+}
+
+function cotBaseTokens(text){
   const out = [];
   for (let t of cotNorm(text).split(/[^a-z0-9ñ.]+/)) {
     t = t.replace(/^\.+|\.+$/g, "");
@@ -229,7 +261,8 @@ let cotIdxCache = { list: null, value: null };
 
 function cotIndex(){
   const cat = getArticulosCatalog();
-  if (cotIdxCache.list === cat.list && cotIdxCache.value) return cotIdxCache.value;
+  const aliasVer = cotUserAliases().ver;
+  if (cotIdxCache.list === cat.list && cotIdxCache.aliasVer === aliasVer && cotIdxCache.value) return cotIdxCache.value;
   const items = [];
   const df = new Map();
   const inv = new Map();
@@ -248,7 +281,7 @@ function cotIndex(){
   const brands = new Set();
   for (const it of items) { const b = cotBrandKey(it.a.marca); if (b) brands.add(b); }
   const value = { items, df, inv, vocab: [...df.keys()], brands: [...brands] };
-  cotIdxCache = { list: cat.list, value };
+  cotIdxCache = { list: cat.list, aliasVer, value };
   return value;
 }
 
@@ -690,7 +723,7 @@ async function cotSaveRelation(row){
   if (!row.solicitado || !row.sku) return;
   if (!rel.loaded) { cotStatus("Las relaciones todavía no se cargaron. Probá de nuevo en unos segundos.", "error"); relacionesModule.ensureLoaded(); return; }
   const key = relKey(row.solicitado);
-  const existing = rel.items.find(r => !relEsReglas(r) && relKey(r.texto) === key);
+  const existing = rel.items.find(r => relTipo(r) === "texto" && relKey(r.texto) === key);
   const now = Date.now();
   let next, undoRel, newRel;
   if (existing) {

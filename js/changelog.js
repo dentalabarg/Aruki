@@ -4,8 +4,20 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "2.8";
+const LATEST_VERSION = "2.9";
 const CHANGELOG = [
+  {
+    version: "2.9",
+    date: "2026-10-08",
+    title: "Palabras equivalentes, nuevo orden del menú e ícono",
+    items: [
+      { type: "nuevo", text: "Relaciones: nuevo tipo \"Palabra equivalente\" para indicar que una palabra del pedido figura de otra forma en los artículos (por ejemplo, autocurable → auto)" },
+      { type: "mejora", text: "El menú lateral muestra primero Presupuestos (Cotizaciones y Relaciones), después Artículos y Control Facturas" },
+      { type: "mejora", text: "Al entrar a Aruki se abre Cotizaciones" },
+      { type: "mejora", text: "Nuevo ícono de la pestaña: el gato celeste sobre fondo transparente" },
+      { type: "mejora", text: "La pestaña del navegador y la pantalla de acceso dicen solamente Aruki" }
+    ]
+  },
   {
     version: "2.8",
     date: "2026-10-08",

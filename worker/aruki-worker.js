@@ -363,7 +363,9 @@ function cleanRelacion(item) {
   const skus = Array.isArray(item?.skus)
     ? [...new Set(item.skus.map(s => String(s || "").trim()).filter(Boolean))].slice(0, 20)
     : [];
-  if (!texto || !skus.length) return null;
+  // Palabra equivalente: "autocurable" → "auto" (no apunta a artículos)
+  const reemplazo = String(item?.reemplazo || "").trim().slice(0, 100);
+  if (!texto || (!skus.length && !reemplazo)) return null;
   // Relaciones por condiciones: [{ op, valor }] (contiene, no_contiene, comienza, no_comienza, termina, no_termina)
   const reglas = Array.isArray(item?.reglas)
     ? item.reglas
@@ -376,6 +378,7 @@ function cleanRelacion(item) {
     texto,
     skus,
     ...(reglas.length ? { reglas } : {}),
+    ...(reemplazo && !reglas.length ? { reemplazo } : {}),
     nota: String(item?.nota || "").trim().slice(0, 300),
     creado: Number(item?.creado) || Date.now(),
     actualizado: Number(item?.actualizado) || Date.now(),

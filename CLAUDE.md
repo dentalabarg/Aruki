@@ -11,6 +11,9 @@ Publicada con GitHub Pages: https://dentalabarg.github.io/Aruki/
 - Valora gastar pocos tokens: leer solo los archivos necesarios, editar con cambios puntuales,
   no reescribir archivos enteros.
 
+## Menú (v2.9)
+Presupuestos (Cotizaciones, Relaciones) → Consultas (Artículos, Control Facturas). Al entrar se abre Cotizaciones.
+
 ## Estructura
 ```
 index.html          Solo estructura HTML (login, barra superior, menú lateral, secciones de módulos)
@@ -58,7 +61,9 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   `GET /relaciones` → `{ relaciones, version }` y `PUT /relaciones` con `{ relaciones, baseVersion }`
   (lista completa; 409 si `baseVersion` no coincide → recargar).
 - Binding KV **`ARUKI_KV`**: clave `relaciones` y claves `login-fail:<ip>` (bloqueo de 15 min tras 5 intentos fallidos).
-- Relación: `{ id, texto, skus: [..], nota, creado, actualizado }`. Comparar textos con `relKey()` (sin tildes/mayúsculas).
+- Relación: `{ id, texto, skus: [..], nota, creado, actualizado }`; por condiciones agrega `reglas: [{op, valor}]`;
+  **palabra equivalente** (v2.9) tiene `reemplazo` y `skus: []` (`relTipo()` → texto | reglas | palabra). Las equivalencias se aplican
+  en `cotTokens()` (pedido y catálogo) además de `COT_ALIAS`. Comparar textos con `relKey()` (sin tildes/mayúsculas).
 - Evento `aruki:loaded` (`detail.endpoint`) se dispara en `document` cuando un módulo de datos termina de cargar.
 - `ALLOWED_ORIGIN` debe ser `https://dentalabarg.github.io` (no `*`). Variables opcionales: `SCHEMA_ID`, `FACTURAS_ENTITY`, `FACTURAS_SMARTIE_ID`,
   `ARTICULOS_ENTITY`, `ARTICULOS_SMARTIE_ID`.

@@ -550,3 +550,5 @@ select.ds-input{cursor:pointer;}
 .cot-ia-btn.is-busy{opacity:.7; pointer-events:none;}
 .badge-ia{background:linear-gradient(90deg, var(--purple-soft), var(--cyan-soft)); color:var(--purple);}
 .cot-file-text .cot-check{margin-top:4px; font-size:12.5px;}
+.chip.chip-alias{background:var(--purple-soft);}
+.chip.chip-alias .sku{color:var(--purple); font-family:var(--sans); font-weight:600;}
