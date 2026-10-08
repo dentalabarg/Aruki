@@ -22,6 +22,7 @@ js/articulos.js     Módulo Artículos + getArticulosCatalog() (SKU, nombre, col
 js/relaciones.js    Presupuestos › Relaciones (CRUD contra /relaciones) + getRelacionesIndex()
 js/cotizaciones.js  Presupuestos › Cotizaciones (lectura de lista, búsqueda, tabla editable, Excel)
 js/cot-archivos.js  Cotizaciones: lectura de archivos (Excel/Word/PDF/txt) → texto en el cuadro → cotProcess()
+js/cot-ia.js        Cotizaciones: revisión con IA (Gemini vía Worker /ia/elegir) de renglones dudosos/sin coincidencia
 js/main.js          Navegación entre módulos (MODULES) + inicio
 worker/aruki-worker.js  Copia del conector de Cloudflare (ver abajo)
 ```
@@ -51,7 +52,7 @@ toggle de tema Oscuro / Sistema / Claro. Reutilizar las clases existentes (`.pan
 ## Conector (Cloudflare Worker)
 URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/core.js`).
 - Valida el login de Aruki (`/auth/login`, `/auth/session`) con token firmado.
-- Guarda como secretos: `YIQI_USER`, `YIQI_PASSWORD`, `ARUKI_USER`, `ARUKI_PASSWORD`, `SESSION_SECRET`.
+- Guarda como secretos: `YIQI_USER`, `YIQI_PASSWORD`, `ARUKI_USER`, `ARUKI_PASSWORD`, `SESSION_SECRET`, `GEMINI_API_KEY`.
   **Nunca** poner credenciales en el HTML/JS del repo (el repo es público).
 - Rutas de datos (requieren `Authorization: Bearer <token>`): `/facturas?page=N`, `/articulos?page=N`,
   `GET /relaciones` → `{ relaciones, version }` y `PUT /relaciones` con `{ relaciones, baseVersion }`
@@ -148,6 +149,12 @@ computadoras), con botón de respaldo (descargar/importar).
      Relaciones por condiciones: campo `reglas: [{op, valor}]` (ops en `REL_OPS` de relaciones.js), todas deben
      cumplirse sobre `relKey(renglón)`; `findRelacionPorReglas()` se usa después del texto exacto. El Worker guarda
      `reglas` desde esta versión (`cleanRelacion`).
+   - v2.3 IA para dudosos (`js/cot-ia.js`): grupos con estado mostrado "dudosa"/"sin" y sin `iaRevisado` → POST
+     `/ia/elegir` `{ renglones: [{ id: grupo, solicitado, candidatos: [{sku,nombre,marca}] }] }` (opciones actuales +
+     `cotSearch(…, 12)`, máx. 15; lotes de 25). El Worker llama a Gemini (`GEMINI_API_KEY`, `GEMINI_MODEL` opcional,
+     default gemini-3.6-flash, JSON con responseSchema, reintentos 3 s/8 s) y solo acepta SKU que estaban entre los
+     candidatos. Resultado → fila con estado "ia" (`iaMotivo` en el title del badge); sin elección → `iaRevisado`.
+     Casilla `#cotIaAuto` (localStorage `aruki-cot-ia`) la corre después de Armar; botón `#cotIaBtn` a mano. Con Deshacer.
    - Tipografía: los datos (tablas, listas, chips, resultados) van 1px más grandes que la interfaz fija.
 3. ✅ Lectura de Excel, Word y PDF con texto (v2.0, `js/cot-archivos.js`). Librerías desde cdnjs, cargadas al usarse:
    SheetJS 0.18.5, mammoth 1.13.0 (docx → HTML: tablas fila por fila, párrafos), pdf.js 3.11.174 (worker vía blob;

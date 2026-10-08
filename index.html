@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=2.2">
+<link rel="stylesheet" href="css/styles.css?v=2.3">
 </head>
 <body>
 
@@ -338,7 +338,12 @@
             <textarea class="ds-input cot-textarea" id="cotTexto" rows="8" placeholder="Ej.:&#10;10 guantes de látex talle M x 100&#10;Composite Z350 A2 x 3&#10;Algodón en rollos - 5"></textarea>
           </div>
           <div class="rel-form-foot">
-            <span class="source-note" id="cotInputHint">Aruki busca primero en Relaciones y después por parecido en todos los artículos.</span>
+            <div class="cot-foot-left">
+              <label class="cot-check" title="Los renglones en amarillo o rojo se mandan a Gemini junto con los artículos más parecidos, y Gemini elige el correcto">
+                <input type="checkbox" id="cotIaAuto" checked> Revisar con IA (Gemini) los renglones dudosos
+              </label>
+              <span class="source-note" id="cotInputHint">Aruki busca primero en Relaciones y después por parecido en todos los artículos.</span>
+            </div>
             <button class="btn btn-primary" id="cotProcessBtn" type="button">Armar presupuesto</button>
           </div>
         </div>
@@ -369,6 +374,7 @@
             </div>
             <button class="btn btn-secondary" id="cotUndoBtn" type="button" disabled title="Deshacer la última acción"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Deshacer</button>
             <button class="btn btn-secondary" id="cotRedoBtn" type="button" disabled title="Rehacer lo último que deshiciste"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>Rehacer</button>
+            <button class="btn btn-secondary cot-ia-btn" id="cotIaBtn" type="button" disabled title="Mandar a Gemini los renglones en amarillo o rojo"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>Revisar dudosos con IA</button>
           </div>
           <div class="cot-status" id="cotStatus"></div>
         </div>
@@ -485,13 +491,14 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=2.2"></script>
-<script src="js/core.js?v=2.2"></script>
-<script src="js/facturas.js?v=2.2"></script>
-<script src="js/articulos.js?v=2.2"></script>
-<script src="js/relaciones.js?v=2.2"></script>
-<script src="js/cotizaciones.js?v=2.2"></script>
-<script src="js/cot-archivos.js?v=2.2"></script>
-<script src="js/main.js?v=2.2"></script>
+<script src="js/changelog.js?v=2.3"></script>
+<script src="js/core.js?v=2.3"></script>
+<script src="js/facturas.js?v=2.3"></script>
+<script src="js/articulos.js?v=2.3"></script>
+<script src="js/relaciones.js?v=2.3"></script>
+<script src="js/cotizaciones.js?v=2.3"></script>
+<script src="js/cot-archivos.js?v=2.3"></script>
+<script src="js/cot-ia.js?v=2.3"></script>
+<script src="js/main.js?v=2.3"></script>
 </body>
 </html>

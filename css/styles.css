@@ -541,3 +541,11 @@ select.ds-input{cursor:pointer;}
 .cot-table .price-reset:hover{color:var(--cyan);}
 .cot-table.mode-disp .col-sub,.cot-table.mode-disp tfoot{display:none;}
 .cot-disp{white-space:nowrap;}
+
+/* IA (Gemini) */
+.cot-foot-left{display:flex; flex-direction:column; gap:6px; min-width:0;}
+.cot-check{display:inline-flex; align-items:center; gap:8px; font:500 13px var(--sans); color:var(--text); cursor:pointer; user-select:none;}
+.cot-check input{width:16px; height:16px; accent-color:var(--cyan); cursor:pointer;}
+.cot-ia-btn{color:var(--purple);}
+.cot-ia-btn.is-busy{opacity:.7; pointer-events:none;}
+.badge-ia{background:linear-gradient(90deg, var(--purple-soft), var(--cyan-soft)); color:var(--purple);}

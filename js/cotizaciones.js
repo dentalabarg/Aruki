@@ -370,6 +370,7 @@ function cotProcess(){
   cotSave();
   const ms = Math.round(performance.now() - t0);
   cotStatus(`${items.length} renglones leídos en ${ms < 1000 ? ms + " ms" : (ms / 1000).toFixed(1) + " s"}. Revisá los marcados en amarillo y rojo.`, "ok");
+  if (typeof cotIaAfterProcess === "function") cotIaAfterProcess();
   cotEl("cotResultPanel").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -381,7 +382,8 @@ const COT_BADGES = {
   buena: ["badge-green", "Coincide"],
   dudosa: ["badge-amber", "Opción"],
   sin: ["badge-red", "Sin coincidencia"],
-  manual: ["badge-cyan", "Manual"]
+  manual: ["badge-cyan", "Manual"],
+  ia: ["badge-ia", "Elegido por IA"]
 };
 
 function cotGroupInfo(){
@@ -432,7 +434,7 @@ function cotRender(){
     return `
       <tr data-id="${r.id}" class="${trCls}">
         <td><span class="cot-handle" draggable="true" title="Arrastrar para ordenar">⠿</span></td>
-        <td class="cot-sol">${escapeHtml(r.solicitado) || "<span class=\"source-note\">(agregado a mano)</span>"}<div><span class="badge ${badgeCls}">${label}</span></div></td>
+        <td class="cot-sol">${escapeHtml(r.solicitado) || "<span class=\"source-note\">(agregado a mano)</span>"}<div><span class="badge ${badgeCls}"${r.iaMotivo && estado === "ia" ? ` title="IA: ${escapeHtml(r.iaMotivo)}"` : ""}>${label}</span></div></td>
         <td><input class="cell-input sku ${missing ? "is-missing" : ""}" data-field="sku" value="${escapeHtml(r.sku)}" placeholder="SKU" autocomplete="off"></td>
         <td class="cot-name">
           <div class="name-view" tabindex="0" title="Tocá para buscar otro artículo">${nameHtml}</div>
@@ -469,13 +471,14 @@ function cotRender(){
   cotEl("cotResultPanel").classList.toggle("hidden", !cot.rows.length);
   cotEl("cotExportBtn").disabled = !cot.rows.length;
   cotRenderUndo();
+  if (typeof cotIaRefresh === "function") cotIaRefresh();
 
   // Resumen por estado (contando renglones pedidos, no filas)
   const byGroup = new Map();
   cot.rows.forEach(r => { if (!byGroup.has(r.grupo)) byGroup.set(r.grupo, cotShownEstado(r, groups)); });
   const counts = {};
   byGroup.forEach(e => { counts[e] = (counts[e] || 0) + 1; });
-  const names = { relacion: "por relación", buena: "coinciden", dudosa: "con opciones", sin: "sin coincidencia", manual: "manuales" };
+  const names = { relacion: "por relación", buena: "coinciden", ia: "elegidos por IA", dudosa: "con opciones", sin: "sin coincidencia", manual: "manuales" };
   cotEl("cotSummary").innerHTML = Object.keys(names).filter(k => counts[k])
     .map(k => `<span class="badge ${COT_BADGES[k][0]}">${counts[k]} ${names[k]}</span>`).join("");
 }

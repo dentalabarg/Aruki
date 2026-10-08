@@ -17,6 +17,10 @@
   - ARTICULOS_ENTITY (por defecto CONSULTA_DE_STOCK)
   - ARTICULOS_SMARTIE_ID (por defecto 2377)
 
+  Para la ayuda con IA en Cotizaciones (renglones dudosos):
+  - GEMINI_API_KEY (secret, clave de Google AI Studio)
+  - GEMINI_MODEL (opcional, por defecto gemini-3.6-flash)
+
   Binding KV (Settings → Bindings):
   - ARUKI_KV  → guarda las Relaciones y los intentos fallidos de login
   ------------------------------------------------------------
@@ -80,9 +84,13 @@ export default {
         return json(await writeRelaciones(request, env, session), corsHeaders);
       }
 
+      if (url.pathname === "/ia/elegir" && request.method === "POST") {
+        return json(await iaElegir(request, env), corsHeaders);
+      }
+
       throw new HttpError(
         404,
-        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas, /articulos o /relaciones."
+        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas, /articulos, /relaciones o /ia/elegir."
       );
     } catch (error) {
       const status = error instanceof HttpError ? error.status : 500;
@@ -574,6 +582,93 @@ function normalizePage(value) {
 }
 
 /* ---------- Helpers ---------- */
+
+/* ---------- IA (Gemini): elegir el artículo para renglones dudosos ----------
+   Recibe { renglones: [{ id, solicitado, candidatos: [{ sku, nombre, marca }] }] }
+   y devuelve { resultados: [{ id, sku, motivo }] }. Solo se mandan el renglón y sus
+   candidatos (nunca el catálogo entero), así el costo es mínimo. */
+const IA_PROMPT = `Sos el asistente de cotizaciones de Dentalab, distribuidora de insumos odontológicos de Argentina.
+Para cada renglón que pidió un cliente te paso una lista de artículos candidatos de nuestro catálogo.
+Elegí el SKU del candidato que corresponde al mismo producto que pidió el cliente.
+Reglas:
+- Solo podés elegir SKU que estén en los candidatos de ese renglón. Nunca inventes.
+- Si el cliente nombra una marca y hay un candidato de esa marca, elegí esa marca.
+- Después priorizá el mismo tipo de producto, y entre esos la medida/presentación/color/número más parecido.
+- Tené en cuenta sinónimos y abreviaturas odontológicas (ej.: "fresa" = "piedra", "FG" = turbina, "CA" = contraángulo, "jer." = jeringa).
+- Si ningún candidato es razonablemente el mismo producto, devolvé sku vacío ("").
+- En "motivo" explicá en pocas palabras (máximo 15) por qué elegiste ese artículo.`;
+
+async function iaElegir(request, env) {
+  if (!env.GEMINI_API_KEY) {
+    throw new HttpError(503, "Falta configurar la clave de Gemini (GEMINI_API_KEY) en el conector de Cloudflare.");
+  }
+  let body;
+  try { body = await request.json(); } catch { throw new HttpError(400, "Los datos enviados no tienen un formato válido."); }
+  const renglones = (Array.isArray(body?.renglones) ? body.renglones : []).slice(0, 40).map(r => ({
+    id: String(r?.id || "").slice(0, 40),
+    solicitado: String(r?.solicitado || "").slice(0, 400),
+    candidatos: (Array.isArray(r?.candidatos) ? r.candidatos : []).slice(0, 15).map(c => ({
+      sku: String(c?.sku || "").slice(0, 60),
+      nombre: String(c?.nombre || "").slice(0, 200),
+      marca: String(c?.marca || "").slice(0, 60),
+    })).filter(c => c.sku),
+  })).filter(r => r.id && r.solicitado && r.candidatos.length);
+  if (!renglones.length) return { resultados: [] };
+
+  const model = env.GEMINI_MODEL || "gemini-3.6-flash";
+  const payload = {
+    systemInstruction: { parts: [{ text: IA_PROMPT }] },
+    contents: [{ role: "user", parts: [{ text: JSON.stringify({ renglones }) }] }],
+    generationConfig: {
+      temperature: 0.1,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "OBJECT",
+        properties: {
+          resultados: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: { id: { type: "STRING" }, sku: { type: "STRING" }, motivo: { type: "STRING" } },
+              required: ["id", "sku"],
+            },
+          },
+        },
+        required: ["resultados"],
+      },
+    },
+  };
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const waits = [3000, 8000];
+  let response, text = "";
+  for (let attempt = 0; attempt <= waits.length; attempt++) {
+    response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+      body: JSON.stringify(payload),
+    });
+    if (response.ok) break;
+    text = await response.text();
+    if (![429, 500, 503].includes(response.status) || attempt === waits.length) {
+      throw new HttpError(502, `Gemini respondió con un error (${response.status}): ${text.slice(0, 300)}`);
+    }
+    await new Promise(r => setTimeout(r, waits[attempt]));
+  }
+
+  const data = await response.json();
+  const raw = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch { throw new HttpError(502, "Gemini devolvió una respuesta que no se pudo leer."); }
+
+  // Solo se aceptan SKU que estaban entre los candidatos de ese renglón
+  const byId = new Map(renglones.map(r => [r.id, new Set(r.candidatos.map(c => c.sku))]));
+  const resultados = (Array.isArray(parsed?.resultados) ? parsed.resultados : [])
+    .map(r => ({ id: String(r?.id || ""), sku: String(r?.sku || "").trim(), motivo: String(r?.motivo || "").slice(0, 200) }))
+    .filter(r => byId.has(r.id))
+    .map(r => (byId.get(r.id).has(r.sku) ? r : { ...r, sku: "" }));
+  return { resultados, modelo: model };
+}
 
 class HttpError extends Error {
   constructor(status, message) {

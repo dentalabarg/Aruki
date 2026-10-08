@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "2.2";
+const LATEST_VERSION = "2.3";
 const CHANGELOG = [
+  {
+    version: "2.3",
+    date: "2026-10-08",
+    title: "Cotizaciones: ayuda con IA para los renglones dudosos",
+    items: [
+      { type: "nuevo", text: "Los renglones en amarillo o rojo se pueden revisar con IA (Gemini): se le manda solo ese renglón y los artículos más parecidos, y elige el correcto" },
+      { type: "nuevo", text: "Casilla \"Revisar con IA los renglones dudosos\" para que pase solo al armar el presupuesto, y botón \"Revisar dudosos con IA\" para hacerlo cuando quieras" },
+      { type: "nuevo", text: "Los elegidos por la IA aparecen como \"Elegido por IA\"; pasando el mouse se ve el motivo. Se puede deshacer" }
+    ]
+  },
   {
     version: "2.2",
     date: "2026-10-07",
