@@ -316,6 +316,13 @@
               <label for="cotLista">Lista de precios</label>
               <select class="ds-input" id="cotLista"></select>
             </div>
+            <div class="field">
+              <label for="cotModo">Cantidad</label>
+              <select class="ds-input" id="cotModo">
+                <option value="cantidad">Respetar cantidad solicitada</option>
+                <option value="disponibilidad">Disponibilidad simplificada</option>
+              </select>
+            </div>
           </div>
           <div class="cot-file" id="cotDrop">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
@@ -346,10 +353,10 @@
           <p class="source-note">Arrastrá desde ⠿ para cambiar el orden. Para cambiar un artículo tocá el SKU o el nombre y buscá. Podés editar el texto adicional y la cantidad. Para cambiar el ancho de una columna arrastrá el borde del título (doble clic vuelve al ancho original). Cuando hay dudas aparecen varias opciones para el mismo renglón: elegí una con ✓ o borrá las que no sirvan.</p>
           <div class="art-scroll">
             <table class="art-table cot-table" id="cotTable">
-              <colgroup><col><col><col><col><col><col><col><col><col><col></colgroup>
+              <colgroup><col><col><col><col><col><col><col><col><col class="col-sub"><col></colgroup>
               <thead><tr>
                 <th></th><th>Solicitado</th><th>SKU</th><th>Nombre del artículo</th><th>Texto adicional</th><th>Marca</th>
-                <th class="num">Cantidad</th><th class="num" id="cotPriceHead">Precio</th><th class="num">Subtotal</th><th></th>
+                <th class="num"><span id="cotQtyHead">Cantidad</span></th><th class="num"><span id="cotPriceHead">Precio</span></th><th class="num col-sub">Subtotal</th><th></th>
               </tr></thead>
               <tbody id="cotBody"></tbody>
               <tfoot><tr><td colspan="8" class="num cot-total-label">Total</td><td class="num cot-total" id="cotTotal">$ 0</td><td></td></tr></tfoot>
@@ -401,10 +408,22 @@
 
         <div class="panel rel-form hidden" id="relForm">
           <div class="panel-title" id="relFormTitle">Nueva relación</div>
+          <div class="rel-tipo" role="tablist" aria-label="Tipo de relación">
+            <button type="button" class="range-btn active" data-rel-tipo="texto">Texto exacto</button>
+            <button type="button" class="range-btn" data-rel-tipo="reglas">Por condiciones (contiene, comienza con…)</button>
+          </div>
           <div class="rel-form-grid">
-            <div class="field">
+            <div class="field" id="relTextoWrap">
               <label for="relTexto">Cuando el cliente escribe…</label>
               <input class="ds-input" id="relTexto" type="text" maxlength="500" placeholder="Ej.: algodón en rollos pack x500" autocomplete="off">
+            </div>
+            <div class="field hidden" id="relReglasWrap">
+              <label>Cuando el renglón del cliente…</label>
+              <div class="rel-reglas" id="relReglas"></div>
+              <div class="rel-reglas-foot">
+                <button class="btn btn-ghost" id="relAddRegla" type="button">+ Agregar condición</button>
+                <span class="source-note">Se tienen que cumplir todas. No importan mayúsculas ni tildes.</span>
+              </div>
             </div>
             <div class="field">
               <label for="relNota">Nota (opcional)</label>
@@ -440,7 +459,7 @@
           </div>
           <div class="art-scroll">
             <table class="art-table">
-              <thead><tr><th>Cuando el cliente escribe</th><th>Artículo(s)</th><th>Nota</th><th class="num">Actualizada</th><th></th></tr></thead>
+              <thead><tr><th>Cuando el cliente escribe / condiciones</th><th>Artículo(s)</th><th>Nota</th><th class="num">Actualizada</th><th></th></tr></thead>
               <tbody id="relBody"></tbody>
             </table>
           </div>

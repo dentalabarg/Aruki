@@ -350,15 +350,25 @@ function cleanRelacion(item) {
     ? [...new Set(item.skus.map(s => String(s || "").trim()).filter(Boolean))].slice(0, 20)
     : [];
   if (!texto || !skus.length) return null;
+  // Relaciones por condiciones: [{ op, valor }] (contiene, no_contiene, comienza, no_comienza, termina, no_termina)
+  const reglas = Array.isArray(item?.reglas)
+    ? item.reglas
+        .filter(g => g && REL_OPS_VALIDAS.includes(g.op) && String(g.valor || "").trim())
+        .map(g => ({ op: g.op, valor: String(g.valor).trim().slice(0, 100) }))
+        .slice(0, 10)
+    : [];
   return {
     id: String(item?.id || crypto.randomUUID()).slice(0, 64),
     texto,
     skus,
+    ...(reglas.length ? { reglas } : {}),
     nota: String(item?.nota || "").trim().slice(0, 300),
     creado: Number(item?.creado) || Date.now(),
     actualizado: Number(item?.actualizado) || Date.now(),
   };
 }
+
+const REL_OPS_VALIDAS = ["contiene", "no_contiene", "comienza", "no_comienza", "termina", "no_termina"];
 
 async function writeRelaciones(request, env, session) {
   requireKv(env);

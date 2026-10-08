@@ -10,8 +10,49 @@ const RELACIONES_ENDPOINT = `${WORKER_BASE}/relaciones`;
 
 const rel = {
   items: [], version: 0, loaded: false, loading: false, saving: false,
-  editingId: null, formSkus: [], search: "", activeResult: 0
+  editingId: null, formSkus: [], search: "", activeResult: 0,
+  formTipo: "texto", formReglas: []
 };
+
+/* ---------- Relaciones por condiciones ----------
+   Una relación puede ser de "texto exacto" (como siempre) o tener `reglas`:
+   [{ op, valor }] que se tienen que cumplir todas sobre el renglón del cliente. */
+const REL_OPS = {
+  contiene:    { label: "contiene",        pos: true,  test: (k, v) => k.includes(v) },
+  no_contiene: { label: "no contiene",     pos: false, test: (k, v) => !k.includes(v) },
+  comienza:    { label: "comienza con",    pos: true,  test: (k, v) => k.startsWith(v) },
+  no_comienza: { label: "no comienza con", pos: false, test: (k, v) => !k.startsWith(v) },
+  termina:     { label: "termina con",     pos: true,  test: (k, v) => k.endsWith(v) },
+  no_termina:  { label: "no termina con",  pos: false, test: (k, v) => !k.endsWith(v) }
+};
+
+function relEsReglas(r){ return Array.isArray(r?.reglas) && r.reglas.length > 0; }
+
+function relReglasTexto(reglas){
+  return reglas.map(g => `${REL_OPS[g.op]?.label || g.op} "${g.valor}"`).join(" y ");
+}
+
+function relCumple(r, key){
+  return r.reglas.every(g => {
+    const op = REL_OPS[g.op];
+    const v = relKey(g.valor);
+    return op && v ? op.test(key, v) : false;
+  });
+}
+
+/* Para Cotizaciones: la relación por condiciones que corresponde a un renglón (o null).
+   Si cumplen varias, gana la que tiene más condiciones "positivas"; si empatan, la más nueva. */
+function findRelacionPorReglas(texto){
+  const key = relKey(texto);
+  if (!key) return null;
+  let best = null, bestPos = -1;
+  for (const r of rel.items) {
+    if (!relEsReglas(r) || !relCumple(r, key)) continue;
+    const pos = r.reglas.filter(g => REL_OPS[g.op]?.pos).length;
+    if (pos > bestPos || (pos === bestPos && (r.actualizado || 0) > (best.actualizado || 0))) { best = r; bestPos = pos; }
+  }
+  return best;
+}
 
 /* Texto normalizado para comparar (sin tildes, mayúsculas ni espacios de más) */
 function relKey(texto){
@@ -21,7 +62,7 @@ function relKey(texto){
 /* Índice para Cotizaciones: texto normalizado → relación */
 function getRelacionesIndex(){
   const map = new Map();
-  rel.items.forEach(r => map.set(relKey(r.texto), r));
+  rel.items.forEach(r => { if (!relEsReglas(r)) map.set(relKey(r.texto), r); });
   return map;
 }
 
@@ -98,6 +139,12 @@ async function relSave(nextItems, okMessage){
     const data = await relApi("PUT", { relaciones: nextItems, baseVersion: rel.version });
     rel.items = data.relaciones || [];
     rel.version = data.version || 0;
+    const lost = nextItems.filter(relEsReglas).filter(r => !rel.items.some(x => x.id === r.id && relEsReglas(x)));
+    if (lost.length) {
+      relSetState("error", "Falta actualizar el conector de Cloudflare",
+        "Las relaciones por condiciones no se pudieron guardar porque el conector todavía es la versión anterior. Pegá el código nuevo del conector en Cloudflare (Deploy) y volvé a crearlas.");
+      return false;
+    }
     relSetState("connected", okMessage || "Cambios guardados",
       `${numberFormatter.format(rel.items.length)} relaciones guardadas.`);
     return true;
@@ -199,11 +246,35 @@ function relRenderChips(){
 }
 
 /* ---------- Formulario alta / edición ---------- */
+function relSetTipo(tipo){
+  rel.formTipo = tipo;
+  document.querySelectorAll("[data-rel-tipo]").forEach(b => b.classList.toggle("active", b.dataset.relTipo === tipo));
+  relEl("relTextoWrap").classList.toggle("hidden", tipo !== "texto");
+  relEl("relReglasWrap").classList.toggle("hidden", tipo !== "reglas");
+  if (tipo === "reglas" && !rel.formReglas.length) rel.formReglas.push({ op: "contiene", valor: "" });
+  relRenderReglas();
+}
+
+function relRenderReglas(){
+  const wrap = relEl("relReglas");
+  wrap.innerHTML = rel.formReglas.map((g, i) => `
+    <div class="rel-regla" data-i="${i}">
+      <select class="ds-input" data-regla-op>${Object.entries(REL_OPS).map(([k, o]) =>
+        `<option value="${k}" ${k === g.op ? "selected" : ""}>${o.label}</option>`).join("")}</select>
+      <input class="ds-input" data-regla-valor type="text" maxlength="100" value="${escapeHtml(g.valor)}" placeholder="Ej.: fosforico" autocomplete="off">
+      <button class="btn-icon danger" type="button" data-regla-del title="Quitar condición" aria-label="Quitar condición" ${rel.formReglas.length < 2 ? "disabled" : ""}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`).join("");
+}
+
 function relOpenForm(item){
   rel.editingId = item ? item.id : null;
   rel.formSkus = item ? [...item.skus] : [];
+  rel.formReglas = item && relEsReglas(item) ? item.reglas.map(g => ({ ...g })) : [];
+  relSetTipo(item && relEsReglas(item) ? "reglas" : "texto");
   relEl("relFormTitle").textContent = item ? "Editar relación" : "Nueva relación";
-  relEl("relTexto").value = item ? item.texto : "";
+  relEl("relTexto").value = item && !relEsReglas(item) ? item.texto : "";
   relEl("relNota").value = item ? (item.nota || "") : "";
   relEl("relSkuSearch").value = "";
   relEl("relFormError").textContent = "";
@@ -222,19 +293,29 @@ function relCloseForm(){
 }
 
 async function relSubmitForm(){
-  const texto = relEl("relTexto").value.trim();
   const nota = relEl("relNota").value.trim();
   const error = relEl("relFormError");
-  if (!texto) { error.textContent = "Escribí cómo lo pide el cliente."; return; }
+  const porReglas = rel.formTipo === "reglas";
+  let texto, reglas;
+  if (porReglas) {
+    reglas = rel.formReglas.map(g => ({ op: g.op, valor: String(g.valor || "").trim() })).filter(g => g.valor);
+    if (!reglas.length) { error.textContent = "Escribí al menos una condición."; return; }
+    if (!reglas.some(g => REL_OPS[g.op]?.pos)) { error.textContent = "Agregá al menos una condición \"contiene\", \"comienza con\" o \"termina con\" (solo con \"no…\" se aplicaría a todo)."; return; }
+    texto = relReglasTexto(reglas);
+  } else {
+    texto = relEl("relTexto").value.trim();
+    if (!texto) { error.textContent = "Escribí cómo lo pide el cliente."; return; }
+  }
   if (!rel.formSkus.length) { error.textContent = "Elegí al menos un artículo."; return; }
   const key = relKey(texto);
-  const dup = rel.items.find(r => relKey(r.texto) === key && r.id !== rel.editingId);
-  if (dup) { error.textContent = `Ya existe una relación para "${dup.texto}". Editá esa en lugar de crear otra.`; return; }
+  const dup = rel.items.find(r => relKey(r.texto) === key && relEsReglas(r) === porReglas && r.id !== rel.editingId);
+  if (dup) { error.textContent = porReglas ? "Ya existe una relación con esas mismas condiciones. Editá esa." : `Ya existe una relación para "${dup.texto}". Editá esa en lugar de crear otra.`; return; }
 
   const now = Date.now();
+  const fields = porReglas ? { texto, reglas } : { texto, reglas: undefined };
   const next = rel.editingId
-    ? rel.items.map(r => r.id === rel.editingId ? { ...r, texto, nota, skus: [...rel.formSkus], actualizado: now } : r)
-    : [{ id: crypto.randomUUID(), texto, nota, skus: [...rel.formSkus], creado: now, actualizado: now }, ...rel.items];
+    ? rel.items.map(r => r.id === rel.editingId ? { ...r, ...fields, nota, skus: [...rel.formSkus], actualizado: now } : r)
+    : [{ id: crypto.randomUUID(), ...fields, nota, skus: [...rel.formSkus], creado: now, actualizado: now }, ...rel.items];
   const ok = await relSave(next, rel.editingId ? "Relación actualizada" : "Relación creada");
   if (ok) relCloseForm();
 }
@@ -265,17 +346,19 @@ async function relImport(file){
   try { parsed = JSON.parse(await file.text()); }
   catch { relSetState("error", "No se pudo leer el archivo", "Elegí un respaldo descargado desde Aruki (.json)."); return; }
   const incoming = (Array.isArray(parsed) ? parsed : parsed?.relaciones) || [];
-  const valid = incoming.filter(r => r && String(r.texto || "").trim() && Array.isArray(r.skus) && r.skus.length);
+  const valid = incoming.filter(r => r && (String(r.texto || "").trim() || relEsReglas(r)) && Array.isArray(r.skus) && r.skus.length);
   if (!valid.length) { relSetState("error", "El archivo no tiene relaciones", "Revisá que sea un respaldo de Aruki."); return; }
   if (!confirm(`Se van a sumar ${valid.length} relaciones del archivo a las ${rel.items.length} actuales. Las que tengan el mismo texto se actualizan. ¿Continuar?`)) return;
 
   const next = [...rel.items];
-  const index = new Map(next.map((r, i) => [relKey(r.texto), i]));
+  const index = new Map(next.map((r, i) => [(relEsReglas(r) ? "reglas:" : "") + relKey(r.texto), i]));
   let added = 0, updated = 0;
   const now = Date.now();
   valid.forEach(r => {
-    const key = relKey(r.texto);
-    const clean = { texto: String(r.texto).trim(), skus: r.skus.map(String), nota: String(r.nota || "") };
+    const reglas = relEsReglas(r) ? r.reglas.filter(g => REL_OPS[g.op] && String(g.valor || "").trim()).map(g => ({ op: g.op, valor: String(g.valor).trim() })) : null;
+    const textoR = reglas && reglas.length ? relReglasTexto(reglas) : String(r.texto || "").trim();
+    const key = (reglas && reglas.length ? "reglas:" : "") + relKey(textoR);
+    const clean = { texto: textoR, skus: r.skus.map(String), nota: String(r.nota || ""), ...(reglas && reglas.length ? { reglas } : {}) };
     if (index.has(key)) { const i = index.get(key); next[i] = { ...next[i], ...clean, actualizado: now }; updated++; }
     else { next.push({ id: crypto.randomUUID(), ...clean, creado: now, actualizado: now }); index.set(key, next.length - 1); added++; }
   });
@@ -307,7 +390,9 @@ function relRender(){
     empty.classList.add("hidden");
     body.innerHTML = rows.map(r => `
       <tr>
-        <td class="name"><strong>${escapeHtml(r.texto)}</strong></td>
+        <td class="name">${relEsReglas(r)
+          ? `<div class="rel-cond">${r.reglas.map((g, i) => `${i ? '<span class="rel-cond-y">y</span>' : ""}<span class="rel-cond-item"><span class="badge ${REL_OPS[g.op]?.pos ? "badge-cyan" : "badge-red"}">${escapeHtml(REL_OPS[g.op]?.label || g.op)}</span>${escapeHtml(g.valor)}</span>`).join("")}</div>`
+          : `<strong>${escapeHtml(r.texto)}</strong>`}</td>
         <td><div class="chips">${r.skus.map(s => relChipHtml(s, false)).join("")}</div></td>
         <td class="muted-cell">${escapeHtml(r.nota || "")}</td>
         <td class="muted-cell num">${r.actualizado ? new Date(r.actualizado).toLocaleDateString("es-AR") : "—"}</td>
@@ -349,6 +434,32 @@ const relacionesModule = {
 
 /* ---------- Eventos ---------- */
 relEl("relNewBtn").addEventListener("click", () => relOpenForm(null));
+document.querySelectorAll("[data-rel-tipo]").forEach(b => b.addEventListener("click", () => relSetTipo(b.dataset.relTipo)));
+relEl("relAddRegla").addEventListener("click", () => {
+  rel.formReglas.push({ op: "contiene", valor: "" });
+  relRenderReglas();
+  const inputs = relEl("relReglas").querySelectorAll("[data-regla-valor]");
+  inputs[inputs.length - 1]?.focus();
+});
+relEl("relReglas").addEventListener("input", e => {
+  const row = e.target.closest("[data-i]");
+  if (!row) return;
+  const g = rel.formReglas[Number(row.dataset.i)];
+  if (e.target.matches("[data-regla-valor]")) g.valor = e.target.value;
+});
+relEl("relReglas").addEventListener("change", e => {
+  const row = e.target.closest("[data-i]");
+  if (row && e.target.matches("[data-regla-op]")) rel.formReglas[Number(row.dataset.i)].op = e.target.value;
+});
+relEl("relReglas").addEventListener("click", e => {
+  const btn = e.target.closest("[data-regla-del]");
+  if (!btn) return;
+  rel.formReglas.splice(Number(btn.closest("[data-i]").dataset.i), 1);
+  relRenderReglas();
+});
+relEl("relReglas").addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.matches("[data-regla-valor]")) { e.preventDefault(); relEl("relSkuSearch").focus(); }
+});
 relEl("relCancelBtn").addEventListener("click", relCloseForm);
 relEl("relSaveBtn").addEventListener("click", relSubmitForm);
 relEl("relRetryBtn").addEventListener("click", relLoad);

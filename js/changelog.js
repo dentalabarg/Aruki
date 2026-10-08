@@ -9,6 +9,19 @@ const CHANGELOG = [
   {
     version: "2.2",
     date: "2026-10-07",
+    title: "Cotizaciones y Relaciones: marcas, condiciones, precio editable y disponibilidad",
+    items: [
+      { type: "nuevo", text: "Opción Cantidad: \"Respetar cantidad solicitada\" o \"Disponibilidad simplificada\" (En stock / Pocas unidades / Sin stock, sumando Depósito 1 - Local y Depósito Central). Se puede cambiar en cualquier momento" },
+      { type: "nuevo", text: "El precio de cada renglón se puede cambiar a mano; \"volver a lista\" lo restablece" },
+      { type: "nuevo", text: "Relaciones por condiciones: contiene, no contiene, comienza con, no comienza con, termina con, no termina con. Se pueden combinar varias en la misma relación" },
+      { type: "mejora", text: "Si el cliente nombra una de nuestras marcas, se prioriza esa marca y después la medida más parecida" },
+      { type: "mejora", text: "Singular y plural: \"vaso\" encuentra \"vasos\", \"flores\" encuentra \"flor\", \"luces\" encuentra \"luz\"" },
+      { type: "correccion", text: "Ahora también se puede cambiar el ancho de la columna de la lista de precios" }
+    ]
+  },
+  {
+    version: "2.2",
+    date: "2026-10-07",
     title: "Cotizaciones: lectura de pliegos de licitación en PDF",
     items: [
       { type: "mejora", text: "Reconoce tablas con columnas R (renglón), Denominación, U.M. (unidad de medida) y Cantidad" },

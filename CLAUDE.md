@@ -139,6 +139,15 @@ computadoras), con botón de respaldo (descargar/importar).
      columna Marca (`getArticulosCatalog()` toma la columna cuyo título contiene "marca").
    - v1.9: Rehacer (`cot.redo`; `cotApplyRel()` revierte o reaplica la relación), barra `.cot-actions` debajo de la
      tabla (Agregar artículo → Deshacer → Rehacer), aviso flotante `#cotToast` 5 s con Deshacer (`cotShowToast()`).
+   - v2.2: `cotSingular()` (vasos→vaso, flores→flor, luces→luz) en pedido y catálogo; marca pedida (`idx.brands`
+     desde la columna Marca, `cotBrandKey()`): ×1,4 a esa marca, ×0,7 a otra marca conocida; medida más parecida
+     (g≈ml, kg/l ×1000) resta hasta 20 % según distancia. Precio editable por renglón (`row.precio`, null = lista;
+     `cotRowPrice()`), se borra al cambiar el SKU. Selector "Cantidad" (`cot.modo`: cantidad | disponibilidad):
+     `cotDisponibilidad()` con `item.stock` (suma de columnas "Deposito 1 - Local" + "Deposito Central"):
+     >5 En stock, 1–5 Pocas unidades, 0 Sin stock; en ese modo se ocultan Subtotal y Total (`.mode-disp`).
+     Relaciones por condiciones: campo `reglas: [{op, valor}]` (ops en `REL_OPS` de relaciones.js), todas deben
+     cumplirse sobre `relKey(renglón)`; `findRelacionPorReglas()` se usa después del texto exacto. El Worker guarda
+     `reglas` desde esta versión (`cleanRelacion`).
    - Tipografía: los datos (tablas, listas, chips, resultados) van 1px más grandes que la interfaz fija.
 3. ✅ Lectura de Excel, Word y PDF con texto (v2.0, `js/cot-archivos.js`). Librerías desde cdnjs, cargadas al usarse:
    SheetJS 0.18.5, mammoth 1.13.0 (docx → HTML: tablas fila por fila, párrafos), pdf.js 3.11.174 (worker vía blob;

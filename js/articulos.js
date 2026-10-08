@@ -83,6 +83,8 @@ function getArticulosCatalog(){
   const skuCol = cols.find(c => /sku|c[oó]digo/i.test(c.title || ""));
   const nameCol = cols.find(c => /nombre|descripci/i.test(c.title || ""));
   const marcaCol = cols.find(c => /marca/i.test(c.title || ""));
+  // Stock: solo importan "Deposito 1 - Local" y "Deposito Central"
+  const stockCols = cols.filter(c => /dep[oó]sito\s*(1|central)|local/i.test(c.title || ""));
   const priceCols = cols.filter(c => artColumnKind(c) === "money");
   const list = [];
   const bySku = new Map();
@@ -90,12 +92,13 @@ function getArticulosCatalog(){
     for (const row of rows) {
       const sku = String(row[skuCol.field] ?? "").trim();
       if (!sku) continue;
-      const item = { sku, nombre: nameCol ? String(row[nameCol.field] ?? "") : "", marca: marcaCol ? String(row[marcaCol.field] ?? "").trim() : "", row };
+      const item = { sku, nombre: nameCol ? String(row[nameCol.field] ?? "") : "", marca: marcaCol ? String(row[marcaCol.field] ?? "").trim() : "", row,
+        stock: stockCols.length ? stockCols.reduce((n, c) => n + (Number(row[c.field]) || 0), 0) : null };
       list.push(item);
       bySku.set(sku, item);
     }
   }
-  const value = { list, bySku, priceCols };
+  const value = { list, bySku, priceCols, stockCols };
   artCatalogCache = { rows, length: rows.length, value };
   return value;
 }

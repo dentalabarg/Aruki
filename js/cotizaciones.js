@@ -17,7 +17,7 @@ const COT_SIZE_UNITS = /^(?:gr|grs|g|gramos?|ml|cc|mm|cm|kg|kgs|mts?|lts?|l)\b/i
 
 const cot = {
   rows: [], seq: 0, cliente: "", priceField: "", texto: "",
-  activeSkuInput: null, skuActive: 0, addActive: 0, dragId: null, undo: [], redo: []
+  activeSkuInput: null, skuActive: 0, addActive: 0, dragId: null, undo: [], redo: [], modo: "cantidad"
 };
 
 function cotEl(id){ return document.getElementById(id); }
@@ -77,6 +77,25 @@ function cotFillPriceLists(){
 function cotPriceTitle(){
   const col = getArticulosCatalog().priceCols.find(c => c.field === cot.priceField);
   return col ? (col.title || col.field) : "Precio";
+}
+
+/* Precio del renglón: el editado a mano si lo hay; si no, el de la lista elegida */
+function cotRowPrice(r){
+  if (r.precio !== null && r.precio !== undefined && r.precio !== "" && Number.isFinite(Number(r.precio))) return Number(r.precio);
+  return r.sku ? cotPrice(r.sku) : null;
+}
+function cotRowSubtotal(r){
+  const p = cotRowPrice(r);
+  return p !== null ? p * (Number(r.cantidad) || 0) : null;
+}
+
+/* Disponibilidad simplificada: Depósito 1 - Local + Depósito Central */
+function cotDisponibilidad(sku){
+  const item = sku ? getArticulosCatalog().bySku.get(sku) : null;
+  if (!item || item.stock === null || item.stock === undefined) return null;
+  if (item.stock > 5) return { txt: "En stock", cls: "badge-green" };
+  if (item.stock >= 1) return { txt: "Pocas unidades", cls: "badge-amber" };
+  return { txt: "Sin stock", cls: "badge-red" };
 }
 
 function cotPrice(sku){
@@ -169,8 +188,18 @@ function cotNorm(text){
     .replace(/(\d+(?:\.\d+)?)\s*(?:kgs?|kilos?)\b/g, " $1kg ")
     .replace(/(\d+(?:\.\d+)?)\s*mm\b/g, " $1mm ")
     .replace(/(\d+(?:\.\d+)?)\s*(?:mts?|metros?)\b/g, " $1m ")
+    .replace(/(\d+(?:\.\d+)?)\s*(?:lts?|litros?|l)\b/g, " $1l ")
     .replace(/(\d+)\s*(?:unidades|unidad|unid|und|uds|un|u)\b/g, " $1 ")
     .replace(/\bx\s*(\d)/g, " $1");
+}
+
+/* Singular de una palabra en castellano (vasos → vaso, flores → flor, luces → luz, guantes → guante).
+   Se aplica igual al pedido y a los artículos, así "vaso" encuentra "vasos" y al revés. */
+function cotSingular(t){
+  if (t.length > 4 && t.endsWith("ces")) return t.slice(0, -3) + "z";
+  if (t.length > 4 && /[lrndjy]es$/.test(t)) return t.slice(0, -2);
+  if (t.length > 3 && /[aeiou]s$/.test(t)) return t.slice(0, -1);
+  return t;
 }
 
 function cotTokens(text){
@@ -178,7 +207,7 @@ function cotTokens(text){
   for (let t of cotNorm(text).split(/[^a-z0-9ñ.]+/)) {
     t = t.replace(/^\.+|\.+$/g, "");
     if (!t || COT_STOP.has(t)) continue;
-    if (!/\d/.test(t) && t.length > 4 && t.endsWith("s")) t = t.slice(0, -1);   // plurales simples
+    if (!/\d/.test(t)) t = cotSingular(t);
     out.push(t);
   }
   return out;
@@ -204,12 +233,31 @@ function cotIndex(){
       inv.get(t).push(i);
     }
   }
-  const value = { items, df, inv, vocab: [...df.keys()] };
+  // Marcas conocidas (columna Marca de YiQi), normalizadas, para detectar si el cliente pidió una
+  const brands = new Set();
+  for (const it of items) { const b = cotBrandKey(it.a.marca); if (b) brands.add(b); }
+  const value = { items, df, inv, vocab: [...df.keys()], brands: [...brands] };
   cotIdxCache = { list: cat.list, value };
   return value;
 }
 
-const COT_MEASURE = /^(\d+(?:\.\d+)?)(g|ml|kg|mm|m)$/;
+const COT_MEASURE = /^(\d+(?:\.\d+)?)(g|ml|kg|l|mm|m)$/;
+const COT_GENERIC_BRAND = /^(generic[oa]?|varios|varias|sin marca|s\/m|nacional|importad[oa]|otros?)$/;
+
+function cotBrandKey(marca){
+  const b = foldText(marca).replace(/[^a-z0-9ñ]+/g, " ").trim();
+  return b.length >= 3 && !COT_GENERIC_BRAND.test(b) ? b : "";
+}
+
+/* Medidas comparables: g/ml/cc/kg/l → misma escala (1 g ≈ 1 ml); mm y m aparte */
+function cotMeasureValue(m){
+  const n = Number(m[1]), u = m[2];
+  if (u === "kg") return { n: n * 1000, g: "peso" };
+  if (u === "l") return { n: n * 1000, g: "peso" };
+  if (u === "g" || u === "ml") return { n, g: "peso" };
+  if (u === "m") return { n: n * 1000, g: "largo" };
+  return { n, g: "largo" };
+}
 
 function cotSearch(text, limit = 6){
   const idx = cotIndex();
@@ -245,7 +293,10 @@ function cotSearch(text, limit = 6){
   }
   if (!totalW) return [];
 
-  const qMeasures = q.map(t => t.match(COT_MEASURE)).filter(Boolean);
+  const qMeasures = q.map(t => t.match(COT_MEASURE)).filter(Boolean).map(cotMeasureValue);
+  // ¿El cliente nombró una de nuestras marcas? Entonces esa marca va primero
+  const qText = ` ${foldText(text).replace(/[^a-z0-9ñ]+/g, " ").trim()} `;
+  const askedBrands = idx.brands.filter(b => qText.includes(` ${b} `));
   const priceField = cot.priceField;
   const results = [];
   for (const [i, s] of scores) {
@@ -257,11 +308,19 @@ function cotSearch(text, limit = 6){
     const recall = s.w / totalW;
     const precision = s.hits / Math.max(it.toks.length, 1);
     let score = 0.85 * recall + 0.15 * Math.min(1, precision);
-    // Medida distinta (pide 4g y el artículo dice 2g): penalizar
+    // Medida: cuanto más parecida (220 g ≈ 200 ml), mejor; muy distinta (4 g vs 20 g) resta
+    const iMeasures = it.toks.map(t => t.match(COT_MEASURE)).filter(Boolean).map(cotMeasureValue);
     for (const qm of qMeasures) {
-      const conflict = it.toks.some(t => { const m = t.match(COT_MEASURE); return m && m[2] === qm[2] && m[1] !== qm[1]; });
-      const same = it.toks.includes(qm[0]);
-      if (conflict && !same) score *= 0.8;
+      const same = iMeasures.filter(im => im.g === qm.g && im.n > 0);
+      if (!same.length || !(qm.n > 0)) continue;
+      const diff = Math.min(...same.map(im => Math.abs(Math.log(im.n / qm.n))));
+      score *= 1 - 0.2 * Math.min(1, diff / Math.log(3));
+    }
+    // Marca pedida: la nuestra con esa marca gana; otra marca conocida queda atrás
+    if (askedBrands.length) {
+      const b = cotBrandKey(it.a.marca);
+      if (b && askedBrands.includes(b)) score *= 1.4;
+      else if (b) score *= 0.7;
     }
     results.push({ a: it.a, score });
   }
@@ -273,7 +332,8 @@ function cotSearch(text, limit = 6){
 function cotResolve(item, relIndex){
   const grupo = ++cot.seq;
   const base = { grupo, solicitado: item.solicitado, cantidad: item.cantidad, extra: "" };
-  const relHit = relIndex.get(relKey(item.solicitado)) || relIndex.get(relKey(item.original || ""));
+  const relHit = relIndex.get(relKey(item.solicitado)) || relIndex.get(relKey(item.original || ""))
+    || findRelacionPorReglas(item.solicitado) || findRelacionPorReglas(item.original || "");
   if (relHit && relHit.skus.length) {
     return relHit.skus.map(sku => cotMakeRow({ ...base, sku, estado: "relacion" }));
   }
@@ -351,8 +411,10 @@ function cotRender(){
   body.innerHTML = cot.rows.map((r, idx) => {
     const item = r.sku ? cat.bySku.get(r.sku) : null;
     const missing = r.sku && !item && cat.list.length > 0;
-    const price = r.sku ? cotPrice(r.sku) : null;
-    const sub = price !== null ? price * (Number(r.cantidad) || 0) : null;
+    const price = cotRowPrice(r);
+    const sub = cotRowSubtotal(r);
+    const edited = r.precio !== null && r.precio !== undefined && r.precio !== "";
+    const disp = cot.modo === "disponibilidad" ? cotDisponibilidad(r.sku) : null;
     if (sub !== null) total += sub;
     const siblings = groups.get(r.grupo) || [r.id];
     const estado = cotShownEstado(r, groups);
@@ -378,9 +440,15 @@ function cotRender(){
         </td>
         <td><input class="cell-input extra" data-field="extra" value="${escapeHtml(r.extra)}" placeholder="—" maxlength="300"></td>
         <td class="cot-marca">${item && item.marca ? escapeHtml(item.marca) : "—"}</td>
-        <td class="num"><input class="cell-input qty" data-field="cantidad" type="number" min="0" step="any" value="${escapeHtml(r.cantidad)}"></td>
-        <td class="num">${price !== null ? escapeHtml(cotMoney(price)) : "—"}</td>
-        <td class="num" data-sub>${sub !== null ? escapeHtml(cotMoney(sub)) : "—"}</td>
+        <td class="num">${cot.modo === "disponibilidad"
+          ? `<span class="cot-disp">${disp ? `<span class="badge ${disp.cls}">${disp.txt}</span>` : "—"}</span>`
+          : `<input class="cell-input qty" data-field="cantidad" type="number" min="0" step="any" value="${escapeHtml(r.cantidad)}">`}</td>
+        <td class="num">
+          <input class="cell-input price ${edited ? "is-edited" : ""}" data-field="precio" type="text" inputmode="decimal" autocomplete="off"
+            value="${price !== null ? escapeHtml(cotPriceInput(price)) : ""}" placeholder="—" title="${edited ? "Precio cambiado a mano" : "Precio de la lista elegida (podés cambiarlo)"}">
+          ${edited ? `<button type="button" class="price-reset" data-price-reset title="Volver al precio de la lista">volver a lista</button>` : ""}
+        </td>
+        <td class="num col-sub" data-sub>${sub !== null ? escapeHtml(cotMoney(sub)) : "—"}</td>
         <td class="num"><div class="row-actions">
           ${isOption ? `<button class="btn-icon ok" type="button" data-pick title="Quedarme con esta opción y borrar las otras" aria-label="Elegir esta opción">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>` : ""}
@@ -395,6 +463,9 @@ function cotRender(){
   cotEl("cotTotal").textContent = cotMoney(total);
   cotEl("cotRowCount").textContent = numberFormatter.format(cot.rows.length);
   cotEl("cotPriceHead").textContent = cotPriceTitle();
+  cotEl("cotQtyHead").textContent = cot.modo === "disponibilidad" ? "Disponibilidad" : "Cantidad";
+  cotEl("cotTable").classList.toggle("mode-disp", cot.modo === "disponibilidad");
+  cotApplyWidths(cotLoadWidths());
   cotEl("cotResultPanel").classList.toggle("hidden", !cot.rows.length);
   cotEl("cotExportBtn").disabled = !cot.rows.length;
   cotRenderUndo();
@@ -486,6 +557,20 @@ function cotHideToast(){
   cotEl("cotToast").classList.add("hidden");
 }
 
+/* Precio para escribir en el campo: 1234.5 → "1.234,50" */
+function cotPriceInput(n){
+  return new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+}
+/* Lo que escribe el usuario → número ("1.234,50", "1234.5", "$ 1.234") */
+function cotParsePrice(text){
+  let t = String(text || "").replace(/[^\d.,-]/g, "");
+  if (!t) return null;
+  if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, "");
+  const n = Number(t);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
 function cotMoney(n){
   return priceFormatter.format(n).replace(/^\$\s?/, "$ ");
 }
@@ -495,8 +580,7 @@ function cotRowById(id){ return cot.rows.find(r => r.id === id); }
 function cotUpdateTotals(){
   let total = 0;
   cot.rows.forEach(r => {
-    const p = r.sku ? cotPrice(r.sku) : null;
-    const sub = p !== null ? p * (Number(r.cantidad) || 0) : null;
+    const sub = cotRowSubtotal(r);
     if (sub !== null) total += sub;
     const td = cotEl("cotBody").querySelector(`tr[data-id="${r.id}"] [data-sub]`);
     if (td) td.textContent = sub !== null ? cotMoney(sub) : "—";
@@ -514,6 +598,7 @@ function cotSetSku(row, value){
   }
   if (sku === row.sku) return false;
   row.sku = sku;
+  row.precio = null;
   // Si era una opción, al tocarla pasa a ser la elegida a mano
   row.estado = sku ? "manual" : "sin";
   return true;
@@ -591,7 +676,7 @@ async function cotSaveRelation(row){
   if (!row.solicitado || !row.sku) return;
   if (!rel.loaded) { cotStatus("Las relaciones todavía no se cargaron. Probá de nuevo en unos segundos.", "error"); relacionesModule.ensureLoaded(); return; }
   const key = relKey(row.solicitado);
-  const existing = rel.items.find(r => relKey(r.texto) === key);
+  const existing = rel.items.find(r => !relEsReglas(r) && relKey(r.texto) === key);
   const now = Date.now();
   let next, undoRel, newRel;
   if (existing) {
@@ -655,6 +740,7 @@ async function cotExport(){
     const XLSX = await cotLoadXlsx();
     const cat = getArticulosCatalog();
     const cliente = cotEl("cotCliente").value.trim();
+    const disp = cot.modo === "disponibilidad";
     const fecha = new Date().toLocaleDateString("es-AR");
     const aoa = [
       ["Presupuesto Dentalab"],
@@ -662,20 +748,29 @@ async function cotExport(){
       ["Fecha", fecha],
       ["Lista de precios", cotPriceTitle()],
       [],
-      ["Solicitado", "SKU", "Nombre del artículo", "Texto adicional", "Marca", "Cantidad", "Precio unitario", "Subtotal"]
+      ["Solicitado", "SKU", "Nombre del artículo", "Texto adicional", "Marca",
+        disp ? "Disponibilidad" : "Cantidad", "Precio unitario", ...(disp ? [] : ["Subtotal"])]
     ];
     const firstData = aoa.length + 1;
     cot.rows.forEach((r, i) => {
       const item = r.sku ? cat.bySku.get(r.sku) : null;
-      const price = r.sku ? cotPrice(r.sku) : null;
+      const price = cotRowPrice(r);
       const rowNum = firstData + i;
-      aoa.push([r.solicitado, r.sku, item ? item.nombre : "", r.extra, item ? item.marca : "", Number(r.cantidad) || 0,
-        price ?? "", price !== null ? { t: "n", f: `F${rowNum}*G${rowNum}`, v: price * (Number(r.cantidad) || 0) } : ""]);
+      const base = [r.solicitado, r.sku, item ? item.nombre : "", r.extra, item ? item.marca : ""];
+      if (disp) {
+        const d = cotDisponibilidad(r.sku);
+        aoa.push([...base, d ? d.txt : "", price ?? ""]);
+      } else {
+        aoa.push([...base, Number(r.cantidad) || 0,
+          price ?? "", price !== null ? { t: "n", f: `F${rowNum}*G${rowNum}`, v: price * (Number(r.cantidad) || 0) } : ""]);
+      }
     });
     const lastData = firstData + cot.rows.length - 1;
-    const total = cot.rows.reduce((s, r) => { const p = r.sku ? cotPrice(r.sku) : null; return s + (p !== null ? p * (Number(r.cantidad) || 0) : 0); }, 0);
-    aoa.push([]);
-    aoa.push(["", "", "", "", "", "", "Total", { t: "n", f: `SUM(H${firstData}:H${lastData})`, v: total }]);
+    const total = cot.rows.reduce((s, r) => s + (cotRowSubtotal(r) || 0), 0);
+    if (!disp) {
+      aoa.push([]);
+      aoa.push(["", "", "", "", "", "", "Total", { t: "n", f: `SUM(H${firstData}:H${lastData})`, v: total }]);
+    }
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws["!cols"] = [{ wch: 40 }, { wch: 14 }, { wch: 52 }, { wch: 28 }, { wch: 18 }, { wch: 10 }, { wch: 16 }, { wch: 16 }];
@@ -708,7 +803,7 @@ function cotSave(){
   try {
     localStorage.setItem(COT_DRAFT_KEY, JSON.stringify({
       rows: cot.rows, seq: cot.seq, cliente: cotEl("cotCliente").value,
-      priceField: cot.priceField, texto: cotEl("cotTexto").value
+      priceField: cot.priceField, texto: cotEl("cotTexto").value, modo: cot.modo
     }));
   } catch {}
 }
@@ -719,6 +814,8 @@ function cotRestore(){
     cot.rows = Array.isArray(d.rows) ? d.rows : [];
     cot.seq = Number(d.seq) || cot.rows.length * 10;
     cot.priceField = d.priceField || "";
+    cot.modo = d.modo === "disponibilidad" ? "disponibilidad" : "cantidad";
+    cotEl("cotModo").value = cot.modo;
     cotEl("cotCliente").value = d.cliente || "";
     cotEl("cotTexto").value = d.texto || "";
   } catch {}
@@ -774,6 +871,10 @@ document.addEventListener("keydown", e => {
 cotEl("cotCliente").addEventListener("input", cotSave);
 cotEl("cotTexto").addEventListener("input", cotSave);
 cotEl("cotTexto").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); cotProcess(); } });
+cotEl("cotModo").addEventListener("change", function(){
+  cot.modo = this.value;
+  cotRender(); cotSave();
+});
 cotEl("cotLista").addEventListener("change", function(){
   cot.priceField = this.value;
   cotRender(); cotSave();
@@ -788,6 +889,7 @@ cotBody.addEventListener("input", e => {
   if (input.dataset.field === "sku" || input.dataset.field === "nombre") { cot.skuActive = 0; cotShowSkuResults(input); return; }
   if (input.dataset.field === "extra") row.extra = input.value;
   if (input.dataset.field === "cantidad") { row.cantidad = input.value === "" ? 0 : Number(input.value); cotUpdateTotals(); }
+  if (input.dataset.field === "precio") return;          // se aplica al salir del campo
   cotSave();
 });
 const COT_PICK_FIELDS = '[data-field="sku"],[data-field="nombre"]';
@@ -811,6 +913,20 @@ function cotCloseName(input, row){
 cotBody.addEventListener("focusin", e => {
   if (e.target.matches(COT_PICK_FIELDS)) { cot.activeSkuInput = e.target; cot.skuActive = 0; e.target.select(); }
   else if (e.target.matches(".name-view")) cotOpenName(e.target);
+});
+/* Precio a mano: se aplica al salir del campo (o con Enter). Vacío = vuelve a la lista. */
+cotBody.addEventListener("focusout", e => {
+  if (!e.target.matches('[data-field="precio"]')) return;
+  const row = cotRowById(e.target.closest("tr").dataset.id);
+  if (!row) return;
+  const n = cotParsePrice(e.target.value);
+  const list = row.sku ? cotPrice(row.sku) : null;
+  const next = n === null || (list !== null && Math.abs(n - list) < 0.005) ? null : n;
+  if (next !== (row.precio ?? null)) { row.precio = next; cotSave(); }
+  cotRender();
+});
+cotBody.addEventListener("focusin", e => {
+  if (e.target.matches('[data-field="precio"]')) e.target.select();
 });
 cotBody.addEventListener("focusout", e => {
   if (!e.target.matches(COT_PICK_FIELDS)) return;
@@ -855,6 +971,7 @@ cotBody.addEventListener("click", e => {
   const row = cotRowById(tr.dataset.id);
   if (!row) return;
   if (e.target.closest(".name-view")) { cotOpenName(e.target.closest(".name-view")); return; }
+  if (e.target.closest("[data-price-reset]")) { row.precio = null; cotRender(); cotSave(); return; }
   if (e.target.closest("[data-delete]")) {
     cotPushUndo(`eliminar "${row.solicitado || row.sku || "renglón"}"`);
     cot.rows = cot.rows.filter(r => r.id !== row.id);
@@ -953,7 +1070,7 @@ setInterval(() => {
 }, 1000);
 
 /* ---------- Ancho de columnas a mano ---------- */
-const COT_COLW_KEY = "aruki-cot-colw";
+var COT_COLW_KEY = "aruki-cot-colw";
 function cotLoadWidths(){
   try { const w = JSON.parse(localStorage.getItem(COT_COLW_KEY) || "null"); return Array.isArray(w) && w.length === 10 ? w : null; }
   catch { return null; }
@@ -961,10 +1078,13 @@ function cotLoadWidths(){
 function cotApplyWidths(w){
   const table = cotEl("cotTable");
   const cols = table.querySelectorAll("colgroup col");
+  const disp = table.classList.contains("mode-disp");
+  // En "Disponibilidad simplificada": la columna Subtotal no ocupa lugar y la de Disponibilidad necesita ~140 px
+  const shown = w ? w.map((v, i) => (disp && i === 8) ? 0 : (disp && i === 6) ? Math.max(v, 140) : v) : null;
   table.classList.toggle("is-resized", !!w);
-  cols.forEach((c, i) => { c.style.width = w ? `${w[i]}px` : ""; });
-  table.style.width = w ? `${w.reduce((a, b) => a + b, 0)}px` : "";
-  table.style.minWidth = w ? "0" : "";
+  cols.forEach((c, i) => { c.style.width = shown ? `${shown[i]}px` : ""; });
+  table.style.width = shown ? `${shown.reduce((a, b) => a + b, 0)}px` : "";
+  table.style.minWidth = shown ? "0" : "";
 }
 (function cotInitResize(){
   const ths = cotEl("cotTable").querySelectorAll("thead th");
