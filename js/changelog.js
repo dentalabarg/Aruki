@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "2.5";
+const LATEST_VERSION = "2.6";
 const CHANGELOG = [
+  {
+    version: "2.6",
+    date: "2026-10-08",
+    title: "Cotizaciones: textos de las casillas de IA",
+    items: [
+      { type: "mejora", text: "Las casillas ahora dicen \"Leer PDF con IA (Gemini)\" y \"Revisar con IA (Gemini) los renglones sin coincidencias\"" }
+    ]
+  },
   {
     version: "2.5",
     date: "2026-10-08",

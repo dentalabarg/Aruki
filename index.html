@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=2.5">
+<link rel="stylesheet" href="css/styles.css?v=2.6">
 </head>
 <body>
 
@@ -330,7 +330,7 @@
               <strong>Subí el archivo del cliente o arrastralo acá</strong>
               <span>Excel, Word, PDF, fotos (JPG o PNG) o texto. Aruki lo lee y arma el presupuesto solo.</span>
               <label class="cot-check" title="Los PDF (también escaneados) y las fotos los lee Gemini, que une los artículos que ocupan varios renglones. Si Gemini falla, los PDF se leen con la lectura común.">
-                <input type="checkbox" id="cotIaLeer" checked> Leer PDF y fotos con IA (Gemini)
+                <input type="checkbox" id="cotIaLeer" checked> Leer PDF con IA (Gemini)
               </label>
             </div>
             <button class="btn btn-secondary" id="cotFileBtn" type="button">Elegir archivo</button>
@@ -343,7 +343,7 @@
           <div class="rel-form-foot">
             <div class="cot-foot-left">
               <label class="cot-check" title="Los renglones en amarillo o rojo se mandan a Gemini junto con los artículos más parecidos, y Gemini elige el correcto">
-                <input type="checkbox" id="cotIaAuto" checked> Revisar con IA (Gemini) los renglones dudosos
+                <input type="checkbox" id="cotIaAuto" checked> Revisar con IA (Gemini) los renglones sin coincidencias
               </label>
               <span class="source-note" id="cotInputHint">Aruki busca primero en Relaciones y después por parecido en todos los artículos.</span>
             </div>
@@ -494,14 +494,14 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=2.5"></script>
-<script src="js/core.js?v=2.5"></script>
-<script src="js/facturas.js?v=2.5"></script>
-<script src="js/articulos.js?v=2.5"></script>
-<script src="js/relaciones.js?v=2.5"></script>
-<script src="js/cotizaciones.js?v=2.5"></script>
-<script src="js/cot-archivos.js?v=2.5"></script>
-<script src="js/cot-ia.js?v=2.5"></script>
-<script src="js/main.js?v=2.5"></script>
+<script src="js/changelog.js?v=2.6"></script>
+<script src="js/core.js?v=2.6"></script>
+<script src="js/facturas.js?v=2.6"></script>
+<script src="js/articulos.js?v=2.6"></script>
+<script src="js/relaciones.js?v=2.6"></script>
+<script src="js/cotizaciones.js?v=2.6"></script>
+<script src="js/cot-archivos.js?v=2.6"></script>
+<script src="js/cot-ia.js?v=2.6"></script>
+<script src="js/main.js?v=2.6"></script>
 </body>
 </html>
