@@ -155,6 +155,9 @@ computadoras), con botón de respaldo (descargar/importar).
      default gemini-3.6-flash, JSON con responseSchema, reintentos 3 s/8 s) y solo acepta SKU que estaban entre los
      candidatos. Resultado → fila con estado "ia" (`iaMotivo` en el title del badge); sin elección → `iaRevisado`.
      Casilla `#cotIaAuto` (localStorage `aruki-cot-ia`) la corre después de Armar; botón `#cotIaBtn` a mano. Con Deshacer.
+     v2.4: el Worker prueba `GEMINI_MODEL` y después `GEMINI_FALLBACK_MODELS` (default gemini-flash-latest,
+     gemini-flash-lite-latest): 3 intentos por modelo (esperas 2 s/5 s) ante 429/500/503, salta al siguiente si 404;
+     si todos saturados → 503 con mensaje claro. Responde `modelo` usado.
    - Tipografía: los datos (tablas, listas, chips, resultados) van 1px más grandes que la interfaz fija.
 3. ✅ Lectura de Excel, Word y PDF con texto (v2.0, `js/cot-archivos.js`). Librerías desde cdnjs, cargadas al usarse:
    SheetJS 0.18.5, mammoth 1.13.0 (docx → HTML: tablas fila por fila, párrafos), pdf.js 3.11.174 (worker vía blob;

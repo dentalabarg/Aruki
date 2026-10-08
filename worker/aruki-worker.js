@@ -20,6 +20,8 @@
   Para la ayuda con IA en Cotizaciones (renglones dudosos):
   - GEMINI_API_KEY (secret, clave de Google AI Studio)
   - GEMINI_MODEL (opcional, por defecto gemini-3.6-flash)
+  - GEMINI_FALLBACK_MODELS (opcional, de reserva si el principal está saturado;
+    por defecto gemini-flash-latest,gemini-flash-lite-latest)
 
   Binding KV (Settings → Bindings):
   - ARUKI_KV  → guarda las Relaciones y los intentos fallidos de login
@@ -615,7 +617,11 @@ async function iaElegir(request, env) {
   })).filter(r => r.id && r.solicitado && r.candidatos.length);
   if (!renglones.length) return { resultados: [] };
 
-  const model = env.GEMINI_MODEL || "gemini-3.6-flash";
+  // Modelo principal y de reserva: si uno está saturado (503/429) o no existe, se prueba el siguiente
+  const models = [...new Set([
+    env.GEMINI_MODEL || "gemini-3.6-flash",
+    ...String(env.GEMINI_FALLBACK_MODELS || "gemini-flash-latest,gemini-flash-lite-latest").split(",").map(m => m.trim()).filter(Boolean),
+  ])];
   const payload = {
     systemInstruction: { parts: [{ text: IA_PROMPT }] },
     contents: [{ role: "user", parts: [{ text: JSON.stringify({ renglones }) }] }],
@@ -639,24 +645,32 @@ async function iaElegir(request, env) {
     },
   };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-  const waits = [3000, 8000];
-  let response, text = "";
-  for (let attempt = 0; attempt <= waits.length; attempt++) {
-    response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-      body: JSON.stringify(payload),
-    });
-    if (response.ok) break;
-    text = await response.text();
-    if (![429, 500, 503].includes(response.status) || attempt === waits.length) {
-      throw new HttpError(502, `Gemini respondió con un error (${response.status}): ${text.slice(0, 300)}`);
+  const waits = [2000, 5000];
+  let data = null, model = "", lastStatus = 0, lastText = "", saturado = false;
+  modelos: for (const m of models) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
+    for (let attempt = 0; attempt <= waits.length; attempt++) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+        body: JSON.stringify(payload),
+      });
+      if (response.ok) { data = await response.json(); model = m; break modelos; }
+      lastStatus = response.status;
+      lastText = await response.text();
+      if (response.status === 404) continue modelos;                  // ese modelo no existe: probar el siguiente
+      if (![429, 500, 503].includes(response.status)) {
+        throw new HttpError(502, `Gemini respondió con un error (${response.status}): ${lastText.slice(0, 300)}`);
+      }
+      saturado = true;
+      if (attempt < waits.length) await new Promise(r => setTimeout(r, waits[attempt]));
     }
-    await new Promise(r => setTimeout(r, waits[attempt]));
+  }
+  if (!data) {
+    if (saturado) throw new HttpError(503, "Gemini está saturado en este momento (le pasa a todos, es temporal). Probá de nuevo en unos minutos con el botón \"Revisar dudosos con IA\".");
+    throw new HttpError(502, `Gemini respondió con un error (${lastStatus}): ${lastText.slice(0, 300)}`);
   }
 
-  const data = await response.json();
   const raw = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
   let parsed;
   try { parsed = JSON.parse(raw); } catch { throw new HttpError(502, "Gemini devolvió una respuesta que no se pudo leer."); }

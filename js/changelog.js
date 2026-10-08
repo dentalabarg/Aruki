@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "2.3";
+const LATEST_VERSION = "2.4";
 const CHANGELOG = [
+  {
+    version: "2.4",
+    date: "2026-10-08",
+    title: "IA: modelo de reserva cuando Gemini está saturado",
+    items: [
+      { type: "mejora", text: "Si el modelo de Gemini está saturado, el conector reintenta y pasa solo a un modelo de reserva" },
+      { type: "mejora", text: "Si todos están saturados, aparece un aviso claro para probar de nuevo en unos minutos" }
+    ]
+  },
   {
     version: "2.3",
     date: "2026-10-08",
