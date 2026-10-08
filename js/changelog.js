@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "2.7";
+const LATEST_VERSION = "2.8";
 const CHANGELOG = [
+  {
+    version: "2.8",
+    date: "2026-10-08",
+    title: "Cotizaciones: las fotos siempre se leen con IA",
+    items: [
+      { type: "mejora", text: "Las fotos (JPG o PNG) se leen siempre con IA, aunque la casilla \"Leer PDF con IA\" esté destildada. La casilla ahora solo decide cómo se leen los PDF" }
+    ]
+  },
   {
     version: "2.7",
     date: "2026-10-08",

@@ -176,6 +176,7 @@ computadoras), con botón de respaldo (descargar/importar).
    (fotos achicadas a 2000 px JPG; máx. 14 MB) → `{ renglones: [{ cantidad, descripcion, presentacion, marca }] }`
    → líneas `cantidad<TAB>texto` en el cuadro. Si falla: PDF → lectura común (`cotReadPdf`) con aviso; foto → error.
    En el Worker, `geminiJSON()` es el helper común (modelo principal + reserva) de /ia/elegir y /ia/leer.
+   v2.8: las fotos van siempre por IA; la casilla `#cotIaLeer` solo decide para los PDF.
    Excel y Word siguen sin IA.
 
 ### Aprendizajes del sistema "Licitaciones" (Google Sheets + Apps Script, del mismo usuario)

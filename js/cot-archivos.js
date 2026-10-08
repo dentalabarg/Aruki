@@ -9,7 +9,7 @@
      · PDF con texto     → pdf.js (arma renglones y columnas por posición)
      · .txt              → directo
      · PDF (con texto o escaneado) y fotos JPG/PNG → Gemini vía el conector (/ia/leer),
-       si la casilla "Leer PDF y fotos con IA" está marcada. Si falla, el PDF usa la lectura común.
+       (las fotos siempre; los PDF si la casilla "Leer PDF con IA" está marcada). Si falla, el PDF usa la lectura común.
    Las tablas con encabezado (Descripción / Cantidad / Presentación / Marca)
    se convierten en "cantidad<TAB>descripción presentación marca".
    ============================================================ */
@@ -479,7 +479,8 @@ async function cotReadFile(file){
   if (/\.heic$/i.test(name) || /heic|heif/i.test(file.type)) {
     throw new Error("Las fotos HEIC del iPhone no se pueden leer. Mandala como JPG (o sacale captura de pantalla) y subila de nuevo.");
   }
-  if ((isPdf || isImg) && cotEl("cotIaLeer").checked) {
+  // Las fotos siempre van por IA (no hay otra forma de leerlas); los PDF, según la casilla
+  if (isImg || (isPdf && cotEl("cotIaLeer").checked)) {
     cotFileHint(`La IA está leyendo ${name}… (puede tardar unos segundos)`);
     try {
       const lines = await cotReadWithIA(file, isPdf);
@@ -507,8 +508,8 @@ async function cotReadFile(file){
       throw e;
     }
   }
-  if (isImg || /^image\//.test(file.type)) {
-    throw new Error("Para leer fotos marcá la casilla \"Leer PDF y fotos con IA\".");
+  if (/^image\//.test(file.type)) {
+    throw new Error("Ese formato de imagen no se puede leer. Usá JPG o PNG.");
   }
   if (/\.txt$/i.test(name) || /^text\//.test(file.type)) return (await file.text()).split(/\r?\n/);
   throw new Error("Ese tipo de archivo no se puede leer. Usá Excel, Word, PDF o texto.");
