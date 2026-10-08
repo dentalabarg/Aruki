@@ -101,7 +101,8 @@ async function cotIaRevisar(){
     cotIaBusy = false;
     cotIaRefresh();
     if (error instanceof SessionExpired) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); return; }
-    cotStatus(`No se pudo revisar con IA: ${error.message || error}`, "error");
+    const motivo = String(error.message || error).replace(/[.\s]+$/, "");
+    cotStatus(`No se pudo revisar con IA: ${motivo}.${/saturado/i.test(motivo) ? " Probá de nuevo en unos minutos con el botón \"Revisar dudosos con IA\"." : ""}`, "error");
     return;
   }
   cotIaBusy = false;

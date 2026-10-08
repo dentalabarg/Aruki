@@ -169,7 +169,12 @@ computadoras), con botón de respaldo (descargar/importar).
    se cierran con hueco > 1,45×alto de letra, nueva cantidad o nueva fila de precios. Cantidad pegada
    ("4 Cavitador") se separa. Corta en el pie (`COT_PDF_END`: total, condiciones de pago, etc.).
    Probado con una orden de compra real de Google Sheets (43 artículos, 2 páginas).
-4. Fotos y PDF escaneados con Gemini.
+4. ✅ PDF, PDF escaneados y fotos con Gemini (v2.5). Casilla `#cotIaLeer` (localStorage `aruki-cot-ia-leer`, marcada
+   por defecto): `cotReadWithIA()` manda el archivo en base64 a `POST /ia/leer` `{ archivo, mimeType, nombre }`
+   (fotos achicadas a 2000 px JPG; máx. 14 MB) → `{ renglones: [{ cantidad, descripcion, presentacion, marca }] }`
+   → líneas `cantidad<TAB>texto` en el cuadro. Si falla: PDF → lectura común (`cotReadPdf`) con aviso; foto → error.
+   En el Worker, `geminiJSON()` es el helper común (modelo principal + reserva) de /ia/elegir y /ia/leer.
+   Excel y Word siguen sin IA.
 
 ### Aprendizajes del sistema "Licitaciones" (Google Sheets + Apps Script, del mismo usuario)
 - Gemini: `POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=…`

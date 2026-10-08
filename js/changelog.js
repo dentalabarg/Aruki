@@ -4,8 +4,19 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "2.4";
+const LATEST_VERSION = "2.5";
 const CHANGELOG = [
+  {
+    version: "2.5",
+    date: "2026-10-08",
+    title: "Cotizaciones: PDF y fotos leídos con IA",
+    items: [
+      { type: "nuevo", text: "Los PDF (también los escaneados) y las fotos JPG o PNG los lee Gemini, que une los artículos que ocupan varios renglones del mismo casillero" },
+      { type: "nuevo", text: "Casilla \"Leer PDF y fotos con IA\" (viene marcada) en la zona para subir archivos" },
+      { type: "mejora", text: "Si Gemini no responde, los PDF con texto se leen igual con la lectura común y aparece un aviso para revisar" },
+      { type: "mejora", text: "Las fotos grandes del celular se achican antes de enviarlas, para que sea más rápido" }
+    ]
+  },
   {
     version: "2.4",
     date: "2026-10-08",

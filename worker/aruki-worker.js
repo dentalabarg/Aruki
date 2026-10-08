@@ -90,9 +90,13 @@ export default {
         return json(await iaElegir(request, env), corsHeaders);
       }
 
+      if (url.pathname === "/ia/leer" && request.method === "POST") {
+        return json(await iaLeer(request, env), corsHeaders);
+      }
+
       throw new HttpError(
         404,
-        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas, /articulos, /relaciones o /ia/elegir."
+        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas, /articulos, /relaciones, /ia/elegir o /ia/leer."
       );
     } catch (error) {
       const status = error instanceof HttpError ? error.status : 500;
@@ -585,7 +589,54 @@ function normalizePage(value) {
 
 /* ---------- Helpers ---------- */
 
-/* ---------- IA (Gemini): elegir el artículo para renglones dudosos ----------
+/* ---------- IA (Gemini) ----------
+   geminiJSON(): llama a Gemini pidiendo JSON con un esquema. Prueba el modelo principal y,
+   si está saturado (429/500/503) o no existe (404), los de reserva. */
+async function geminiJSON(env, { system, parts, schema }) {
+  if (!env.GEMINI_API_KEY) {
+    throw new HttpError(503, "Falta configurar la clave de Gemini (GEMINI_API_KEY) en el conector de Cloudflare.");
+  }
+  const models = [...new Set([
+    env.GEMINI_MODEL || "gemini-3.6-flash",
+    ...String(env.GEMINI_FALLBACK_MODELS || "gemini-flash-latest,gemini-flash-lite-latest").split(",").map(m => m.trim()).filter(Boolean),
+  ])];
+  const payload = {
+    systemInstruction: { parts: [{ text: system }] },
+    contents: [{ role: "user", parts }],
+    generationConfig: { temperature: 0.1, responseMimeType: "application/json", responseSchema: schema },
+  };
+  const body = JSON.stringify(payload);
+  const waits = [2000, 5000];
+  let lastStatus = 0, lastText = "", saturado = false;
+  for (const m of models) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
+    for (let attempt = 0; attempt <= waits.length; attempt++) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+        body,
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const raw = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
+        try { return { result: JSON.parse(raw), model: m }; }
+        catch { throw new HttpError(502, "Gemini devolvió una respuesta que no se pudo leer."); }
+      }
+      lastStatus = response.status;
+      lastText = await response.text();
+      if (response.status === 404) break;                       // ese modelo no existe: probar el siguiente
+      if (![429, 500, 503].includes(response.status)) {
+        throw new HttpError(502, `Gemini respondió con un error (${response.status}): ${lastText.slice(0, 300)}`);
+      }
+      saturado = true;
+      if (attempt < waits.length) await new Promise(r => setTimeout(r, waits[attempt]));
+    }
+  }
+  if (saturado) throw new HttpError(503, "Gemini está saturado en este momento (es algo temporal de Google)");
+  throw new HttpError(502, `Gemini respondió con un error (${lastStatus}): ${lastText.slice(0, 300)}`);
+}
+
+/* /ia/elegir: elegir el artículo para renglones dudosos.
    Recibe { renglones: [{ id, solicitado, candidatos: [{ sku, nombre, marca }] }] }
    y devuelve { resultados: [{ id, sku, motivo }] }. Solo se mandan el renglón y sus
    candidatos (nunca el catálogo entero), así el costo es mínimo. */
@@ -601,9 +652,6 @@ Reglas:
 - En "motivo" explicá en pocas palabras (máximo 15) por qué elegiste ese artículo.`;
 
 async function iaElegir(request, env) {
-  if (!env.GEMINI_API_KEY) {
-    throw new HttpError(503, "Falta configurar la clave de Gemini (GEMINI_API_KEY) en el conector de Cloudflare.");
-  }
   let body;
   try { body = await request.json(); } catch { throw new HttpError(400, "Los datos enviados no tienen un formato válido."); }
   const renglones = (Array.isArray(body?.renglones) ? body.renglones : []).slice(0, 40).map(r => ({
@@ -617,71 +665,94 @@ async function iaElegir(request, env) {
   })).filter(r => r.id && r.solicitado && r.candidatos.length);
   if (!renglones.length) return { resultados: [] };
 
-  // Modelo principal y de reserva: si uno está saturado (503/429) o no existe, se prueba el siguiente
-  const models = [...new Set([
-    env.GEMINI_MODEL || "gemini-3.6-flash",
-    ...String(env.GEMINI_FALLBACK_MODELS || "gemini-flash-latest,gemini-flash-lite-latest").split(",").map(m => m.trim()).filter(Boolean),
-  ])];
-  const payload = {
-    systemInstruction: { parts: [{ text: IA_PROMPT }] },
-    contents: [{ role: "user", parts: [{ text: JSON.stringify({ renglones }) }] }],
-    generationConfig: {
-      temperature: 0.1,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: "OBJECT",
-        properties: {
-          resultados: {
-            type: "ARRAY",
-            items: {
-              type: "OBJECT",
-              properties: { id: { type: "STRING" }, sku: { type: "STRING" }, motivo: { type: "STRING" } },
-              required: ["id", "sku"],
-            },
+  const { result, model } = await geminiJSON(env, {
+    system: IA_PROMPT,
+    parts: [{ text: JSON.stringify({ renglones }) }],
+    schema: {
+      type: "OBJECT",
+      properties: {
+        resultados: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: { id: { type: "STRING" }, sku: { type: "STRING" }, motivo: { type: "STRING" } },
+            required: ["id", "sku"],
           },
         },
-        required: ["resultados"],
       },
+      required: ["resultados"],
     },
-  };
-
-  const waits = [2000, 5000];
-  let data = null, model = "", lastStatus = 0, lastText = "", saturado = false;
-  modelos: for (const m of models) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
-    for (let attempt = 0; attempt <= waits.length; attempt++) {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-        body: JSON.stringify(payload),
-      });
-      if (response.ok) { data = await response.json(); model = m; break modelos; }
-      lastStatus = response.status;
-      lastText = await response.text();
-      if (response.status === 404) continue modelos;                  // ese modelo no existe: probar el siguiente
-      if (![429, 500, 503].includes(response.status)) {
-        throw new HttpError(502, `Gemini respondió con un error (${response.status}): ${lastText.slice(0, 300)}`);
-      }
-      saturado = true;
-      if (attempt < waits.length) await new Promise(r => setTimeout(r, waits[attempt]));
-    }
-  }
-  if (!data) {
-    if (saturado) throw new HttpError(503, "Gemini está saturado en este momento (le pasa a todos, es temporal). Probá de nuevo en unos minutos con el botón \"Revisar dudosos con IA\".");
-    throw new HttpError(502, `Gemini respondió con un error (${lastStatus}): ${lastText.slice(0, 300)}`);
-  }
-
-  const raw = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
-  let parsed;
-  try { parsed = JSON.parse(raw); } catch { throw new HttpError(502, "Gemini devolvió una respuesta que no se pudo leer."); }
+  });
 
   // Solo se aceptan SKU que estaban entre los candidatos de ese renglón
   const byId = new Map(renglones.map(r => [r.id, new Set(r.candidatos.map(c => c.sku))]));
-  const resultados = (Array.isArray(parsed?.resultados) ? parsed.resultados : [])
+  const resultados = (Array.isArray(result?.resultados) ? result.resultados : [])
     .map(r => ({ id: String(r?.id || ""), sku: String(r?.sku || "").trim(), motivo: String(r?.motivo || "").slice(0, 200) }))
     .filter(r => byId.has(r.id))
     .map(r => (byId.get(r.id).has(r.sku) ? r : { ...r, sku: "" }));
   return { resultados, modelo: model };
+}
+
+/* /ia/leer: leer un PDF (con texto o escaneado) o una foto JPG/PNG y devolver la lista
+   de artículos pedidos, un renglón por artículo (une los casilleros de varios renglones).
+   Recibe { archivo: base64, mimeType, nombre } → { renglones: [{ cantidad, descripcion, presentacion, marca }] } */
+const IA_LEER_PROMPT = `Sos el asistente de cotizaciones de Dentalab, distribuidora de insumos odontológicos de Argentina.
+Te paso un archivo (PDF o foto) donde un cliente pide artículos: una orden de compra, una licitación, una lista, una foto de un papel o de una pantalla.
+Extraé la lista de artículos pedidos, exactamente un elemento por artículo.
+Reglas:
+- Si la descripción de un artículo ocupa varios renglones dentro del mismo casillero o celda, unila en una sola descripción.
+- "cantidad": la cantidad pedida de ese artículo (número). No confundas con el número de ítem/renglón, el precio, el total ni la presentación ("x 100 u", "caja x 50"). Si no figura, null.
+- "descripcion": el texto del artículo tal como lo escribió el cliente (sin corregir ni traducir), sin precios ni número de ítem.
+- "presentacion" y "marca": solo si están en columnas o datos aparte; si no, vacío.
+- Ignorá encabezados, títulos de columnas, datos del cliente o proveedor, subtotales, totales, condiciones de pago, firmas y pies de página.
+- Mantené el orden del documento.
+- Si no hay una lista de artículos, devolvé la lista vacía.`;
+
+const IA_LEER_TIPOS = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+
+async function iaLeer(request, env) {
+  let body;
+  try { body = await request.json(); } catch { throw new HttpError(400, "Los datos enviados no tienen un formato válido."); }
+  const mimeType = String(body?.mimeType || "").toLowerCase();
+  const data = String(body?.archivo || "");
+  if (!IA_LEER_TIPOS.includes(mimeType)) throw new HttpError(400, "Solo se pueden leer con IA archivos PDF, JPG o PNG.");
+  if (!data) throw new HttpError(400, "No llegó el archivo.");
+  if (data.length > 19 * 1024 * 1024) throw new HttpError(413, "El archivo es demasiado grande para leerlo con IA (máximo unos 14 MB).");
+
+  const { result, model } = await geminiJSON(env, {
+    system: IA_LEER_PROMPT,
+    parts: [
+      { inline_data: { mime_type: mimeType, data } },
+      { text: "Extraé la lista de artículos pedidos de este archivo." },
+    ],
+    schema: {
+      type: "OBJECT",
+      properties: {
+        renglones: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              cantidad: { type: "NUMBER", nullable: true },
+              descripcion: { type: "STRING" },
+              presentacion: { type: "STRING" },
+              marca: { type: "STRING" },
+            },
+            required: ["descripcion"],
+          },
+        },
+      },
+      required: ["renglones"],
+    },
+  });
+
+  const renglones = (Array.isArray(result?.renglones) ? result.renglones : []).slice(0, 500).map(r => ({
+    cantidad: Number.isFinite(Number(r?.cantidad)) && Number(r.cantidad) > 0 ? Number(r.cantidad) : null,
+    descripcion: String(r?.descripcion || "").replace(/\s+/g, " ").trim().slice(0, 400),
+    presentacion: String(r?.presentacion || "").replace(/\s+/g, " ").trim().slice(0, 120),
+    marca: String(r?.marca || "").replace(/\s+/g, " ").trim().slice(0, 80),
+  })).filter(r => r.descripcion);
+  return { renglones, modelo: model };
 }
 
 class HttpError extends Error {

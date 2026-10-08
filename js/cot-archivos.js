@@ -8,7 +8,8 @@
      · Word (.docx)      → mammoth (tablas y párrafos)
      · PDF con texto     → pdf.js (arma renglones y columnas por posición)
      · .txt              → directo
-   Fotos y PDF escaneados quedan para la Etapa 4 (Gemini).
+     · PDF (con texto o escaneado) y fotos JPG/PNG → Gemini vía el conector (/ia/leer),
+       si la casilla "Leer PDF y fotos con IA" está marcada. Si falla, el PDF usa la lectura común.
    Las tablas con encabezado (Descripción / Cantidad / Presentación / Marca)
    se convierten en "cantidad<TAB>descripción presentación marca".
    ============================================================ */
@@ -291,7 +292,7 @@ async function cotReadPdf(file){
   }
   cotPdfStripPageChrome(pages);
   if (chars < 15) {
-    throw new Error("Este PDF parece escaneado (es una imagen, no tiene texto). Las fotos y los PDF escaneados se van a poder leer en la próxima etapa, con Gemini.");
+    throw new Error("Este PDF parece escaneado (es una imagen, no tiene texto). Para leerlo marcá la casilla \"Leer PDF y fotos con IA\".");
   }
 
   // Unir textos muy pegados (para reconocer la fila de títulos)
@@ -414,13 +415,100 @@ async function cotReadPdf(file){
   return out;
 }
 
+/* ---------- Lectura con IA (PDF, PDF escaneado, fotos) ---------- */
+const COT_IA_LEER_KEY = "aruki-cot-ia-leer";
+
+async function cotWorkerPost(path, body){
+  const token = getAuthToken();
+  if (!token) throw new SessionExpired("Sesión vencida.");
+  const response = await fetch(`${WORKER_BASE}${path}`, {
+    method: "POST",
+    headers: { "Accept": "application/json", "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+    body: JSON.stringify(body),
+    cache: "no-store"
+  });
+  let payload = null;
+  try { payload = await response.json(); } catch {}
+  if (response.status === 401) throw new SessionExpired("Sesión vencida.");
+  if (response.status === 404) throw new Error("el conector de Cloudflare todavía no tiene esta función (hay que pegar el código nuevo y tocar Deploy)");
+  if (!response.ok || payload?.error || !payload) throw new Error(payload?.error || `error HTTP ${response.status}`);
+  return payload;
+}
+
+function cotBlobToBase64(blob){
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(",")[1] || "");
+    r.onerror = () => reject(new Error("No se pudo leer el archivo."));
+    r.readAsDataURL(blob);
+  });
+}
+
+/* Fotos grandes del celular: se achican (máx. 2000 px, JPG) para que viajen rápido y gasten menos */
+async function cotPrepareImage(file){
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+    if (scale === 1 && file.size < 1.5 * 1024 * 1024) return { blob: file, mime: file.type || "image/jpeg" };
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bmp.width * scale);
+    canvas.height = Math.round(bmp.height * scale);
+    canvas.getContext("2d").drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.85));
+    return blob ? { blob, mime: "image/jpeg" } : { blob: file, mime: file.type || "image/jpeg" };
+  } catch {
+    return { blob: file, mime: file.type || "image/jpeg" };
+  }
+}
+
+async function cotReadWithIA(file, isPdf){
+  let blob = file, mime = "application/pdf";
+  if (!isPdf) ({ blob, mime } = await cotPrepareImage(file));
+  if (blob.size > 14 * 1024 * 1024) throw new Error("el archivo es demasiado grande para leerlo con IA (máximo 14 MB)");
+  const data = await cotWorkerPost("/ia/leer", { archivo: await cotBlobToBase64(blob), mimeType: mime, nombre: file.name || "" });
+  return (data.renglones || []).map(r => {
+    const texto = [r.descripcion, r.presentacion, r.marca].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+    return r.cantidad ? `${r.cantidad}\t${texto}` : texto;
+  }).filter(Boolean);
+}
+
 async function cotReadFile(file){
   const name = file.name || "";
+  const isPdf = /\.pdf$/i.test(name) || file.type === "application/pdf";
+  const isImg = /\.(jpe?g|png|webp)$/i.test(name) || /^image\/(jpeg|png|webp)$/.test(file.type);
+  if (/\.heic$/i.test(name) || /heic|heif/i.test(file.type)) {
+    throw new Error("Las fotos HEIC del iPhone no se pueden leer. Mandala como JPG (o sacale captura de pantalla) y subila de nuevo.");
+  }
+  if ((isPdf || isImg) && cotEl("cotIaLeer").checked) {
+    cotFileHint(`La IA está leyendo ${name}… (puede tardar unos segundos)`);
+    try {
+      const lines = await cotReadWithIA(file, isPdf);
+      if (!lines.length) throw new Error("la IA no encontró una lista de artículos en el archivo");
+      cotReadFile.via = "IA";
+      return lines;
+    } catch (error) {
+      if (error instanceof SessionExpired) throw error;
+      const motivo = String(error.message || error).replace(/[.\s]+$/, "");
+      if (!isPdf) throw new Error(`No se pudo leer la foto con IA: ${motivo}.`);
+      cotReadFile.motivo = motivo;
+      cotReadFile.aviso = `No se pudo leer con IA (${motivo}); se usó la lectura común, revisá el texto.`;
+    }
+  }
+  cotReadFile.via = "";
   if (/\.(xlsx|xls|xlsm|ods|csv)$/i.test(name)) return cotReadExcel(file);
   if (/\.(docx|doc)$/i.test(name)) return cotReadWord(file);
-  if (/\.pdf$/i.test(name) || file.type === "application/pdf") return cotReadPdf(file);
-  if (/\.(jpe?g|png|webp|heic)$/i.test(name) || /^image\//.test(file.type)) {
-    throw new Error("Las fotos se van a poder leer en la próxima etapa, con Gemini. Por ahora podés pegar la lista a mano.");
+  if (isPdf) {
+    try { return await cotReadPdf(file); }
+    catch (e) {
+      // PDF escaneado y la IA no pudo: no hay otra forma de leerlo
+      if (cotReadFile.aviso && /escaneado/.test(e.message)) {
+        throw new Error(`No se pudo leer con IA (${cotReadFile.motivo}) y este PDF es escaneado, así que no hay otra forma de leerlo. Probá de nuevo en unos minutos.`);
+      }
+      throw e;
+    }
+  }
+  if (isImg || /^image\//.test(file.type)) {
+    throw new Error("Para leer fotos marcá la casilla \"Leer PDF y fotos con IA\".");
   }
   if (/\.txt$/i.test(name) || /^text\//.test(file.type)) return (await file.text()).split(/\r?\n/);
   throw new Error("Ese tipo de archivo no se puede leer. Usá Excel, Word, PDF o texto.");
@@ -438,6 +526,7 @@ async function cotHandleFile(file){
   const drop = cotEl("cotDrop");
   drop.classList.add("is-busy");
   cotFileHint(`Leyendo ${file.name}…`);
+  cotReadFile.aviso = ""; cotReadFile.via = ""; cotReadFile.motivo = "";
   try {
     const lines = (await cotReadFile(file)).map(l => String(l).trim()).filter(Boolean);
     if (!lines.length) throw new Error("No se encontró ninguna lista de artículos en el archivo.");
@@ -445,10 +534,17 @@ async function cotHandleFile(file){
     if (box.value.trim() && !confirm("Ya hay texto en el cuadro. ¿Reemplazarlo por lo que dice el archivo?")) return;
     box.value = lines.join("\n");
     cotSave();
-    cotFileHint(`Leído: ${file.name} · ${lines.length} renglones. Si algo salió mal, corregí el texto y tocá Armar presupuesto.`, "ok");
-    if (!cotEl("cotProcessBtn").disabled) cotProcess();
+    const via = cotReadFile.via === "IA" ? " con IA" : "";
+    if (cotReadFile.aviso) cotFileHint(`${file.name} · ${lines.length} renglones. ${cotReadFile.aviso}`, "error");
+    else cotFileHint(`Leído${via}: ${file.name} · ${lines.length} renglones. Si algo salió mal, corregí el texto y tocá Armar presupuesto.`, "ok");
+    if (!cotEl("cotProcessBtn").disabled) {
+      const hint = cotEl("cotInputHint").textContent, color = cotEl("cotInputHint").style.color;
+      cotProcess();
+      cotEl("cotInputHint").textContent = hint; cotEl("cotInputHint").style.color = color;
+    }
     else cotFileHint(`Leído: ${file.name} · ${lines.length} renglones. Cuando terminen de cargar los artículos, tocá Armar presupuesto.`, "ok");
   } catch (error) {
+    if (error instanceof SessionExpired) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); return; }
     cotFileHint(String(error?.message || error), "error");
   } finally {
     drop.classList.remove("is-busy");
@@ -456,6 +552,11 @@ async function cotHandleFile(file){
 }
 
 cotEl("cotFileBtn").addEventListener("click", () => cotEl("cotFile").click());
+(function(){
+  const box = cotEl("cotIaLeer");
+  try { const v = localStorage.getItem(COT_IA_LEER_KEY); if (v !== null) box.checked = v === "1"; } catch {}
+  box.addEventListener("change", () => { try { localStorage.setItem(COT_IA_LEER_KEY, box.checked ? "1" : "0"); } catch {} });
+})();
 cotEl("cotFile").addEventListener("change", function(){
   const f = this.files[0];
   this.value = "";
