@@ -158,6 +158,8 @@ computadoras), con botón de respaldo (descargar/importar).
      v2.4: el Worker prueba `GEMINI_MODEL` y después `GEMINI_FALLBACK_MODELS` (default gemini-flash-latest,
      gemini-flash-lite-latest): 3 intentos por modelo (esperas 2 s/5 s) ante 429/500/503, salta al siguiente si 404;
      si todos saturados → 503 con mensaje claro. Responde `modelo` usado.
+   - v2.7: equivalencias `COT_ALIAS` en `cotTokens()` (después de `cotSingular`): autocurable→auto, termocurable→termo.
+     Para sumar otra, agregar una entrada (palabra completa en singular → como figura en el artículo).
    - Tipografía: los datos (tablas, listas, chips, resultados) van 1px más grandes que la interfaz fija.
 3. ✅ Lectura de Excel, Word y PDF con texto (v2.0, `js/cot-archivos.js`). Librerías desde cdnjs, cargadas al usarse:
    SheetJS 0.18.5, mammoth 1.13.0 (docx → HTML: tablas fila por fila, párrafos), pdf.js 3.11.174 (worker vía blob;

@@ -197,10 +197,20 @@ function cotNorm(text){
    Se aplica igual al pedido y a los artículos, así "vaso" encuentra "vasos" y al revés. */
 function cotSingular(t){
   if (t.length > 4 && t.endsWith("ces")) return t.slice(0, -3) + "z";
-  if (t.length > 4 && /[lrndjy]es$/.test(t)) return t.slice(0, -2);
+  // flores → flor, papeles → papel; pero descartables → descartable, autocurables → autocurable
+  if (t.length > 4 && /[aeiou][lrndjy]es$/.test(t)) return t.slice(0, -2);
+  if (t.length > 4 && /[lrndjy]es$/.test(t)) return t.slice(0, -1);
   if (t.length > 3 && /[aeiou]s$/.test(t)) return t.slice(0, -1);
   return t;
 }
+
+/* Equivalencias: palabras que en nuestros artículos figuran abreviadas.
+   Se aplican igual al pedido y al catálogo (después de pasar a singular).
+   Para sumar otra: "palabra completa": "como figura en el artículo". */
+const COT_ALIAS = {
+  autocurable: "auto",
+  termocurable: "termo"
+};
 
 function cotTokens(text){
   const out = [];
@@ -208,6 +218,7 @@ function cotTokens(text){
     t = t.replace(/^\.+|\.+$/g, "");
     if (!t || COT_STOP.has(t)) continue;
     if (!/\d/.test(t)) t = cotSingular(t);
+    t = COT_ALIAS[t] || t;
     out.push(t);
   }
   return out;

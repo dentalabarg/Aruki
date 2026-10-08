@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "2.6";
+const LATEST_VERSION = "2.7";
 const CHANGELOG = [
+  {
+    version: "2.7",
+    date: "2026-10-08",
+    title: "Cotizaciones: autocurable = auto, termocurable = termo",
+    items: [
+      { type: "mejora", text: "\"Autocurable\" (o \"autocurables\") encuentra artículos que dicen \"auto\", y \"termocurable\" (o \"termocurables\") los que dicen \"termo\"" },
+      { type: "correccion", text: "Mejor singular de palabras como \"descartables\" → \"descartable\"" }
+    ]
+  },
   {
     version: "2.6",
     date: "2026-10-08",
