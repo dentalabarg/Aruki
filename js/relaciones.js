@@ -255,7 +255,7 @@ function relSetTipo(tipo){
   relEl("relTextoWrap").classList.toggle("hidden", tipo === "reglas");
   relEl("relReemplazoWrap").classList.toggle("hidden", tipo !== "palabra");
   relEl("relSkuWrap").classList.toggle("hidden", tipo === "palabra");
-  relEl("relTextoLabel").textContent = tipo === "palabra" ? "Cuando el pedido dice la palabra (o palabras)…" : "Cuando el cliente escribe…";
+  relEl("relTextoLabel").textContent = tipo === "palabra" ? "La palabra (o palabras)…" : "Cuando el cliente escribe…";
   relEl("relTexto").placeholder = tipo === "palabra" ? "Ej.: autocurable" : "Ej.: algodón en rollos pack x500";
   relEl("relReglasWrap").classList.toggle("hidden", tipo !== "reglas");
   if (tipo === "reglas" && !rel.formReglas.length) rel.formReglas.push({ op: "contiene", valor: "" });
@@ -419,7 +419,7 @@ function relRender(){
           ? `<div class="rel-cond">${r.reglas.map((g, i) => `${i ? '<span class="rel-cond-y">y</span>' : ""}<span class="rel-cond-item"><span class="badge ${REL_OPS[g.op]?.pos ? "badge-cyan" : "badge-red"}">${escapeHtml(REL_OPS[g.op]?.label || g.op)}</span>${escapeHtml(g.valor)}</span>`).join("")}</div>`
           : `<strong>${escapeHtml(r.texto)}</strong>`}</td>
         <td><div class="chips">${relEsPalabra(r)
-          ? `<span class="chip chip-alias" title="En la búsqueda, esta palabra se lee como «${escapeHtml(r.reemplazo)}»"><span class="sku">buscar como</span>${escapeHtml(r.reemplazo)}</span>`
+          ? `<span class="chip chip-alias" title="En la búsqueda, «${escapeHtml(r.texto)}» y «${escapeHtml(r.reemplazo)}» se toman como lo mismo, en los dos sentidos"><span class="sku">⇄ equivale a</span>${escapeHtml(r.reemplazo)}</span>`
           : r.skus.map(s => relChipHtml(s, false)).join("")}</div></td>
         <td class="muted-cell">${escapeHtml(r.nota || "")}</td>
         <td class="muted-cell num">${r.actualizado ? new Date(r.actualizado).toLocaleDateString("es-AR") : "—"}</td>

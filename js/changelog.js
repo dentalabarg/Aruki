@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "2.9";
+const LATEST_VERSION = "3.0";
 const CHANGELOG = [
+  {
+    version: "3.0",
+    date: "2026-10-08",
+    title: "Palabras equivalentes en los dos sentidos",
+    items: [
+      { type: "mejora", text: "Las palabras equivalentes se muestran como \"⇄ equivale a\": funcionan en los dos sentidos (si el cliente escribe cualquiera de las dos, aparecen los artículos que dicen una u otra)" }
+    ]
+  },
   {
     version: "2.9",
     date: "2026-10-08",
