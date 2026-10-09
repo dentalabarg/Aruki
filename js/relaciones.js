@@ -11,7 +11,7 @@ const RELACIONES_ENDPOINT = `${WORKER_BASE}/relaciones`;
 const rel = {
   items: [], version: 0, loaded: false, loading: false, saving: false,
   editingId: null, formSkus: [], search: "", activeResult: 0,
-  formTipo: "texto", formReglas: []
+  formTipo: "texto", formReglas: [], filtro: "todas"
 };
 
 /* ---------- Relaciones por condiciones ----------
@@ -55,6 +55,43 @@ function findRelacionPorReglas(texto){
     if (pos > bestPos || (pos === bestPos && (r.actualizado || 0) > (best.actualizado || 0))) { best = r; bestPos = pos; }
   }
   return best;
+}
+
+/* ¿Ya existe una relación igual? (mismo tipo y mismo disparador; sin importar mayúsculas ni tildes)
+   · texto: mismo texto · condiciones: mismas condiciones en cualquier orden
+   · equivalencia: mismo par de palabras, en cualquiera de los dos sentidos */
+function relReglasKey(reglas){
+  return reglas.map(g => `${g.op}:${relKey(g.valor)}`).filter(k => !k.endsWith(":")).sort().join("|");
+}
+function relFindDup(tipo, data, exceptId){
+  return rel.items.find(r => {
+    if (r.id === exceptId || relTipo(r) !== tipo) return false;
+    if (tipo === "reglas") return relReglasKey(r.reglas) === relReglasKey(data.reglas || []);
+    if (tipo === "palabra") {
+      const a = relKey(data.texto), b = relKey(data.reemplazo || "");
+      const x = relKey(r.texto), y = relKey(r.reemplazo);
+      return (a === x && b === y) || (a === y && b === x) || (!b && a === x);
+    }
+    return relKey(r.texto) === relKey(data.texto);
+  }) || null;
+}
+function relFormData(){
+  return {
+    texto: relEl("relTexto").value.trim(),
+    reemplazo: relEl("relReemplazo").value.trim(),
+    reglas: rel.formReglas.map(g => ({ op: g.op, valor: String(g.valor || "").trim() })).filter(g => g.valor)
+  };
+}
+function relCheckDup(){
+  const warn = relEl("relDupWarn");
+  const data = relFormData();
+  const empty = rel.formTipo === "reglas" ? !data.reglas.length : !data.texto;
+  const dup = empty ? null : relFindDup(rel.formTipo, data, rel.editingId);
+  warn.classList.toggle("hidden", !dup);
+  if (!dup) { warn.textContent = ""; return null; }
+  const destino = relEsPalabra(dup) ? `⇄ ${dup.reemplazo}` : `→ ${dup.skus.join(", ")}`;
+  warn.textContent = `Ya existe una relación igual: "${dup.texto}" ${destino}`;
+  return dup;
 }
 
 /* Texto normalizado para comparar (sin tildes, mayúsculas ni espacios de más) */
@@ -260,6 +297,7 @@ function relSetTipo(tipo){
   relEl("relReglasWrap").classList.toggle("hidden", tipo !== "reglas");
   if (tipo === "reglas" && !rel.formReglas.length) rel.formReglas.push({ op: "contiene", valor: "" });
   relRenderReglas();
+  relCheckDup();
 }
 
 function relRenderReglas(){
@@ -290,6 +328,7 @@ function relOpenForm(item){
   relRenderChips();
   relRenderResults();
   articulosModule.ensureLoaded();
+  relCheckDup();
   relEl("relTexto").focus();
   relEl("relForm").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
@@ -321,7 +360,7 @@ async function relSubmitForm(){
     if (relKey(reemplazo) === relKey(texto)) { error.textContent = "La palabra y su equivalente son iguales."; return; }
   } else if (!rel.formSkus.length) { error.textContent = "Elegí al menos un artículo."; return; }
   const key = relKey(texto);
-  const dup = rel.items.find(r => relKey(r.texto) === key && relTipo(r) === rel.formTipo && r.id !== rel.editingId);
+  const dup = relFindDup(rel.formTipo, { texto, reglas, reemplazo }, rel.editingId);
   if (dup) { error.textContent = porReglas ? "Ya existe una relación con esas mismas condiciones. Editá esa." : esPalabra ? `Ya existe una equivalencia para "${dup.texto}". Editá esa.` : `Ya existe una relación para "${dup.texto}". Editá esa en lugar de crear otra.`; return; }
 
   const now = Date.now();
@@ -394,7 +433,11 @@ async function relImport(file){
 function relRender(){
   const q = foldText(rel.search).split(/\s+/).filter(Boolean);
   const cat = getArticulosCatalog();
+  const counts = { todas: rel.items.length, texto: 0, reglas: 0, palabra: 0 };
+  rel.items.forEach(r => { counts[relTipo(r)]++; });
+  document.querySelectorAll("[data-n]").forEach(el => { el.textContent = counts[el.dataset.n] ? `(${numberFormatter.format(counts[el.dataset.n])})` : ""; });
   const rows = rel.items.filter(r => {
+    if (rel.filtro !== "todas" && relTipo(r) !== rel.filtro) return false;
     if (!q.length) return true;
     const names = r.skus.map(s => cat.bySku.get(String(s))?.nombre || "").join(" ");
     const text = foldText(`${r.texto} ${r.skus.join(" ")} ${names} ${r.reemplazo || ""} ${r.nota || ""}`);
@@ -408,7 +451,7 @@ function relRender(){
   if (!rows.length) {
     body.innerHTML = "";
     empty.textContent = rel.loading ? "Cargando relaciones…"
-      : rel.items.length ? "No hay relaciones que coincidan con la búsqueda."
+      : rel.items.length ? (rel.filtro !== "todas" && !q.length ? "No hay relaciones de este tipo." : "No hay relaciones que coincidan con la búsqueda.")
       : "Todavía no hay relaciones. Tocá \"Nueva relación\" para crear la primera.";
     empty.classList.remove("hidden");
   } else {
@@ -468,6 +511,13 @@ relEl("relAddRegla").addEventListener("click", () => {
   const inputs = relEl("relReglas").querySelectorAll("[data-regla-valor]");
   inputs[inputs.length - 1]?.focus();
 });
+relEl("relForm").addEventListener("input", () => relCheckDup());
+relEl("relForm").addEventListener("change", () => relCheckDup());
+document.querySelectorAll("[data-rel-filtro]").forEach(b => b.addEventListener("click", () => {
+  rel.filtro = b.dataset.relFiltro;
+  document.querySelectorAll("[data-rel-filtro]").forEach(x => x.classList.toggle("is-active", x === b));
+  relRender();
+}));
 relEl("relReglas").addEventListener("input", e => {
   const row = e.target.closest("[data-i]");
   if (!row) return;

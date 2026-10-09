@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=3.0">
+<link rel="stylesheet" href="css/styles.css?v=3.1">
 </head>
 <body>
 
@@ -376,6 +376,7 @@
             </div>
             <button class="btn btn-secondary" id="cotUndoBtn" type="button" disabled title="Deshacer la última acción"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Deshacer</button>
             <button class="btn btn-secondary" id="cotRedoBtn" type="button" disabled title="Rehacer lo último que deshiciste"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>Rehacer</button>
+            <button class="btn btn-secondary" id="cotRelAllBtn" type="button" disabled title="Guardar como relación todos los renglones que tienen un artículo elegido"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>Guardar todas como relaciones</button>
             <button class="btn btn-secondary cot-ia-btn" id="cotIaBtn" type="button" disabled title="Mandar a Gemini los renglones en amarillo o rojo"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>Revisar dudosos con IA</button>
           </div>
           <div class="cot-status" id="cotStatus"></div>
@@ -453,6 +454,7 @@
           </div>
           <div class="rel-form-foot">
             <span class="rel-form-error" id="relFormError"></span>
+            <span class="rel-dup-warn hidden" id="relDupWarn"></span>
             <div class="rel-form-actions">
               <button class="btn btn-ghost" id="relCancelBtn" type="button">Cancelar</button>
               <button class="btn btn-primary" id="relSaveBtn" type="button">Guardar relación</button>
@@ -464,6 +466,12 @@
           <div class="panel-head">
             <div class="panel-title">Relaciones guardadas · <span id="relCount">0</span> de <span id="relTotal">0</span></div>
             <div class="toolbar">
+              <div class="range-filter" id="relFiltro" role="group" aria-label="Tipo de relación">
+                <button class="range-btn is-active" type="button" data-rel-filtro="todas">Todas <span class="rel-filtro-n" data-n="todas"></span></button>
+                <button class="range-btn" type="button" data-rel-filtro="texto">Texto exacto <span class="rel-filtro-n" data-n="texto"></span></button>
+                <button class="range-btn" type="button" data-rel-filtro="reglas">Condiciones <span class="rel-filtro-n" data-n="reglas"></span></button>
+                <button class="range-btn" type="button" data-rel-filtro="palabra">Equivalencias <span class="rel-filtro-n" data-n="palabra"></span></button>
+              </div>
               <div class="search-wrap">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input class="search-input" id="relSearch" type="text" placeholder="Buscar por texto del cliente, SKU o nombre…">
@@ -498,14 +506,14 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=3.0"></script>
-<script src="js/core.js?v=3.0"></script>
-<script src="js/facturas.js?v=3.0"></script>
-<script src="js/articulos.js?v=3.0"></script>
-<script src="js/relaciones.js?v=3.0"></script>
-<script src="js/cotizaciones.js?v=3.0"></script>
-<script src="js/cot-archivos.js?v=3.0"></script>
-<script src="js/cot-ia.js?v=3.0"></script>
-<script src="js/main.js?v=3.0"></script>
+<script src="js/changelog.js?v=3.1"></script>
+<script src="js/core.js?v=3.1"></script>
+<script src="js/facturas.js?v=3.1"></script>
+<script src="js/articulos.js?v=3.1"></script>
+<script src="js/relaciones.js?v=3.1"></script>
+<script src="js/cotizaciones.js?v=3.1"></script>
+<script src="js/cot-archivos.js?v=3.1"></script>
+<script src="js/cot-ia.js?v=3.1"></script>
+<script src="js/main.js?v=3.1"></script>
 </body>
 </html>

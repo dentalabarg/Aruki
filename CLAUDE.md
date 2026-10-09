@@ -63,7 +63,10 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
 - Binding KV **`ARUKI_KV`**: clave `relaciones` y claves `login-fail:<ip>` (bloqueo de 15 min tras 5 intentos fallidos).
 - Relación: `{ id, texto, skus: [..], nota, creado, actualizado }`; por condiciones agrega `reglas: [{op, valor}]`;
   **palabra equivalente** (v2.9) tiene `reemplazo` y `skus: []` (`relTipo()` → texto | reglas | palabra). Las equivalencias se aplican
-  en `cotTokens()` (pedido y catálogo) además de `COT_ALIAS`. Comparar textos con `relKey()` (sin tildes/mayúsculas).
+  en `cotTokens()` (pedido y catálogo) además de `COT_ALIAS`.
+  v3.1: filtros por tipo (`rel.filtro`), aviso en vivo de relación igual (`relFindDup()`: texto igual, mismas
+  condiciones en cualquier orden, o mismo par de palabras en cualquier sentido). Cotizaciones: "Guardar todas como
+  relaciones" (`cotSaveAllRelations()`; renglones con un solo SKU, sin relación previa; undo `rel.type = "bulk"`). Comparar textos con `relKey()` (sin tildes/mayúsculas).
 - Evento `aruki:loaded` (`detail.endpoint`) se dispara en `document` cuando un módulo de datos termina de cargar.
 - `ALLOWED_ORIGIN` debe ser `https://dentalabarg.github.io` (no `*`). Variables opcionales: `SCHEMA_ID`, `FACTURAS_ENTITY`, `FACTURAS_SMARTIE_ID`,
   `ARTICULOS_ENTITY`, `ARTICULOS_SMARTIE_ID`.

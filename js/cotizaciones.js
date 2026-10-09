@@ -515,6 +515,7 @@ function cotRender(){
   cotEl("cotResultPanel").classList.toggle("hidden", !cot.rows.length);
   cotEl("cotExportBtn").disabled = !cot.rows.length;
   cotRenderUndo();
+  cotEl("cotRelAllBtn").disabled = !cot.rows.some(r => r.sku && r.solicitado && r.estado !== "relacion");
   if (typeof cotIaRefresh === "function") cotIaRefresh();
 
   // Resumen por estado (contando renglones pedidos, no filas)
@@ -550,7 +551,12 @@ function cotRenderUndo(){
 async function cotApplyRel(relInfo, forward){
   const now = Date.now();
   let next;
-  if (relInfo.type === "created") {
+  if (relInfo.type === "bulk") {
+    const ids = new Set(relInfo.objs.map(o => o.id));
+    next = forward
+      ? [...relInfo.objs.map(o => ({ ...o, actualizado: now })), ...rel.items.filter(r => !ids.has(r.id))]
+      : rel.items.filter(r => !ids.has(r.id));
+  } else if (relInfo.type === "created") {
     next = forward
       ? [{ ...relInfo.obj, actualizado: now }, ...rel.items.filter(r => r.id !== relInfo.id)]
       : rel.items.filter(r => r.id !== relInfo.id);
@@ -754,6 +760,54 @@ async function cotSaveRelation(row){
   }
 }
 
+/* ---------- Guardar todas como relaciones ----------
+   Toma cada renglón pedido que tiene un solo artículo elegido (no los que todavía tienen varias
+   opciones ni los que ya vinieron de una relación) y crea "texto del cliente → SKU".
+   Si ya hay una relación con ese texto, no la toca. Se puede deshacer de una sola vez. */
+function cotRelCandidates(){
+  const groups = new Map();
+  cot.rows.forEach(r => { if (!groups.has(r.grupo)) groups.set(r.grupo, []); groups.get(r.grupo).push(r); });
+  const out = [], seen = new Set();
+  let yaExisten = 0, conOpciones = 0;
+  for (const rows of groups.values()) {
+    const withSku = rows.filter(r => r.sku);
+    const r = withSku[0];
+    if (!r || !r.solicitado) continue;
+    if (r.estado === "relacion") continue;
+    if (withSku.length > 1) { conOpciones++; continue; }
+    const key = relKey(r.solicitado);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    if (rel.items.some(x => relTipo(x) === "texto" && relKey(x.texto) === key)) { yaExisten++; continue; }
+    out.push(r);
+  }
+  return { rows: out, yaExisten, conOpciones };
+}
+
+async function cotSaveAllRelations(){
+  if (!rel.loaded) { cotStatus("Las relaciones todavía no se cargaron. Probá de nuevo en unos segundos.", "error"); relacionesModule.ensureLoaded(); return; }
+  const { rows, yaExisten, conOpciones } = cotRelCandidates();
+  const notas = [];
+  if (conOpciones) notas.push(`${conOpciones} con varias opciones sin elegir`);
+  if (yaExisten) notas.push(`${yaExisten} que ya tenían relación`);
+  if (!rows.length) { cotStatus(`No hay renglones nuevos para guardar como relación${notas.length ? ` (se saltean ${notas.join(" y ")})` : ""}.`, "ok"); return; }
+  if (!confirm(`Se van a crear ${rows.length} relaciones nuevas (texto del cliente → artículo elegido).${notas.length ? `\n\nSe saltean ${notas.join(" y ")}.` : ""}\n\n¿Continuar?`)) return;
+  const now = Date.now();
+  const objs = rows.map(r => ({ id: crypto.randomUUID(), texto: r.solicitado, nota: "Creada desde Cotizaciones", skus: [r.sku], creado: now, actualizado: now }));
+  const snapshot = cloneRows(cot.rows);
+  cotStatus("Guardando relaciones…");
+  const ok = await relSave([...objs, ...rel.items], `${objs.length} relaciones creadas`);
+  if (!ok) { cotStatus("No se pudieron guardar las relaciones. Revisá el aviso en el módulo Relaciones.", "error"); return; }
+  cot.undo.push({ label: `guardar ${objs.length} relaciones`, rows: snapshot, rel: { type: "bulk", objs } });
+  if (cot.undo.length > 30) cot.undo.shift();
+  cot.redo = [];
+  const ids = new Set(rows.map(r => r.id));
+  cot.rows.forEach(r => { if (ids.has(r.id)) r.estado = "relacion"; });
+  cotRender(); cotSave();
+  cotStatus(`Se guardaron ${objs.length} relaciones nuevas.${notas.length ? ` Se saltearon ${notas.join(" y ")}.` : ""}`, "ok");
+  cotShowToast(`${objs.length} relaciones guardadas`);
+}
+
 /* ---------- Arrastrar para ordenar ---------- */
 function cotClearDrop(){
   cotEl("cotBody").querySelectorAll(".drop-before,.drop-after,.dragging").forEach(tr => tr.classList.remove("drop-before", "drop-after", "dragging"));
@@ -901,6 +955,7 @@ cotEl("cotProcessBtn").addEventListener("click", cotProcess);
 cotEl("cotNewBtn").addEventListener("click", cotClear);
 cotEl("cotExportBtn").addEventListener("click", cotExport);
 cotEl("cotUndoBtn").addEventListener("click", cotUndo);
+cotEl("cotRelAllBtn").addEventListener("click", cotSaveAllRelations);
 cotEl("cotRedoBtn").addEventListener("click", cotRedo);
 cotEl("cotToastUndo").addEventListener("click", cotUndo);
 cotEl("cotToastClose").addEventListener("click", cotHideToast);

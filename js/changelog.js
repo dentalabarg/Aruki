@@ -4,8 +4,19 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "3.0";
+const LATEST_VERSION = "3.1";
 const CHANGELOG = [
+  {
+    version: "3.1",
+    date: "2026-10-09",
+    title: "Filtros en Relaciones y guardar todas las relaciones de una vez",
+    items: [
+      { type: "nuevo", text: "Relaciones: filtros Todas, Texto exacto, Condiciones y Equivalencias, con la cantidad de cada tipo" },
+      { type: "nuevo", text: "Al crear o editar una relación, avisa en el momento si ya existe una igual (mismo texto, mismas condiciones o el mismo par de palabras)" },
+      { type: "nuevo", text: "Cotizaciones: botón \"Guardar todas como relaciones\" que crea en un clic las relaciones de todos los renglones con un artículo elegido (se puede deshacer)" },
+      { type: "correccion", text: "Cotizaciones: separación entre el recuadro de la lista y el del presupuesto" }
+    ]
+  },
   {
     version: "3.0",
     date: "2026-10-08",
