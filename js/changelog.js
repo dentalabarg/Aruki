@@ -4,8 +4,19 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "3.1";
+const LATEST_VERSION = "3.2";
 const CHANGELOG = [
+  {
+    version: "3.2",
+    date: "2026-10-10",
+    title: "Artículos guardados: ya no se descargan cada vez que entrás",
+    items: [
+      { type: "mejora", text: "Los artículos quedan guardados en la computadora: al entrar aparecen al instante, sin esperar la descarga desde YiQi" },
+      { type: "nuevo", text: "Se actualizan solos cada 4 horas, por detrás, sin dejar de usarlos mientras tanto" },
+      { type: "nuevo", text: "Botón Actualizar en Artículos para traerlos al momento, y aviso de cuándo fue la última actualización" },
+      { type: "mejora", text: "Al cerrar sesión se borran los artículos guardados en esa computadora" }
+    ]
+  },
   {
     version: "3.1",
     date: "2026-10-09",

@@ -140,6 +140,7 @@ document.getElementById("eyeBtn").addEventListener("click", function(){
 
 document.getElementById("logoutBtn").addEventListener("click", function(){
   clearSession();
+  cacheClearAll();   // al cerrar sesión se borran los datos guardados en esta computadora
   showLogin();
   document.getElementById("loginForm").reset();
   document.getElementById("rememberMe").checked = true;
@@ -323,14 +324,55 @@ async function loadAllPages(endpoint, signal, onProgress){
 }
 
 /* ============================================================
+   DATOS GUARDADOS EN ESTA COMPUTADORA (IndexedDB)
+   ------------------------------------------------------------
+   Guarda lo descargado de una smartie para no volver a bajarlo
+   cada vez que se entra. Si algo falla, simplemente no se usa.
+   ============================================================ */
+const CACHE_DB = "aruki-cache";
+const CACHE_STORE = "smarties";
+function cacheOpen(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(CACHE_DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(CACHE_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function cacheRun(mode, fn){
+  try {
+    const db = await cacheOpen();
+    return await new Promise(resolve => {
+      const tx = db.transaction(CACHE_STORE, mode);
+      const req = fn(tx.objectStore(CACHE_STORE));
+      tx.oncomplete = () => { db.close(); resolve(req?.result ?? null); };
+      tx.onerror = tx.onabort = () => { db.close(); resolve(null); };
+    });
+  } catch { return null; }
+}
+const cacheGet = key => cacheRun("readonly", st => st.get(key));
+const cacheSet = (key, value) => cacheRun("readwrite", st => st.put(value, key));
+const cacheClearAll = () => cacheRun("readwrite", st => st.clear());
+
+function fmtAgo(ms){
+  const min = Math.max(0, Math.round(ms / 60000));
+  if (min < 1) return "recién";
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.floor(min / 60), r = min % 60;
+  return `hace ${h} h${r ? ` ${r} min` : ""}`;
+}
+
+/* ============================================================
    MÓDULO GENÉRICO: carga todo, busca en todo, pagina en pantalla
    ============================================================ */
 function createDataModule(cfg){
   const $ = key => document.getElementById(cfg.ids[key]);
   const m = {
     rows: [], columns: [], total: 0, viewPage: 1, search: "",
-    loading: false, loaded: false, abort: null, loadId: 0, failed: [], lastRender: 0
+    loading: false, loaded: false, abort: null, loadId: 0, failed: [], lastRender: 0,
+    refreshing: false, restoring: false, savedAt: 0
   };
+  const cacheMaxAge = cfg.cache ? cfg.cache.maxAgeHours * 3600000 : 0;
 
   m.setState = function(state, title, text, progress){
     const banner = $("banner");
@@ -344,7 +386,16 @@ function createDataModule(cfg){
     if (showProgress) $("progressFill").style.width = `${Math.max(2, Math.min(100, progress * 100))}%`;
     $("stop").classList.toggle("hidden", state !== "loading");
     $("retry").classList.toggle("hidden", state !== "error");
-    $("refresh").disabled = m.loading;
+    $("refresh").disabled = m.loading || m.refreshing;
+  };
+
+  /* Aviso cuando se están usando los datos guardados */
+  m.showSavedState = function(){
+    if (!cfg.cache || !m.savedAt) return;
+    const when = new Date(m.savedAt).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+    m.setState("connected", `${numberFormatter.format(m.rows.length)} registros listos`,
+      `Actualizados el ${when} (${fmtAgo(Date.now() - m.savedAt)}). Se actualizan solos cada ${cfg.cache.maxAgeHours} horas; con Actualizar lo hacés ahora.`);
+    $("kicker").textContent = "Guardado en esta computadora";
   };
 
   m.filtered = function(){
@@ -397,12 +448,14 @@ function createDataModule(cfg){
     });
     $("first").disabled = m.viewPage <= 1;
     $("last").disabled = m.viewPage >= totalPages;
-    $("refresh").disabled = m.loading;
+    $("refresh").disabled = m.loading || m.refreshing;
   };
 
   m.load = async function(){
-    if (m.loading) return;
+    if (m.loading || m.refreshing) return;
     if (!getAuthToken()) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); return; }
+    // Con datos guardados: se actualiza "por detrás" y se sigue usando lo que ya hay
+    if (cfg.cache && m.loaded && m.rows.length) return m.refreshInBackground();
 
     m.loading = true;
     m.loadId += 1;
@@ -445,6 +498,9 @@ function createDataModule(cfg){
       } else if (m.failed.length) {
         m.setState("error", "Carga incompleta",
           `No se pudieron descargar ${m.failed.length} página(s) (${m.failed.slice(0, 8).join(", ")}${m.failed.length > 8 ? "…" : ""}). Presioná Reintentar para volver a cargar todo.`);
+      } else if (cfg.cache) {
+        m.saveCache();
+        m.showSavedState();
       } else {
         m.setState("connected", "Todos los registros cargados",
           `${numberFormatter.format(m.rows.length)} registros traídos desde YiQi. Actualizá para volver a consultar.`);
@@ -464,17 +520,93 @@ function createDataModule(cfg){
     }
   };
 
+  const savedAgo = () => m.savedAt ? `los datos guardados (${fmtAgo(Date.now() - m.savedAt)})` : "los datos ya cargados";
+  m.saveCache = function(){
+    m.savedAt = Date.now();
+    const rows = m.rows.map(r => { const { __s, ...rest } = r; return rest; });
+    cacheSet(cfg.cache.key, { rows, columns: m.columns, total: m.total, savedAt: m.savedAt });
+  };
+
+  /* Descarga todo de nuevo sin borrar lo que se está usando; reemplaza al terminar bien */
+  m.refreshInBackground = async function(){
+    m.refreshing = true;
+    m.loadId += 1;
+    const id = m.loadId;
+    m.abort = new AbortController();
+    m.setState("loading", "Actualizando desde YiQi", "Mientras tanto podés seguir usando los datos guardados.", 0.02);
+    try {
+      const result = await loadAllPages(cfg.endpoint, m.abort.signal, snap => {
+        if (id !== m.loadId) return;
+        m.setState("loading", "Actualizando desde YiQi",
+          `Página ${numberFormatter.format(snap.done)} de ${numberFormatter.format(snap.totalPages)}. Mientras tanto podés seguir usando los datos guardados.`,
+          snap.done / snap.totalPages);
+      });
+      if (id !== m.loadId) return;
+      m.refreshing = false;
+      if (result.aborted) { if (m.savedAt) m.showSavedState(); else m.setState("idle", "Actualización detenida", "Seguís usando los datos ya cargados."); return; }
+      if (result.failed.length) {
+        m.setState("error", "No se pudo actualizar del todo",
+          `Fallaron ${result.failed.length} página(s). Seguís usando ${savedAgo()}. Presioná Reintentar.`);
+        return;
+      }
+      m.rows = result.rows;
+      m.columns = result.columns || m.columns;
+      m.total = result.total;
+      m.failed = [];
+      m.saveCache();
+      m.showSavedState();
+      m.render();
+      document.dispatchEvent(new CustomEvent("aruki:loaded", { detail: { endpoint: cfg.endpoint } }));
+    } catch (error) {
+      if (id !== m.loadId) return;
+      m.refreshing = false;
+      if (error instanceof SessionExpired) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); return; }
+      m.setState("error", "No se pudo actualizar",
+        `${String(error?.message || error)} Seguís usando ${savedAgo()}.`);
+    }
+  };
+
   m.stop = function(){ if (m.abort) m.abort.abort(); };
 
-  m.ensureLoaded = function(){
-    if (!m.loaded && !m.loading && getAuthToken()) m.load();
+  m.ensureLoaded = async function(){
+    if (m.loaded || m.loading || m.refreshing || m.restoring || !getAuthToken()) return;
+    if (cfg.cache) {
+      m.restoring = true;
+      const loadId = m.loadId;
+      const saved = await cacheGet(cfg.cache.key);
+      m.restoring = false;
+      if (loadId !== m.loadId || m.loaded || m.loading) return;
+      if (saved && Array.isArray(saved.rows) && saved.rows.length) {
+        m.rows = saved.rows;
+        m.columns = saved.columns || [];
+        m.total = saved.total || saved.rows.length;
+        m.savedAt = saved.savedAt || 0;
+        m.loaded = true;
+        m.viewPage = 1;
+        m.showSavedState();
+        m.render();
+        document.dispatchEvent(new CustomEvent("aruki:loaded", { detail: { endpoint: cfg.endpoint } }));
+        if (Date.now() - m.savedAt >= cacheMaxAge) m.load();
+        return;
+      }
+    }
+    m.load();
   };
+
+  /* Cada minuto: refresca el "hace X min" y actualiza solo cuando pasaron las horas indicadas */
+  if (cfg.cache) {
+    setInterval(() => {
+      if (!m.loaded || !m.savedAt || m.loading || m.refreshing || !getAuthToken()) return;
+      if (Date.now() - m.savedAt >= cacheMaxAge) m.load();
+      else if ($("banner").dataset.state === "connected") m.showSavedState();
+    }, 60000);
+  }
 
   m.reset = function(){
     m.loadId += 1;
     if (m.abort) m.abort.abort();
     m.rows = []; m.columns = []; m.total = 0; m.viewPage = 1; m.search = "";
-    m.loading = false; m.loaded = false; m.failed = [];
+    m.loading = false; m.loaded = false; m.failed = []; m.refreshing = false; m.restoring = false; m.savedAt = 0;
     if (cfg.onReset) cfg.onReset(m);
     $("search").value = "";
     m.setState("idle", "Sin datos cargados", cfg.idleText);

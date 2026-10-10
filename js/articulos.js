@@ -39,6 +39,7 @@ function artResolveColumns(columns, rows){
 const articulosModule = createDataModule({
   endpoint: `${WORKER_BASE}/articulos`,
   viewSize: 100,
+  cache: { key: "articulos", maxAgeHours: 4 },   // guardado en la computadora, se actualiza solo cada 4 h
   loadingTitle: "Cargando todos los artículos desde YiQi",
   idleText: "Aruki carga todos los artículos al abrir este módulo.",
   emptyText: "Todavía no hay artículos cargados.",

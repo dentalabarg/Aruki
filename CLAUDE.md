@@ -90,6 +90,11 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
 `createDataModule(cfg)` (en `js/core.js`) descarga **todas** las páginas de la smartie al abrir el
 módulo (barra de progreso, botón Detener), y la búsqueda/filtros/paginación se hacen en el navegador
 sobre todo lo cargado (sin tildes ni mayúsculas, varias palabras = todas deben aparecer).
+v3.2: `cfg.cache = { key, maxAgeHours }` (hoy solo Artículos, 4 h) guarda filas/columnas en **IndexedDB**
+(`aruki-cache`, helpers `cacheGet/cacheSet/cacheClearAll`). Al entrar se usan las guardadas (sin descargar); si
+pasaron las horas, o con Actualizar, `refreshInBackground()` descarga todo sin tocar `m.rows` (flag `m.refreshing`,
+`m.loading` queda false) y reemplaza solo si terminó completo. Un `setInterval` de 1 min revisa la antigüedad.
+Al cerrar sesión se borra el caché.
 Para un módulo nuevo: sección `view-<nombre>` + ítem `data-module="<nombre>"` en `index.html`,
 archivo `js/<nombre>.js`, sumarlo a `MODULES` en `js/main.js` y a los `<script>`.
 
