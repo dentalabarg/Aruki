@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "3.8";
+const LATEST_VERSION = "3.9";
 const CHANGELOG = [
+  {
+    version: "3.9",
+    date: "2026-10-13",
+    title: "Pedidos a YiQi: precio final y Consumidor Final",
+    items: [
+      { type: "correccion", text: "Enviar pedido a YiQi: el precio cambiado a mano se manda como precio FINAL (con impuestos), no como neto" },
+      { type: "correccion", text: "Sin cliente elegido se usa siempre el cliente Consumidor Final de YiQi (id 8192)" }
+    ]
+  },
   {
     version: "3.8",
     date: "2026-10-13",

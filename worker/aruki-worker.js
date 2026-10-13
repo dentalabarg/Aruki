@@ -19,6 +19,7 @@
   - CLIENTES_SMARTIE_ID (por defecto 1834, entidad CLIENTE)
   - CONSULTA_RAPIDA (opcional: "no" para volver a leer las smarties de a 50)
   - ORIGEN_PEDIDO_ID (opcional: id del Origen de pedido; por defecto 3 = "Local")
+  - CONSUMIDOR_FINAL_ID (opcional: id del cliente Consumidor Final; por defecto 8192)
   - ORIGEN_PEDIDO_NOMBRE (opcional, por defecto "Local")
 
   Para la ayuda con IA en Cotizaciones (renglones dudosos):
@@ -807,7 +808,8 @@ async function crearPedido(request, env, session) {
   }
 
   let clienteId = Number(body.clienteId) || null;
-  if (!clienteId) clienteId = await findConsumidorFinal(env);
+  // Sin cliente elegido → "Consumidor Final" = id 8192 en YiQi (confirmado por el usuario; variable CONSUMIDOR_FINAL_ID lo cambia)
+  if (!clienteId) clienteId = Number(env.CONSUMIDOR_FINAL_ID || 8192);
   if (!clienteId) throw new HttpError(400, "No se encontró el cliente \"Consumidor Final\" en YiQi. Elegí un cliente de la lista.");
 
   const { ids, missing } = await findMaterialIds(env, items.map(i => String(i.sku).trim()));
@@ -821,7 +823,7 @@ async function crearPedido(request, env, session) {
       DEDP_CANTIDAD: Number(i.cantidad) > 0 ? Number(i.cantidad) : 1,
     };
     const precio = Number(i.precio);
-    if (i.precio !== null && i.precio !== undefined && i.precio !== "" && Number.isFinite(precio) && precio >= 0) p.DEDP_PRECIO_UNITARIO = precio;
+    if (i.precio !== null && i.precio !== undefined && i.precio !== "" && Number.isFinite(precio) && precio >= 0) p.DEDP_PRECIO_UNITARIO_FINA = precio;   // el precio que se escribe en Aruki es FINAL (con impuestos)
     const texto = String(i.texto || "").trim();
     if (texto) p.DEDP_TEXTO_ADICIONAL = texto.slice(0, 500);
     return p;

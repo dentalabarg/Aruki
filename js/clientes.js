@@ -6,6 +6,7 @@
    un buscador de clientes. Vacío = Consumidor Final.
    ============================================================ */
 const CLI_MAX_AGE = 4 * 3600000;
+const CLI_CONSUMIDOR_FINAL_ID = 8192;   // "Consumidor Final" en YiQi
 const clientesStore = {
   list: [], loaded: false, loading: false, savedAt: 0, error: "", listeners: new Set(),
 
@@ -59,7 +60,8 @@ const clientesStore = {
 
   /* Cliente "Consumidor Final" (para cuando el campo queda vacío) */
   consumidorFinal(){
-    return this.list.find(c => /^consumidor\s+final$/i.test(c.razon.trim()))
+    return this.list.find(c => Number(c.id) === CLI_CONSUMIDOR_FINAL_ID)
+      || this.list.find(c => /^consumidor\s+final$/i.test(c.razon.trim()))
       || this.list.find(c => /^consumidor\s+final$/i.test(c.nombre.trim()))
       || this.list.find(c => /consumidor\s+final/i.test(`${c.razon} ${c.nombre}`)) || null;
   }
@@ -188,8 +190,7 @@ function clientePicker(inputId, onChange){
     forYiqi(){
       if (p.selected) return { id: p.selected.id, nombre: cliLabel(p.selected) };
       if (input.value.trim()) return { error: "Elegí el cliente de la lista (o dejá el campo vacío para Consumidor Final)." };
-      const cf = clientesStore.consumidorFinal();
-      return cf ? { id: cf.id, nombre: "Consumidor Final" } : { id: null, nombre: "Consumidor Final" };
+      return { id: CLI_CONSUMIDOR_FINAL_ID, nombre: "Consumidor Final" };
     }
   };
   renderInfo();

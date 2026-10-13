@@ -91,10 +91,11 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
 - Aruki es **solo lectura**: no crear ni modificar nada en YiQi salvo pedido explícito del usuario.
   **Única escritura (v3.4, pedida por el usuario): crear Pedido.** Worker `POST /pedido` `{ clienteId, cliente, lista, items:[{sku,cantidad,precio|null,texto}] }`
   → `POST /PEDIDO` `{ schemaId, data:{ EXTE_ID_EXTE (Origen "Local"), CLIE_ID_CLIE, LIDP_ID_LIDP, PEDI_OBSERVACIONES,
-  Productos:[{ MATE_ID_MATE, DEDP_CANTIDAD, DEDP_PRECIO_UNITARIO (solo si se cambió a mano), DEDP_TEXTO_ADICIONAL }] } }`;
+  Productos:[{ MATE_ID_MATE, DEDP_CANTIDAD, DEDP_PRECIO_UNITARIO_FINA (precio FINAL, solo si se cambió a mano), DEDP_TEXTO_ADICIONAL }] } }`;
   respuesta `{ ok, newId, error, parameter(JSON string) }` (HTTP 200 con ok=false = error de negocio).
   Búsquedas: `GET /{ENTIDAD}/search?schemaId&CAMPO=valor` (array plano, filtros por igualdad): MATERIAL por MATE_CODIGO,
   LISTA_DE_PRECIO (LIDP_NOMBRE, se compara con el título de la columna de precio), CLIENTE "Consumidor Final".
+  Cliente vacío → "Consumidor Final" = **id 8192** (`CLI_CONSUMIDOR_FINAL_ID` en clientes.js; Worker `CONSUMIDOR_FINAL_ID`).
   Origen de pedido "Local" = **id 3** (confirmado por el usuario; variable `ORIGEN_PEDIDO_ID` lo cambia). Las entidades
   EXTERNAL_SYSTEM / ORIGEN_DE_PEDIDO / ORIGEN_PEDIDO / SISTEMA_EXTERNO dan 404.
   `GET /yiqi/diagnostico` muestra origen, listas y Consumidor Final encontrados.
