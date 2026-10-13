@@ -671,10 +671,22 @@ async function buildFastPlan(env, entity, smartieId) {
       cols = c; break;
     }
     if (r.status === 404) { plan.motivo = `YiQi no tiene consulta rápida para ${entity} (404)`; return plan; }
-    notas.push(`columnas rechazadas (${r.status}): ${shortErr(r)}`);
-    if (r.status !== 400) break;
+    notas.push(`${c[0]?.field === "id" ? "con id" : "sin id"}: error ${r.status} ${shortErr(r)}`);
   }
-  if (!cols) { plan.motivo = notas.join(" · ") || "YiQi rechazó la consulta"; return plan; }
+  if (!cols) {
+    // Diagnóstico: se prueba cada columna sola para saber cuál no acepta YiQi
+    const malas = [];
+    for (const col of base.slice(0, 20)) {
+      const r = await runQuery(env, entity, 1, [col], [], 1);
+      if (!r.ok) {
+        const t = (smartie.columns || []).find(x => x.field === col.field);
+        malas.push(`${t?.title || col.field} [${col.field}]`);
+      }
+    }
+    plan.motivo = (notas.join(" · ") || "YiQi rechazó la consulta")
+      + (malas.length ? ` · columnas que YiQi no acepta: ${malas.join(", ")}` : " · cada columna sola anda; falla la combinación");
+    return plan;
+  }
 
   // 2) ¿Con qué filtros da el mismo total que la smartie?
   const totales = [];

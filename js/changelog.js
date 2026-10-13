@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "4.1";
+const LATEST_VERSION = "4.2";
 const CHANGELOG = [
+  {
+    version: "4.2",
+    date: "2026-10-13",
+    title: "Diagnóstico de la lectura rápida",
+    items: [
+      { type: "mejora", text: "Si YiQi da error en la lectura rápida, se prueba también sin pedir el número de fila y, si sigue fallando, el motivo indica qué columna de la smartie no acepta YiQi. Requiere actualizar el conector" }
+    ]
+  },
   {
     version: "4.1",
     date: "2026-10-13",
