@@ -43,11 +43,13 @@ function presDownload(blob, name){
 const presSub = r => r.precio !== null && r.precio !== undefined ? r.precio * (Number(r.cantidad) || 0) : null;
 const presMoney = n => priceFormatter.format(n).replace(/^\$\s?/, "$ ");
 
-/* Stock real (Depósito 1 - Local + Depósito Central) para la columna opcional */
-function presStockHtml(item){
+/* Stock real (Depósito 1 - Local + Depósito Central) para la columna opcional.
+   En rojo y remarcado si no alcanza para la cantidad pedida. */
+function presStockHtml(item, cantidad){
   if (!item || item.stock === null || item.stock === undefined) return "—";
   const n = Number(item.stock) || 0;
-  return `<span class="stock-num ${n <= 0 ? "is-zero" : n <= 5 ? "is-low" : ""}">${escapeHtml(decimalFormatter.format(n))}</span>`;
+  const falta = n < (Number(cantidad) || 0);
+  return `<span class="stock-num ${falta ? "is-short" : ""}"${falta ? ` title="No alcanza: hay ${escapeHtml(decimalFormatter.format(n))} y se piden ${escapeHtml(decimalFormatter.format(Number(cantidad) || 0))}"` : ""}>${escapeHtml(decimalFormatter.format(n))}</span>`;
 }
 
 /* ---------- Excel ---------- */

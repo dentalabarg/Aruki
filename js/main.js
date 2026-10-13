@@ -16,6 +16,7 @@ function showModule(name){
     sidebarBackdrop.classList.add("hidden");
   }
   window.scrollTo({ top: 0 });
+  requestAnimationFrame(fitScrollAreas);
   if (name === "facturas") facturasModule.ensureLoaded();
   if (name === "articulos") articulosModule.ensureLoaded();
   if (name === "relaciones") relacionesModule.ensureLoaded();

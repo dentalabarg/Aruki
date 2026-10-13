@@ -487,10 +487,10 @@ function cotRender(){
         </td>
         <td><input class="cell-input extra" data-field="extra" value="${escapeHtml(r.extra)}" placeholder="—" maxlength="300"></td>
         <td class="cot-marca">${item && item.marca ? escapeHtml(item.marca) : "—"}</td>
-        <td class="num col-stock">${presStockHtml(item)}</td>
         <td class="num">${cot.modo === "disponibilidad"
           ? `<span class="cot-disp">${disp ? `<span class="badge ${disp.cls}">${disp.txt}</span>` : "—"}</span>`
           : `<input class="cell-input qty" data-field="cantidad" type="number" min="0" step="any" value="${escapeHtml(r.cantidad)}">`}</td>
+        <td class="num col-stock" data-stock>${presStockHtml(item, r.cantidad)}</td>
         <td class="num">
           <input class="cell-input price ${edited ? "is-edited" : ""}" data-field="precio" type="text" inputmode="decimal" autocomplete="off"
             value="${price !== null ? escapeHtml(cotPriceInput(price)) : ""}" placeholder="—" title="${edited ? "Precio cambiado a mano" : "Precio de la lista elegida (podés cambiarlo)"}">
@@ -642,6 +642,8 @@ function cotUpdateTotals(){
     if (sub !== null) total += sub;
     const td = cotEl("cotBody").querySelector(`tr[data-id="${r.id}"] [data-sub]`);
     if (td) td.textContent = sub !== null ? cotMoney(sub) : "—";
+    const st = cotEl("cotBody").querySelector(`tr[data-id="${r.id}"] [data-stock]`);
+    if (st) st.innerHTML = presStockHtml(r.sku ? getArticulosCatalog().bySku.get(r.sku) : null, r.cantidad);
   });
   cotEl("cotTotal").textContent = cotMoney(total);
 }
@@ -1176,6 +1178,15 @@ setInterval(() => {
 
 /* ---------- Ancho de columnas a mano ---------- */
 var COT_COLW_KEY = "aruki-cot-colw";
+// v3.8: Stock real pasó después de Cantidad → se intercambian esos dos anchos guardados (una sola vez)
+try {
+  const old = JSON.parse(localStorage.getItem(COT_COLW_KEY) || "null");
+  if (Array.isArray(old) && old.length === 11 && !localStorage.getItem("aruki-cot-colw-v38")) {
+    [old[6], old[7]] = [old[7], old[6]];
+    localStorage.setItem(COT_COLW_KEY, JSON.stringify(old));
+  }
+  localStorage.setItem("aruki-cot-colw-v38", "1");
+} catch {}
 function cotLoadWidths(){
   try { const w = JSON.parse(localStorage.getItem(COT_COLW_KEY) || "null"); return Array.isArray(w) && w.length === 11 ? w : null; }
   catch { return null; }
@@ -1186,8 +1197,8 @@ function cotApplyWidths(w){
   const disp = table.classList.contains("mode-disp");
   const stock = table.classList.contains("show-stock");
   // En "Disponibilidad simplificada": la columna Subtotal no ocupa lugar y la de Disponibilidad necesita ~140 px.
-  // La columna Stock real (6) solo ocupa lugar si está activada.
-  const shown = w ? w.map((v, i) => (disp && i === 9) || (!stock && i === 6) ? 0 : (disp && i === 7) ? Math.max(v, 140) : v) : null;
+  // La columna Stock real (7, después de Cantidad) solo ocupa lugar si está activada.
+  const shown = w ? w.map((v, i) => (disp && i === 9) || (!stock && i === 7) ? 0 : (disp && i === 6) ? Math.max(v, 140) : v) : null;
   table.classList.toggle("is-resized", !!w);
   cols.forEach((c, i) => { c.style.width = shown ? `${shown[i]}px` : ""; });
   table.style.width = shown ? `${shown.reduce((a, b) => a + b, 0)}px` : "";

@@ -366,6 +366,36 @@ function fmtAgo(ms){
   return `hace ${h} h${r ? ` ${r} min` : ""}`;
 }
 
+/* Ajusta la altura del cuadro con scroll de un módulo para que toda la página entre en la pantalla
+   (sin scroll de la página entera: solo se scrollea adentro del cuadro). */
+const FIT_VIEWS = ["view-articulos", "view-relaciones"];
+function fitScrollArea(viewId){
+  const view = document.getElementById(viewId);
+  if (!view || view.classList.contains("hidden") || window.innerWidth <= 980) {
+    if (view) { const el = view.querySelector(".art-scroll"); if (el) el.style.maxHeight = ""; }
+    return;
+  }
+  const el = view.querySelector(".art-scroll");
+  if (!el) return;
+  el.style.maxHeight = "0px";                      // se mide con el cuadro cerrado
+  const top = el.getBoundingClientRect().top + window.scrollY;
+  const pad = parseFloat(getComputedStyle(view.parentElement).paddingBottom) || 0;
+  const below = view.getBoundingClientRect().bottom + window.scrollY - top + pad;   // paginación, márgenes, etc.
+  const avail = Math.floor(window.innerHeight - top - below);
+  el.style.maxHeight = `${Math.max(220, avail)}px`;
+}
+function fitScrollAreas(){ FIT_VIEWS.forEach(fitScrollArea); }
+window.addEventListener("resize", () => requestAnimationFrame(fitScrollAreas));
+// Si algo cambia de tamaño dentro de la página (un formulario que se abre, etc.) se vuelve a ajustar
+let fitPending = false;
+if (window.ResizeObserver) {
+  new ResizeObserver(() => {
+    if (fitPending) return;
+    fitPending = true;
+    requestAnimationFrame(() => { fitPending = false; fitScrollAreas(); });
+  }).observe(document.querySelector(".content"));
+}
+
 /* Botones "Actualizar …" de la barra superior: se van rellenando con el avance */
 function syncBtnProgress(btn, progress, error, done = true){
   if (!btn) return;

@@ -95,7 +95,8 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   respuesta `{ ok, newId, error, parameter(JSON string) }` (HTTP 200 con ok=false = error de negocio).
   Búsquedas: `GET /{ENTIDAD}/search?schemaId&CAMPO=valor` (array plano, filtros por igualdad): MATERIAL por MATE_CODIGO,
   LISTA_DE_PRECIO (LIDP_NOMBRE, se compara con el título de la columna de precio), CLIENTE "Consumidor Final".
-  Origen de pedido: entidad sin confirmar (prueba EXTERNAL_SYSTEM, ORIGEN_DE_PEDIDO…) o variable `ORIGEN_PEDIDO_ID`.
+  Origen de pedido "Local" = **id 3** (confirmado por el usuario; variable `ORIGEN_PEDIDO_ID` lo cambia). Las entidades
+  EXTERNAL_SYSTEM / ORIGEN_DE_PEDIDO / ORIGEN_PEDIDO / SISTEMA_EXTERNO dan 404.
   `GET /yiqi/diagnostico` muestra origen, listas y Consumidor Final encontrados.
 - Lectura rápida (v3.7, `fastSmartie()` en el Worker) para /clientes, /articulos y /facturas: lee la página 1 de la
   smartie (columnas + total), pide `POST /{ENTIDAD}/query?schemaId=` `{ page, pageSize: 1000, columns:[{field,…}] }` con esas
@@ -124,7 +125,9 @@ v3.5: los `.runtime-banner` solo se ven con `data-state="error"` (CSS). Los boto
 superior (`.sync-btn`: `#syncCliBtn` → `clientesStore.refresh()`, `#artRefreshBtn` y `#refreshBtn` = `ids.refresh` de
 Artículos y Facturas); `syncBtnProgress(btn, progress|null, error, done)` los rellena (`--p`, `data-pct`); tocarlos mientras cargan detiene (v3.6). Artículos: selección por SKU
 (`artSel`, barra `#artSelBar`) → `manAddSkus()` en Armar presupuesto. Columna optativa "Stock real" (`.col-stock`,
-clase `show-stock` en la tabla, `presStockHtml()`); en Cotizaciones la tabla tiene 11 columnas (anchos guardados de 11).
+clase `show-stock` en la tabla, `presStockHtml(item, cantidad)` → rojo si stock < cantidad); v3.8: va después de Cantidad
+(en Cotizaciones col 6 = Cantidad, 7 = Stock; 11 columnas). `fitScrollArea(viewId)` (core.js) ajusta el alto de `.art-scroll`
+en Artículos y Relaciones para que la página no tenga scroll propio (ResizeObserver sobre `.content`).
 Para un módulo nuevo: sección `view-<nombre>` + ítem `data-module="<nombre>"` en `index.html`,
 archivo `js/<nombre>.js`, sumarlo a `MODULES` en `js/main.js` y a los `<script>`.
 

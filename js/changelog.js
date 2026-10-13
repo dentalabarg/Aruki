@@ -4,8 +4,19 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "3.7";
+const LATEST_VERSION = "3.8";
 const CHANGELOG = [
+  {
+    version: "3.8",
+    date: "2026-10-13",
+    title: "Stock real después de Cantidad, aviso de stock insuficiente y páginas sin scroll de más",
+    items: [
+      { type: "mejora", text: "Cotizaciones y Armar presupuesto: la columna Stock real va después de Cantidad" },
+      { type: "mejora", text: "El Stock real se marca en rojo y remarcado solo cuando no alcanza para la cantidad pedida" },
+      { type: "correccion", text: "Artículos y Relaciones: la página entra en la pantalla; solo se scrollea dentro del cuadro" },
+      { type: "correccion", text: "Enviar pedido a YiQi: Origen de pedido \"Local\" (id 3). Requiere actualizar el conector de Cloudflare" }
+    ]
+  },
   {
     version: "3.7",
     date: "2026-10-13",

@@ -18,7 +18,7 @@
   - ARTICULOS_SMARTIE_ID (por defecto 2377)
   - CLIENTES_SMARTIE_ID (por defecto 1834, entidad CLIENTE)
   - CONSULTA_RAPIDA (opcional: "no" para volver a leer las smarties de a 50)
-  - ORIGEN_PEDIDO_ID (opcional: id del Origen de pedido "Local"; si no está, se busca solo)
+  - ORIGEN_PEDIDO_ID (opcional: id del Origen de pedido; por defecto 3 = "Local")
   - ORIGEN_PEDIDO_NOMBRE (opcional, por defecto "Local")
 
   Para la ayuda con IA en Cotizaciones (renglones dudosos):
@@ -710,7 +710,8 @@ let lookupCache = { at: 0, origenId: null, origenNombre: "", listas: null };
 const LOOKUP_TTL = 30 * 60 * 1000;
 
 async function getOrigenLocal(env) {
-  if (env.ORIGEN_PEDIDO_ID) return { id: Number(env.ORIGEN_PEDIDO_ID), nombre: env.ORIGEN_PEDIDO_NOMBRE || "Local" };
+  // Origen "Local" = id 3 en YiQi (confirmado por el usuario). Se puede cambiar con la variable ORIGEN_PEDIDO_ID.
+  return { id: Number(env.ORIGEN_PEDIDO_ID || 3), nombre: env.ORIGEN_PEDIDO_NOMBRE || "Local" };
   if (lookupCache.origenId && Date.now() - lookupCache.at < LOOKUP_TTL) return { id: lookupCache.origenId, nombre: lookupCache.origenNombre };
   const wanted = foldName(env.ORIGEN_PEDIDO_NOMBRE || "Local");
   const entities = (env.ORIGEN_PEDIDO_ENTITY ? [env.ORIGEN_PEDIDO_ENTITY] : [])

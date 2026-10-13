@@ -131,10 +131,10 @@ function manRender(){
         <td class="cot-name">${item ? escapeHtml(item.nombre) : `<span class="missing">No está en Artículos</span>`}</td>
         <td><input class="cell-input extra" data-field="extra" value="${escapeHtml(r.extra || "")}" placeholder="—" maxlength="300"></td>
         <td class="cot-marca">${item && item.marca ? escapeHtml(item.marca) : "—"}</td>
-        <td class="num col-stock">${presStockHtml(item)}</td>
         <td class="num">${disp
           ? `<span class="cot-disp">${d ? `<span class="badge ${d.cls}">${d.txt}</span>` : "—"}</span>`
           : `<input class="cell-input qty" data-field="cantidad" type="number" min="0" step="any" value="${escapeHtml(r.cantidad)}">`}</td>
+        <td class="num col-stock" data-stock>${presStockHtml(item, r.cantidad)}</td>
         <td class="num">
           <input class="cell-input price ${edited ? "is-edited" : ""}" data-field="precio" type="text" inputmode="decimal" autocomplete="off"
             value="${price !== null ? escapeHtml(cotPriceInput(price)) : ""}" placeholder="—" title="${edited ? "Precio cambiado a mano" : "Precio de la lista elegida (podés cambiarlo)"}">
@@ -167,6 +167,8 @@ function manUpdateTotals(){
     if (sub !== null) total += sub;
     const td = manEl("manBody").querySelector(`tr[data-id="${r.id}"] [data-sub]`);
     if (td) td.textContent = sub !== null ? cotMoney(sub) : "—";
+    const st = manEl("manBody").querySelector(`tr[data-id="${r.id}"] [data-stock]`);
+    if (st) st.innerHTML = presStockHtml(getArticulosCatalog().bySku.get(r.sku), r.cantidad);
   });
   manEl("manTotal").textContent = cotMoney(total);
 }

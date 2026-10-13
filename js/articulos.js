@@ -171,6 +171,7 @@ const articulosModule = createDataModule({
       }).join("")}</tr>`;
     }).join("");
     artRenderSel();
+    fitScrollArea("view-articulos");
   },
   onReset(){
     artSel.clear();
@@ -217,7 +218,10 @@ const artSel = new Set();
 let artPageSkus = [];
 function artRenderSel(){
   const n = artSel.size;
-  document.getElementById("artSelBar").classList.toggle("hidden", !n);
+  const bar = document.getElementById("artSelBar");
+  const wasHidden = bar.classList.contains("hidden");
+  bar.classList.toggle("hidden", !n);
+  if (wasHidden !== !n) fitScrollArea("view-articulos");
   document.getElementById("artSelCount").textContent = `${numberFormatter.format(n)} artículo${n === 1 ? "" : "s"} seleccionado${n === 1 ? "" : "s"}`;
   const all = document.getElementById("artCheckAll");
   if (all) {

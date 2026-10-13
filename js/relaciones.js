@@ -485,6 +485,7 @@ function relRender(){
   const busy = rel.loading || rel.saving;
   ["relNewBtn", "relImportBtn", "relSaveBtn"].forEach(id => { relEl(id).disabled = busy; });
   relEl("relExportBtn").disabled = busy || !rel.items.length;
+  fitScrollArea("view-relaciones");
 }
 
 const relacionesModule = {

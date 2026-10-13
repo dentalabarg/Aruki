@@ -195,7 +195,7 @@ html[data-theme="light"] .topbar{background:rgba(238,236,231,.88);}
 .sidebar-foot{margin-top:auto; padding:10px; font:400 11px var(--mono); color:var(--muted-2);}
 .sidebar.collapsed .sidebar-foot{display:none;}
 
-.content{flex:1; padding:28px 24px 60px; max-width:1770px; margin:0 auto; width:100%;}
+.content{flex:1; padding:28px 24px 28px; max-width:1770px; margin:0 auto; width:100%;}
 .page-head{display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:22px;}
 .page-kicker{font:700 10px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--text-cyan-muted); margin-bottom:6px;}
 .page-title{font:800 26px var(--display); letter-spacing:-.02em;}
@@ -630,8 +630,7 @@ select.ds-input{cursor:pointer;}
 .stock-check{margin-top:8px;}
 .cot-table:not(.show-stock) .col-stock{display:none;}
 .stock-num{font-variant-numeric:tabular-nums; font-weight:500;}
-.stock-num.is-low{color:var(--amber, #b7791f);}
-.stock-num.is-zero{color:var(--red);}
+.stock-num.is-short{color:var(--red); font-weight:700; background:var(--red-soft); padding:2px 7px; border-radius:var(--radius-pill);}
 
 /* Selección en Artículos */
 .art-check{width:44px; text-align:center !important; padding-left:6px !important; padding-right:6px !important;}
