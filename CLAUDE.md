@@ -38,7 +38,7 @@ Los scripts son clásicos (no módulos ES) y comparten el ámbito global; el ord
 cotizaciones → cot-archivos → cot-ia → manual → main.
 
 ## Reglas de cada cambio (obligatorias)
-1. Subir `LATEST_VERSION` en `js/changelog.js` (1.5 → 1.6 …).
+1. Subir `LATEST_VERSION` en `js/changelog.js` (1.5 → 1.6 …; después de X.9 sigue la (X+1).0, ej. 3.9 → 4.0).
 2. Agregar un bloque **al inicio** de `CHANGELOG`: `version`, `date` (AAAA-MM-DD, hoy),
    `title`, `items` con `type` = `nuevo` | `mejora` | `correccion`.
 3. Actualizar el `?v=X.X` de **todos** los `<link>`/`<script>` de `index.html` para que el

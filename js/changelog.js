@@ -4,10 +4,10 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "3.10";
+const LATEST_VERSION = "4.0";
 const CHANGELOG = [
   {
-    version: "3.10",
+    version: "4.0",
     date: "2026-10-13",
     title: "Clientes, cantidades desde Artículos y opciones en Cotizaciones",
     items: [
