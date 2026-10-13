@@ -979,7 +979,15 @@ async function diagnosticoPedido(env) {
 /* ---------- IA (Gemini) ----------
    geminiJSON(): llama a Gemini pidiendo JSON con un esquema. Prueba el modelo principal y,
    si está saturado (429/500/503) o no existe (404), los de reserva. */
-async function geminiJSON(env, { system, parts, schema }) {
+/* Configuración de "pensamiento" para respuestas rápidas (elegir entre candidatos no necesita razonar mucho).
+   Gemini 3 usa thinkingLevel; Gemini 2.5 usa thinkingBudget. Si un modelo no acepta la opción, se reintenta sin ella. */
+function fastThinking(model) {
+  if (/gemini-3/i.test(model)) return { thinkingLevel: "minimal" };
+  if (/gemini-2\.5/i.test(model)) return { thinkingBudget: 0 };
+  return null;   // alias como "gemini-flash-latest": no se sabe la versión, se usa como viene
+}
+
+async function geminiJSON(env, { system, parts, schema, fast = false }) {
   if (!env.GEMINI_API_KEY) {
     throw new HttpError(503, "Falta configurar la clave de Gemini (GEMINI_API_KEY) en el conector de Cloudflare.");
   }
@@ -992,17 +1000,20 @@ async function geminiJSON(env, { system, parts, schema }) {
     contents: [{ role: "user", parts }],
     generationConfig: { temperature: 0.1, responseMimeType: "application/json", responseSchema: schema },
   };
-  const body = JSON.stringify(payload);
-  const waits = [2000, 5000];
+  const waits = fast ? [1500, 3000] : [2000, 5000];
   let lastStatus = 0, lastText = "", saturado = false;
   for (const m of models) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
+    let thinking = fast ? fastThinking(m) : null;
     for (let attempt = 0; attempt <= waits.length; attempt++) {
+      const cfg = thinking ? { ...payload.generationConfig, thinkingConfig: thinking } : payload.generationConfig;
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-        body,
+        body: JSON.stringify({ ...payload, generationConfig: cfg }),
       });
+      // El modelo no acepta esa configuración de pensamiento: se repite enseguida sin ella
+      if (response.status === 400 && thinking) { await response.text(); thinking = null; attempt--; continue; }
       if (response.ok) {
         const data = await response.json();
         const raw = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
@@ -1052,7 +1063,9 @@ async function iaElegir(request, env) {
   })).filter(r => r.id && r.solicitado && r.candidatos.length);
   if (!renglones.length) return { resultados: [] };
 
+  const inicio = Date.now();
   const { result, model } = await geminiJSON(env, {
+    fast: true,
     system: IA_PROMPT,
     parts: [{ text: JSON.stringify({ renglones }) }],
     schema: {
@@ -1077,7 +1090,7 @@ async function iaElegir(request, env) {
     .map(r => ({ id: String(r?.id || ""), sku: String(r?.sku || "").trim(), motivo: String(r?.motivo || "").slice(0, 200) }))
     .filter(r => byId.has(r.id))
     .map(r => (byId.get(r.id).has(r.sku) ? r : { ...r, sku: "" }));
-  return { resultados, modelo: model };
+  return { resultados, modelo: model, ms: Date.now() - inicio };
 }
 
 /* /ia/leer: leer un PDF (con texto o escaneado) o una foto JPG/PNG y devolver la lista

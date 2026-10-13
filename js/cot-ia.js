@@ -8,7 +8,8 @@
    Puede correr solo después de "Armar presupuesto" (casilla) o con el botón.
    ============================================================ */
 const COT_IA_KEY = "aruki-cot-ia";
-const COT_IA_LOTE = 25;          // renglones por consulta
+const COT_IA_LOTE = 20;          // renglones por consulta
+const COT_IA_PARALELO = 3;       // consultas a la vez
 const COT_IA_CANDIDATOS = 12;
 let cotIaBusy = false;
 
@@ -55,7 +56,7 @@ async function cotIaPost(renglones){
   if (response.status === 401) throw new SessionExpired("Sesión vencida.");
   if (response.status === 404) throw new Error("El conector de Cloudflare todavía no tiene la función de IA. Hay que pegar el código nuevo del conector (Deploy).");
   if (!response.ok || payload?.error) throw new Error(payload?.error || `Error HTTP ${response.status}.`);
-  return payload.resultados || [];
+  return { resultados: payload.resultados || [], modelo: payload.modelo || "" };
 }
 
 async function cotIaRevisar(){
@@ -91,12 +92,24 @@ async function cotIaRevisar(){
   cotIaRefresh();
   cotStatus(`La IA está revisando ${cotRenglones(pedidos.length)}…`);
   const resultados = new Map();
+  const modelos = new Set();
+  const inicio = Date.now();
   try {
-    for (let i = 0; i < pedidos.length; i += COT_IA_LOTE) {
-      const lote = pedidos.slice(i, i + COT_IA_LOTE);
-      if (pedidos.length > COT_IA_LOTE) cotStatus(`La IA está revisando… ${Math.min(i + COT_IA_LOTE, pedidos.length)} de ${pedidos.length}`);
-      (await cotIaPost(lote)).forEach(r => resultados.set(r.id, r));
-    }
+    // Tandas de 20 renglones, hasta 3 a la vez
+    const lotes = [];
+    for (let i = 0; i < pedidos.length; i += COT_IA_LOTE) lotes.push(pedidos.slice(i, i + COT_IA_LOTE));
+    let next = 0, hechos = 0;
+    const worker = async () => {
+      while (next < lotes.length) {
+        const lote = lotes[next++];
+        const res = await cotIaPost(lote);
+        res.resultados.forEach(r => resultados.set(r.id, r));
+        if (res.modelo) modelos.add(res.modelo);
+        hechos += lote.length;
+        if (lotes.length > 1) cotStatus(`La IA está revisando… ${Math.min(hechos, pedidos.length)} de ${pedidos.length}`);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(COT_IA_PARALELO, lotes.length) }, worker));
   } catch (error) {
     cotIaBusy = false;
     cotIaRefresh();
@@ -130,7 +143,9 @@ async function cotIaRevisar(){
   cotRender(); cotSave();
   const msg = `IA: ${cotRenglones(elegidos)} resuelto${elegidos === 1 ? "" : "s"}` +
     (sinRespuesta ? `, ${sinRespuesta} sin un artículo que corresponda (buscalos a mano)` : "") + ".";
-  cotStatus(`${msg} Pasá el mouse sobre "Elegido por IA" para ver por qué. Si está bien, podés guardarlo como relación.`, "ok");
+  const seg = Math.max(1, Math.round((Date.now() - inicio) / 1000));
+  const conModelo = modelos.size ? ` (${[...modelos].join(", ")} · ${seg} s)` : ` (${seg} s)`;
+  cotStatus(`${msg.replace(/\.$/, "")}${conModelo}. Pasá el mouse sobre "Elegido por IA" para ver por qué. Si está bien, podés guardarlo como relación.`, "ok");
   cotShowToast(`IA: ${elegidos} resuelto${elegidos === 1 ? "" : "s"}`);
 }
 

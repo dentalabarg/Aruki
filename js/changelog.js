@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "4.4";
+const LATEST_VERSION = "4.5";
 const CHANGELOG = [
+  {
+    version: "4.5",
+    date: "2026-10-13",
+    title: "IA más rápida en Cotizaciones",
+    items: [
+      { type: "mejora", text: "Revisar con IA: Gemini elige los artículos sin el \"pensamiento\" previo (no hace falta para elegir entre candidatos), lo que la hace bastante más rápida. Requiere actualizar el conector" },
+      { type: "mejora", text: "Los renglones dudosos se mandan en tandas de 20, hasta 3 a la vez (antes de a una)" },
+      { type: "nuevo", text: "Al terminar, el aviso muestra qué modelo de IA se usó y cuántos segundos tardó" }
+    ]
+  },
   {
     version: "4.4",
     date: "2026-10-13",

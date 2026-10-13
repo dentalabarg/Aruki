@@ -213,6 +213,9 @@ computadoras), con botón de respaldo (descargar/importar).
      default gemini-3.6-flash, JSON con responseSchema, reintentos 3 s/8 s) y solo acepta SKU que estaban entre los
      candidatos. Resultado → fila con estado "ia" (`iaMotivo` en el title del badge); sin elección → `iaRevisado`.
      Casilla `#cotIaAuto` (localStorage `aruki-cot-ia`) la corre después de Armar; botón `#cotIaBtn` a mano. Con Deshacer.
+     v4.5: lotes de 20 (`COT_IA_LOTE`), 3 en paralelo (`COT_IA_PARALELO`); `/ia/elegir` usa `geminiJSON({fast:true})` →
+     `thinkingConfig` mínimo (`fastThinking()`: Gemini 3 `thinkingLevel:"minimal"`, 2.5 `thinkingBudget:0`; si da 400 se
+     reintenta sin), esperas 1,5 s/3 s; responde `modelo` y `ms`, y el aviso muestra modelo y segundos. /ia/leer sin cambios.
      v2.4: el Worker prueba `GEMINI_MODEL` y después `GEMINI_FALLBACK_MODELS` (default gemini-flash-latest,
      gemini-flash-lite-latest): 3 intentos por modelo (esperas 2 s/5 s) ante 429/500/503, salta al siguiente si 404;
      si todos saturados → 503 con mensaje claro. Responde `modelo` usado.
