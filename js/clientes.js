@@ -26,9 +26,12 @@ const clientesStore = {
   async refresh(){
     if (this.loading) return;
     this.loading = true; this.error = ""; this.notify();
+    const btn = document.getElementById("syncCliBtn");
+    syncBtnProgress(btn, 0.02);
+    btn.disabled = true;
     try {
       const ctrl = new AbortController();
-      const result = await loadAllPages(`${WORKER_BASE}/clientes`, ctrl.signal, () => {});
+      const result = await loadAllPages(`${WORKER_BASE}/clientes`, ctrl.signal, snap => syncBtnProgress(btn, snap.done / snap.totalPages));
       if (result.failed.length && !result.rows.length) throw new Error("No se pudieron descargar los clientes.");
       this.list = cliParse(result.rows, result.columns);
       this.savedAt = Date.now(); this.loaded = true;
@@ -38,6 +41,12 @@ const clientesStore = {
       this.error = String(error?.message || error);
     } finally {
       this.loading = false; this.notify();
+      btn.disabled = false;
+      syncBtnProgress(btn, null, !!this.error);
+      btn.title = this.error ? `No se pudieron actualizar los clientes: ${this.error}`
+        : `Traer los clientes actualizados desde YiQi · ${numberFormatter.format(this.list.length)} clientes · Última actualización: ${new Date(this.savedAt).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })}`;
+      if (this.error && this.manual) alert(`No se pudieron actualizar los clientes.\n\n${this.error}`);
+      this.manual = false;
     }
   },
 
@@ -182,3 +191,9 @@ function clientePicker(inputId, onChange){
   renderInfo();
   return api;
 }
+
+document.getElementById("syncCliBtn").addEventListener("click", () => {
+  if (!getAuthToken()) return;
+  clientesStore.manual = true;
+  clientesStore.refresh();
+});

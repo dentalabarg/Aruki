@@ -115,6 +115,11 @@ v3.3 (`js/articulos.js`): `artRowExcluded(row)` oculta en Artículos (cfg.filter
 (Cotizaciones/Relaciones) los que tienen en SKU/nombre `ART_EXCLUDE` (discontinuado, mercado libre, para fraccionar, rep wm)
 o **todos** los precios en 0/vacíos; `bySku` sigue teniendo todos (para mostrar nombres de relaciones viejas).
 Columna Identificador oculta (`ART_HIDDEN_TITLE`). Anchos de columna a mano en localStorage `aruki-art-colw` ({field: px}).
+v3.5: los `.runtime-banner` solo se ven con `data-state="error"` (CSS). Los botones de actualizar están en la barra
+superior (`.sync-btn`: `#syncCliBtn` → `clientesStore.refresh()`, `#artRefreshBtn` y `#refreshBtn` = `ids.refresh` de
+Artículos y Facturas); `syncBtnProgress(btn, progress|null, error)` los rellena (`--p`). Artículos: selección por SKU
+(`artSel`, barra `#artSelBar`) → `manAddSkus()` en Armar presupuesto. Columna optativa "Stock real" (`.col-stock`,
+clase `show-stock` en la tabla, `presStockHtml()`); en Cotizaciones la tabla tiene 11 columnas (anchos guardados de 11).
 Para un módulo nuevo: sección `view-<nombre>` + ítem `data-module="<nombre>"` en `index.html`,
 archivo `js/<nombre>.js`, sumarlo a `MODULES` en `js/main.js` y a los `<script>`.
 

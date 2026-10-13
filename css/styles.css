@@ -579,3 +579,71 @@ select.ds-input{cursor:pointer;}
 .man-table.mode-disp .col-sub{display:none;}
 .man-table.mode-disp tfoot{display:none;}
 .man-empty{padding:28px 20px;}
+
+/* ============================================================
+   v3.5 — barra superior con "Actualizar …", sin recuadros de estado,
+   selección en Artículos, Stock real, barra lateral retraída centrada
+   ============================================================ */
+/* Los recuadros de estado solo aparecen cuando hay un error */
+.runtime-banner:not([data-state="error"]){display:none;}
+
+.sync-btns{display:flex; align-items:center; gap:6px;}
+.sync-btn{
+  --p:0; position:relative; overflow:hidden; isolation:isolate;
+  display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px;
+  border:none; border-radius:var(--radius-pill); cursor:pointer;
+  background:var(--bg-elev-2); box-shadow:var(--shadow-sm);
+  font:500 12.5px var(--sans); color:var(--text); white-space:nowrap;
+  transition:color var(--transition-base), box-shadow var(--transition-base);
+}
+.sync-btn b{font-weight:600;}
+.sync-btn svg{flex-shrink:0; color:var(--cyan);}
+.sync-btn::before{
+  content:""; position:absolute; inset:0; z-index:-1; transform-origin:left center;
+  transform:scaleX(var(--p)); background:var(--cyan); opacity:.28; transition:transform 300ms ease;
+}
+@media (hover:hover){ .sync-btn:not(:disabled):hover{box-shadow:var(--shadow-sm), 0 0 0 1px var(--cyan-soft);} }
+.sync-btn:disabled{cursor:progress;}
+.sync-btn.is-busy{box-shadow:var(--shadow-sm), 0 0 0 1px var(--cyan-soft);}
+.sync-btn.is-busy svg{animation:syncSpin 1s linear infinite;}
+.sync-btn.is-error{box-shadow:var(--shadow-sm), 0 0 0 1px var(--red-soft); color:var(--red);}
+.sync-btn.is-error svg{color:var(--red);}
+.sync-btn.is-done{animation:syncDone 1.2s ease;}
+@keyframes syncSpin{to{transform:rotate(360deg);}}
+@keyframes syncDone{0%{box-shadow:var(--shadow-sm), 0 0 0 2px var(--green-soft);} 100%{box-shadow:var(--shadow-sm);}}
+@media (max-width:1280px){ .sync-btn span{font-size:0;} .sync-btn b{font-size:12.5px;} }
+@media (max-width:820px){ .sync-btns{display:none;} }
+
+/* Botones "Nueva cotización" / "Nuevo presupuesto" bien visibles */
+.btn-new{display:inline-flex; align-items:center; gap:7px; background:var(--cyan); color:#fff; box-shadow:var(--shadow-sm);}
+@media (hover:hover){ .btn-new:hover{filter:brightness(1.08);} }
+
+/* Separación entre recuadros de Armar presupuesto */
+#view-manual .panel + .panel{margin-top:22px;}
+
+/* Barra lateral retraída: más angosta y con los íconos centrados */
+:root{--sidebar-w-collapsed:60px;}
+.sidebar.collapsed{padding:18px 8px;}
+.sidebar.collapsed .nav-item,.sidebar.collapsed .nav-item.sub{justify-content:center; padding:10px 0; gap:0;}
+
+/* Stock real (columna optativa) */
+.stock-check{margin-top:8px;}
+.cot-table:not(.show-stock) .col-stock{display:none;}
+.stock-num{font-variant-numeric:tabular-nums; font-weight:500;}
+.stock-num.is-low{color:var(--amber, #b7791f);}
+.stock-num.is-zero{color:var(--red);}
+
+/* Selección en Artículos */
+.art-check{width:44px; text-align:center !important; padding-left:6px !important; padding-right:6px !important;}
+.art-check input{width:16px; height:16px; accent-color:var(--cyan); cursor:pointer; vertical-align:middle;}
+.art-main tbody tr[data-sku]{cursor:pointer;}
+.art-main tbody tr.is-selected td{background:var(--cyan-soft);}
+.art-selbar{
+  position:sticky; top:calc(var(--topbar-h) + 8px); z-index:5;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:8px 8px 8px 14px; border-radius:var(--radius-sm);
+  background:var(--bg-elev-2); box-shadow:var(--shadow-md, var(--shadow-sm)), 0 0 0 1px var(--cyan-soft);
+  font:600 13px var(--sans); color:var(--text);
+}
+.art-selbar #artSelCount{margin-right:auto;}
+.art-selbar .btn{display:inline-flex; align-items:center; gap:6px;}

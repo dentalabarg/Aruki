@@ -5,7 +5,7 @@
    Excel, PDF y envío del pedido a YiQi.
    ============================================================ */
 const MAN_DRAFT_KEY = "aruki-manual";
-const man = { rows: [], seq: 0, priceField: "", modo: "cantidad", undo: [], redo: [], addActive: 0, lastSent: "" };
+const man = { rows: [], seq: 0, priceField: "", modo: "cantidad", stock: false, undo: [], redo: [], addActive: 0, lastSent: "" };
 const manEl = id => document.getElementById(id);
 const manCliente = clientePicker("manCliente", () => manSave());
 
@@ -131,6 +131,7 @@ function manRender(){
         <td class="cot-name">${item ? escapeHtml(item.nombre) : `<span class="missing">No está en Artículos</span>`}</td>
         <td><input class="cell-input extra" data-field="extra" value="${escapeHtml(r.extra || "")}" placeholder="—" maxlength="300"></td>
         <td class="cot-marca">${item && item.marca ? escapeHtml(item.marca) : "—"}</td>
+        <td class="num col-stock">${presStockHtml(item)}</td>
         <td class="num">${disp
           ? `<span class="cot-disp">${d ? `<span class="badge ${d.cls}">${d.txt}</span>` : "—"}</span>`
           : `<input class="cell-input qty" data-field="cantidad" type="number" min="0" step="any" value="${escapeHtml(r.cantidad)}">`}</td>
@@ -151,6 +152,10 @@ function manRender(){
   manEl("manQtyHead").textContent = disp ? "Disponibilidad" : "Cantidad";
   manEl("manPriceHead").textContent = manPriceTitle();
   manEl("manTable").classList.toggle("mode-disp", disp);
+  manEl("manTable").classList.toggle("show-stock", man.stock && !disp);
+  manEl("manStockWrap").classList.toggle("hidden", disp);
+  manEl("manStock").checked = !!man.stock;
+  manEl("manClearBtn").disabled = !man.rows.length;
   manEl("manEmpty").classList.toggle("hidden", man.rows.length > 0);
   ["manExcelBtn", "manPdfBtn", "manYiqiBtn"].forEach(id => { manEl(id).disabled = !man.rows.length; });
   manRenderUndo();
@@ -186,6 +191,35 @@ function manAddSku(sku){
     if (tr) tr.scrollIntoView({ block: "nearest" });
   }
 }
+/* Agregar varios de una vez (desde el módulo Artículos). Devuelve cuántos se agregaron / sumaron. */
+function manAddSkus(skus){
+  const cat = getArticulosCatalog();
+  const valid = skus.filter(sku => cat.bySku.has(sku));
+  if (!valid.length) return 0;
+  manPushUndo(`agregar ${valid.length} artículo(s) desde Artículos`);
+  let nuevos = 0, sumados = 0;
+  valid.forEach(sku => {
+    const existing = man.rows.find(r => r.sku === sku);
+    if (existing) { existing.cantidad = (Number(existing.cantidad) || 0) + 1; sumados++; }
+    else { man.rows.push({ id: `m${++man.seq}`, sku, cantidad: 1, precio: null, extra: "" }); nuevos++; }
+  });
+  manRender(); manSave();
+  const partes = [];
+  if (nuevos) partes.push(`${nuevos} agregado${nuevos === 1 ? "" : "s"}`);
+  if (sumados) partes.push(`${sumados} ya estaba${sumados === 1 ? "" : "n"} (se sumó 1)`);
+  setTimeout(() => manToast(`Desde Artículos: ${partes.join(", ")}`), 50);
+  return valid.length;
+}
+
+/* Vaciar: saca todos los artículos (deja cliente, lista y modo) */
+function manEmpty(){
+  if (!man.rows.length) return;
+  manPushUndo(`vaciar el presupuesto (${man.rows.length} renglones)`);
+  man.rows = [];
+  manRender(); manSave();
+  manToast("Presupuesto vaciado");
+}
+
 const manAdd = manEl("manAddSearch");
 function manRenderAddResults(){
   const box = manEl("manAddResults");
@@ -278,6 +312,11 @@ manEl("manLista").addEventListener("change", e => {
   manRender(); manSave();
   manToast(`Lista de precios: ${manPriceTitle()}`, false);
 });
+manEl("manStock").addEventListener("change", e => {
+  man.stock = e.target.checked;
+  manRender(); manSave();
+});
+manEl("manClearBtn").addEventListener("click", manEmpty);
 manEl("manModo").addEventListener("change", e => {
   man.modo = e.target.value === "disponibilidad" ? "disponibilidad" : "cantidad";
   manRender(); manSave();
@@ -333,7 +372,7 @@ manEl("manYiqiBtn").addEventListener("click", async () => {
 function manSave(){
   try {
     localStorage.setItem(MAN_DRAFT_KEY, JSON.stringify({
-      rows: man.rows, seq: man.seq, priceField: man.priceField, modo: man.modo, lastSent: man.lastSent,
+      rows: man.rows, seq: man.seq, priceField: man.priceField, modo: man.modo, lastSent: man.lastSent, stock: !!man.stock,
       cliente: manCliente.get(), clienteTexto: manCliente.text()
     }));
   } catch {}
@@ -347,6 +386,7 @@ function manRestore(){
     man.priceField = d.priceField || "";
     man.modo = d.modo === "disponibilidad" ? "disponibilidad" : "cantidad";
     man.lastSent = d.lastSent || "";
+    man.stock = !!d.stock;
     manEl("manModo").value = man.modo;
     manCliente.set(d.cliente || null, d.clienteTexto || "");
   } catch {}

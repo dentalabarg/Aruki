@@ -43,6 +43,13 @@ function presDownload(blob, name){
 const presSub = r => r.precio !== null && r.precio !== undefined ? r.precio * (Number(r.cantidad) || 0) : null;
 const presMoney = n => priceFormatter.format(n).replace(/^\$\s?/, "$ ");
 
+/* Stock real (Depósito 1 - Local + Depósito Central) para la columna opcional */
+function presStockHtml(item){
+  if (!item || item.stock === null || item.stock === undefined) return "—";
+  const n = Number(item.stock) || 0;
+  return `<span class="stock-num ${n <= 0 ? "is-zero" : n <= 5 ? "is-low" : ""}">${escapeHtml(decimalFormatter.format(n))}</span>`;
+}
+
 /* ---------- Excel ---------- */
 async function presExcel(doc){
   const XLSX = await cotLoadXlsx();

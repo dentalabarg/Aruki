@@ -16,7 +16,7 @@ const COT_UNIT_WORDS = "u|un|und|unid|unidad|unidades|uds|cajas?|cjs?|packs?|pza
 const COT_SIZE_UNITS = /^(?:gr|grs|g|gramos?|ml|cc|mm|cm|kg|kgs|mts?|lts?|l)\b/i;
 
 const cot = {
-  rows: [], seq: 0, cliente: "", priceField: "", texto: "",
+  rows: [], seq: 0, cliente: "", priceField: "", texto: "", stock: false,
   activeSkuInput: null, skuActive: 0, addActive: 0, dragId: null, undo: [], redo: [], modo: "cantidad"
 };
 
@@ -487,6 +487,7 @@ function cotRender(){
         </td>
         <td><input class="cell-input extra" data-field="extra" value="${escapeHtml(r.extra)}" placeholder="—" maxlength="300"></td>
         <td class="cot-marca">${item && item.marca ? escapeHtml(item.marca) : "—"}</td>
+        <td class="num col-stock">${presStockHtml(item)}</td>
         <td class="num">${cot.modo === "disponibilidad"
           ? `<span class="cot-disp">${disp ? `<span class="badge ${disp.cls}">${disp.txt}</span>` : "—"}</span>`
           : `<input class="cell-input qty" data-field="cantidad" type="number" min="0" step="any" value="${escapeHtml(r.cantidad)}">`}</td>
@@ -512,6 +513,9 @@ function cotRender(){
   cotEl("cotPriceHead").textContent = cotPriceTitle();
   cotEl("cotQtyHead").textContent = cot.modo === "disponibilidad" ? "Disponibilidad" : "Cantidad";
   cotEl("cotTable").classList.toggle("mode-disp", cot.modo === "disponibilidad");
+  cotEl("cotTable").classList.toggle("show-stock", cot.stock && cot.modo === "cantidad");
+  cotEl("cotStockWrap").classList.toggle("hidden", cot.modo !== "cantidad");
+  cotEl("cotStock").checked = !!cot.stock;
   cotApplyWidths(cotLoadWidths());
   cotEl("cotResultPanel").classList.toggle("hidden", !cot.rows.length);
   ["cotExportBtn", "cotPdfBtn", "cotYiqiBtn"].forEach(id => { cotEl(id).disabled = !cot.rows.length; });
@@ -894,7 +898,7 @@ async function cotSendYiqi(){
 function cotSave(){
   try {
     localStorage.setItem(COT_DRAFT_KEY, JSON.stringify({
-      rows: cot.rows, seq: cot.seq, cliente: cotClientePk.text(), clienteSel: cotClientePk.get(), lastSent: cot.lastSent || "",
+      rows: cot.rows, seq: cot.seq, cliente: cotClientePk.text(), clienteSel: cotClientePk.get(), lastSent: cot.lastSent || "", stock: !!cot.stock,
       priceField: cot.priceField, texto: cotEl("cotTexto").value, modo: cot.modo
     }));
   } catch {}
@@ -910,6 +914,7 @@ function cotRestore(){
     cotEl("cotModo").value = cot.modo;
     cotClientePk.set(d.clienteSel || null, d.cliente || "");
     cot.lastSent = d.lastSent || "";
+    cot.stock = !!d.stock;
     cotEl("cotTexto").value = d.texto || "";
   } catch {}
 }
@@ -967,6 +972,10 @@ document.addEventListener("keydown", e => {
 });
 cotEl("cotTexto").addEventListener("input", cotSave);
 cotEl("cotTexto").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); cotProcess(); } });
+cotEl("cotStock").addEventListener("change", function(){
+  cot.stock = this.checked;
+  cotRender(); cotSave();
+});
 cotEl("cotModo").addEventListener("change", function(){
   cot.modo = this.value;
   cotRender(); cotSave();
@@ -1168,15 +1177,17 @@ setInterval(() => {
 /* ---------- Ancho de columnas a mano ---------- */
 var COT_COLW_KEY = "aruki-cot-colw";
 function cotLoadWidths(){
-  try { const w = JSON.parse(localStorage.getItem(COT_COLW_KEY) || "null"); return Array.isArray(w) && w.length === 10 ? w : null; }
+  try { const w = JSON.parse(localStorage.getItem(COT_COLW_KEY) || "null"); return Array.isArray(w) && w.length === 11 ? w : null; }
   catch { return null; }
 }
 function cotApplyWidths(w){
   const table = cotEl("cotTable");
   const cols = table.querySelectorAll("colgroup col");
   const disp = table.classList.contains("mode-disp");
-  // En "Disponibilidad simplificada": la columna Subtotal no ocupa lugar y la de Disponibilidad necesita ~140 px
-  const shown = w ? w.map((v, i) => (disp && i === 8) ? 0 : (disp && i === 6) ? Math.max(v, 140) : v) : null;
+  const stock = table.classList.contains("show-stock");
+  // En "Disponibilidad simplificada": la columna Subtotal no ocupa lugar y la de Disponibilidad necesita ~140 px.
+  // La columna Stock real (6) solo ocupa lugar si está activada.
+  const shown = w ? w.map((v, i) => (disp && i === 9) || (!stock && i === 6) ? 0 : (disp && i === 7) ? Math.max(v, 140) : v) : null;
   table.classList.toggle("is-resized", !!w);
   cols.forEach((c, i) => { c.style.width = shown ? `${shown[i]}px` : ""; });
   table.style.width = shown ? `${shown.reduce((a, b) => a + b, 0)}px` : "";
@@ -1193,7 +1204,7 @@ function cotApplyWidths(w){
     handle.addEventListener("pointerdown", e => {
       e.preventDefault(); e.stopPropagation();
       // Primera vez: se toman los anchos que se ven ahora como punto de partida
-      const w = cotLoadWidths() || [...ths].map(t => Math.round(t.getBoundingClientRect().width));
+      const w = cotLoadWidths() || [...ths].map(t => Math.round(t.getBoundingClientRect().width) || 90);   // columnas ocultas: 90 px
       const startX = e.clientX, startW = w[i];
       handle.classList.add("active");
       handle.setPointerCapture(e.pointerId);

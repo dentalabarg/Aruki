@@ -4,8 +4,23 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "3.4";
+const LATEST_VERSION = "3.5";
 const CHANGELOG = [
+  {
+    version: "3.5",
+    date: "2026-10-13",
+    title: "Botones de actualizar arriba, selección en Artículos y Stock real",
+    items: [
+      { type: "nuevo", text: "Barra superior: botones Actualizar Clientes, Actualizar Artículos y Actualizar Facturas, que se van rellenando a medida que avanza la descarga desde YiQi" },
+      { type: "mejora", text: "Se sacaron los recuadros de estado (\"Conectado a YiQi\", \"Listo para cotizar\", etc.). Solo aparecen si hay un error" },
+      { type: "nuevo", text: "Artículos: se pueden seleccionar artículos (tocando la fila o la casilla) y agregarlos todos juntos a Armar presupuesto" },
+      { type: "nuevo", text: "Armar presupuesto y Cotizaciones: columna optativa Stock real (Depósito 1 - Local + Depósito Central), solo con \"Respetar cantidad solicitada\"" },
+      { type: "nuevo", text: "Armar presupuesto: botón Vaciar presupuesto (se puede deshacer)" },
+      { type: "mejora", text: "Botones Nueva cotización y Nuevo presupuesto más visibles" },
+      { type: "correccion", text: "Armar presupuesto: separación entre el recuadro de datos y el de artículos" },
+      { type: "correccion", text: "Barra lateral retraída más angosta y con los íconos centrados" }
+    ]
+  },
   {
     version: "3.4",
     date: "2026-10-13",

@@ -77,7 +77,7 @@ function artLoadWidths(){
 function artApplyWidths(table, ths, cols, w){
   const has = !!w && cols.some(c => w[c.field]);
   table.classList.toggle("is-resized", has);
-  let total = 0;
+  let total = has ? 44 : 0;                       // + columna de selección
   ths.forEach((th, i) => {
     const px = has ? (w[cols[i].field] || 120) : 0;
     th.style.width = has ? `${px}px` : "";
@@ -88,7 +88,7 @@ function artApplyWidths(table, ths, cols, w){
 function artInitResize(cols){
   const head = document.getElementById("artHead");
   const table = head.closest("table");
-  const ths = [...head.querySelectorAll("th")];
+  const ths = [...head.querySelectorAll("th[data-field]")];
   ths.forEach((th, i) => {
     const handle = document.createElement("span");
     handle.className = "col-resizer";
@@ -126,7 +126,8 @@ function artInitResize(cols){
 const articulosModule = createDataModule({
   endpoint: `${WORKER_BASE}/articulos`,
   viewSize: 100,
-  cache: { key: "articulos", maxAgeHours: 4 },   // guardado en la computadora, se actualiza solo cada 4 h
+  cache: { key: "articulos", maxAgeHours: 4 },
+  syncTitle: "Traer los artículos actualizados desde YiQi (se hace solo cada 4 horas)",   // guardado en la computadora, se actualiza solo cada 4 h
   loadingTitle: "Cargando todos los artículos desde YiQi",
   idleText: "Aruki carga todos los artículos al abrir este módulo.",
   emptyText: "Todavía no hay artículos cargados.",
@@ -149,20 +150,31 @@ const articulosModule = createDataModule({
     const head = document.getElementById("artHead");
     if (head.dataset.key !== headKey) {          // el encabezado se arma solo cuando cambian las columnas
       head.dataset.key = headKey;
-      head.innerHTML = cols.map(c => {
+      head.innerHTML = `<th class="art-check"><input type="checkbox" id="artCheckAll" title="Seleccionar todos los de esta página" aria-label="Seleccionar todos los de esta página"></th>` + cols.map(c => {
         const num = artColumnKind(c) === "money" || QTY_TITLE.test(c.title || "");
-        return `<th class="${num ? "num" : ""}">${escapeHtml(c.title || c.field)}</th>`;
+        return `<th class="${num ? "num" : ""}" data-field="${escapeHtml(c.field)}">${escapeHtml(c.title || c.field)}</th>`;
       }).join("");
       if (cols.length) artInitResize(cols);
     }
-    document.getElementById("artBody").innerHTML = pageRows.map(r => `<tr>${cols.map(c => {
-      const cell = artFormatCell(r[c.field], c);
-      const isName = /nombre|descripci/i.test(c.title || "");
-      const cls = [cell.num ? "num" : "", cell.zero ? "zero" : "", isName ? "name" : ""].filter(Boolean).join(" ");
-      return `<td class="${cls}">${escapeHtml(cell.text)}</td>`;
-    }).join("")}</tr>`).join("");
+    const skuCol = cols.find(c => /sku|c[oó]digo/i.test(c.title || ""));
+    artPageSkus = [];
+    document.getElementById("artBody").innerHTML = pageRows.map(r => {
+      const sku = skuCol ? String(r[skuCol.field] ?? "").trim() : "";
+      if (sku) artPageSkus.push(sku);
+      const sel = sku && artSel.has(sku);
+      return `<tr data-sku="${escapeHtml(sku)}" class="${sel ? "is-selected" : ""}"><td class="art-check">${sku
+        ? `<input type="checkbox" ${sel ? "checked" : ""} aria-label="Seleccionar ${escapeHtml(sku)}">` : ""}</td>${cols.map(c => {
+        const cell = artFormatCell(r[c.field], c);
+        const isName = /nombre|descripci/i.test(c.title || "");
+        const cls = [cell.num ? "num" : "", cell.zero ? "zero" : "", isName ? "name" : ""].filter(Boolean).join(" ");
+        return `<td class="${cls}">${escapeHtml(cell.text)}</td>`;
+      }).join("")}</tr>`;
+    }).join("");
+    artRenderSel();
   },
   onReset(){
+    artSel.clear();
+    artRenderSel();
     document.getElementById("artHead").innerHTML = "";
     document.getElementById("artHead").dataset.key = "";
     document.getElementById("artBody").innerHTML = "";
@@ -198,3 +210,48 @@ function getArticulosCatalog(){
   artCatalogCache = { rows, length: rows.length, value };
   return value;
 }
+
+
+/* ---------- Selección de artículos → Armar presupuesto ---------- */
+const artSel = new Set();
+let artPageSkus = [];
+function artRenderSel(){
+  const n = artSel.size;
+  document.getElementById("artSelBar").classList.toggle("hidden", !n);
+  document.getElementById("artSelCount").textContent = `${numberFormatter.format(n)} artículo${n === 1 ? "" : "s"} seleccionado${n === 1 ? "" : "s"}`;
+  const all = document.getElementById("artCheckAll");
+  if (all) {
+    const onPage = artPageSkus.filter(s => artSel.has(s)).length;
+    all.checked = artPageSkus.length > 0 && onPage === artPageSkus.length;
+    all.indeterminate = onPage > 0 && onPage < artPageSkus.length;
+  }
+}
+function artToggle(sku, on){
+  if (!sku) return;
+  if (on) artSel.add(sku); else artSel.delete(sku);
+  const tr = document.querySelector(`#artBody tr[data-sku="${CSS.escape(sku)}"]`);
+  if (tr) { tr.classList.toggle("is-selected", on); const cb = tr.querySelector("input"); if (cb) cb.checked = on; }
+  artRenderSel();
+}
+document.getElementById("artBody").addEventListener("click", e => {
+  const tr = e.target.closest("tr[data-sku]");
+  if (!tr || !tr.dataset.sku) return;
+  if (window.getSelection && String(window.getSelection()).length && !e.target.matches("input")) return;   // estaba seleccionando texto
+  const on = e.target.matches("input[type=checkbox]") ? e.target.checked : !artSel.has(tr.dataset.sku);
+  artToggle(tr.dataset.sku, on);
+});
+document.getElementById("artHead").addEventListener("change", e => {
+  if (e.target.id !== "artCheckAll") return;
+  artPageSkus.forEach(sku => artToggle(sku, e.target.checked));
+});
+document.getElementById("artSelClear").addEventListener("click", () => {
+  [...artSel].forEach(sku => artToggle(sku, false));
+});
+document.getElementById("artSelAdd").addEventListener("click", () => {
+  const skus = [...artSel];
+  if (!skus.length) return;
+  showModule("manual");
+  manAddSkus(skus);
+  artSel.clear();
+  articulosModule.render();
+});

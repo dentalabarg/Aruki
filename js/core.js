@@ -364,6 +364,20 @@ function fmtAgo(ms){
   return `hace ${h} h${r ? ` ${r} min` : ""}`;
 }
 
+/* Botones "Actualizar …" de la barra superior: se van rellenando con el avance */
+function syncBtnProgress(btn, progress, error){
+  if (!btn) return;
+  const busy = typeof progress === "number";
+  const wasBusy = btn.classList.contains("is-busy");
+  btn.classList.toggle("is-busy", busy);
+  btn.classList.toggle("is-error", !busy && !!error);
+  btn.style.setProperty("--p", busy ? String(Math.max(0.02, Math.min(1, progress))) : "0");
+  if (!busy) {
+    btn.classList.remove("is-done");
+    if (!error && wasBusy) { void btn.offsetWidth; btn.classList.add("is-done"); setTimeout(() => btn.classList.remove("is-done"), 1200); }
+  }
+}
+
 /* ============================================================
    MÓDULO GENÉRICO: carga todo, busca en todo, pagina en pantalla
    ============================================================ */
@@ -388,6 +402,10 @@ function createDataModule(cfg){
     if (showProgress) $("progressFill").style.width = `${Math.max(2, Math.min(100, progress * 100))}%`;
     $("stop").classList.toggle("hidden", state !== "loading");
     $("retry").classList.toggle("hidden", state !== "error");
+    syncBtnProgress($("refresh"), state === "loading" ? (showProgress ? progress : 0.02) : null, state === "error");
+    const rb = $("refresh");
+    if (!rb.dataset.title) rb.dataset.title = rb.title;
+    rb.title = state === "error" ? `${title}: ${text}` : rb.dataset.title;
     $("refresh").disabled = m.loading || m.refreshing;
   };
 
@@ -398,6 +416,7 @@ function createDataModule(cfg){
     m.setState("connected", `${numberFormatter.format(m.rows.length)} registros listos`,
       `Actualizados el ${when} (${fmtAgo(Date.now() - m.savedAt)}). Se actualizan solos cada ${cfg.cache.maxAgeHours} horas; con Actualizar lo hacés ahora.`);
     $("kicker").textContent = "Guardado en esta computadora";
+    $("refresh").title = `${cfg.syncTitle || "Traer los datos actualizados desde YiQi"} · Última actualización: ${when} (${fmtAgo(Date.now() - m.savedAt)})`;
   };
 
   m.filtered = function(){

@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=3.4">
+<link rel="stylesheet" href="css/styles.css?v=3.5">
 </head>
 <body>
 
@@ -82,6 +82,11 @@
       <button class="t-pill" id="changelogBtn" title="Ver novedades">v<span id="topVersion">1.0</span></button>
     </div>
     <div class="topbar-r">
+      <div class="sync-btns" role="group" aria-label="Actualizar desde YiQi">
+        <button class="sync-btn" id="syncCliBtn" type="button" title="Traer los clientes actualizados desde YiQi"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><polyline points="21 3 21 8 16 8"/><polyline points="3 21 3 16 8 16"/></svg><span>Actualizar <b>Clientes</b></span></button>
+        <button class="sync-btn" id="artRefreshBtn" type="button" title="Traer los artículos actualizados desde YiQi (se hace solo cada 4 horas)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><polyline points="21 3 21 8 16 8"/><polyline points="3 21 3 16 8 16"/></svg><span>Actualizar <b>Artículos</b></span></button>
+        <button class="sync-btn" id="refreshBtn" type="button" title="Traer las facturas actualizadas desde YiQi"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><polyline points="21 3 21 8 16 8"/><polyline points="3 21 3 16 8 16"/></svg><span>Actualizar <b>Facturas</b></span></button>
+      </div>
       <div class="theme-toggle" role="group" aria-label="Tema">
         <button class="theme-opt" data-theme-opt="dark">Oscuro</button>
         <button class="theme-opt" data-theme-opt="system">Sistema</button>
@@ -147,9 +152,6 @@
             <h1 class="page-title">Facturas de venta</h1>
           </div>
           <div class="page-head-actions">
-            <button class="btn btn-secondary" id="refreshBtn" type="button" title="Volver a cargar todo desde YiQi">
-              Actualizar
-            </button>
           </div>
         </div>
 
@@ -240,7 +242,6 @@
             <h1 class="page-title">Consulta de stock</h1>
           </div>
           <div class="page-head-actions">
-            <button class="btn btn-secondary" id="artRefreshBtn" type="button" title="Traer ahora los artículos actualizados desde YiQi (se hace solo cada 4 horas)">Actualizar</button>
           </div>
         </div>
 
@@ -267,8 +268,13 @@
               </div>
             </div>
           </div>
+          <div class="art-selbar hidden" id="artSelBar">
+            <span id="artSelCount"></span>
+            <button class="btn btn-primary" id="artSelAdd" type="button"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Agregar a Armar presupuesto</button>
+            <button class="btn btn-ghost" id="artSelClear" type="button">Quitar selección</button>
+          </div>
           <div class="art-scroll">
-            <table class="art-table">
+            <table class="art-table art-main">
               <thead><tr id="artHead"></tr></thead>
               <tbody id="artBody"></tbody>
             </table>
@@ -298,7 +304,7 @@
             <h1 class="page-title">Cotizaciones</h1>
           </div>
           <div class="page-head-actions">
-            <button class="btn btn-ghost" id="cotNewBtn" type="button" title="Borrar todo y empezar una cotización nueva">Nueva cotización</button>
+            <button class="btn btn-new" id="cotNewBtn" type="button" title="Borrar todo y empezar una cotización nueva"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva cotización</button>
           </div>
         </div>
 
@@ -327,6 +333,9 @@
                 <option value="cantidad">Respetar cantidad solicitada</option>
                 <option value="disponibilidad">Disponibilidad simplificada</option>
               </select>
+              <label class="cot-check stock-check" id="cotStockWrap" title="Agrega una columna con el stock real (Depósito 1 - Local + Depósito Central)">
+                <input type="checkbox" id="cotStock"> Mostrar columna Stock real
+              </label>
             </div>
           </div>
           <div class="cot-file" id="cotDrop">
@@ -366,13 +375,13 @@
           <p class="source-note">Arrastrá desde ⠿ para cambiar el orden. Para cambiar un artículo tocá el SKU o el nombre y buscá. Podés editar el texto adicional y la cantidad. Para cambiar el ancho de una columna arrastrá el borde del título (doble clic vuelve al ancho original). Cuando hay dudas aparecen varias opciones para el mismo renglón: elegí una con ✓ o borrá las que no sirvan.</p>
           <div class="art-scroll">
             <table class="art-table cot-table" id="cotTable">
-              <colgroup><col><col><col><col><col><col><col><col><col class="col-sub"><col></colgroup>
+              <colgroup><col><col><col><col><col><col><col class="col-stock"><col><col><col class="col-sub"><col></colgroup>
               <thead><tr>
-                <th></th><th>Solicitado</th><th>SKU</th><th>Nombre del artículo</th><th>Texto adicional</th><th>Marca</th>
+                <th></th><th>Solicitado</th><th>SKU</th><th>Nombre del artículo</th><th>Texto adicional</th><th>Marca</th><th class="num col-stock">Stock real</th>
                 <th class="num"><span id="cotQtyHead">Cantidad</span></th><th class="num"><span id="cotPriceHead">Precio</span></th><th class="num col-sub">Subtotal</th><th></th>
               </tr></thead>
               <tbody id="cotBody"></tbody>
-              <tfoot><tr><td colspan="8" class="num cot-total-label">Total</td><td class="num cot-total" id="cotTotal">$ 0</td><td></td></tr></tfoot>
+              <tfoot><tr><td colspan="6"></td><td class="col-stock"></td><td colspan="2" class="num cot-total-label">Total</td><td class="num cot-total col-sub" id="cotTotal">$ 0</td><td></td></tr></tfoot>
             </table>
           </div>
           <div class="cot-actions">
@@ -411,7 +420,7 @@
             <h1 class="page-title">Armar presupuesto</h1>
           </div>
           <div class="page-head-actions">
-            <button class="btn btn-ghost" id="manNewBtn" type="button" title="Borrar todo y empezar un presupuesto nuevo">Nuevo presupuesto</button>
+            <button class="btn btn-new" id="manNewBtn" type="button" title="Borrar todo (artículos y cliente) y empezar un presupuesto nuevo"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo presupuesto</button>
           </div>
         </div>
 
@@ -440,6 +449,9 @@
                 <option value="cantidad">Respetar cantidad solicitada</option>
                 <option value="disponibilidad">Disponibilidad simplificada</option>
               </select>
+              <label class="cot-check stock-check" id="manStockWrap" title="Agrega una columna con el stock real (Depósito 1 - Local + Depósito Central)">
+                <input type="checkbox" id="manStock"> Mostrar columna Stock real
+              </label>
             </div>
           </div>
         </div>
@@ -455,15 +467,16 @@
             </div>
             <button class="btn btn-secondary" id="manUndoBtn" type="button" disabled title="Deshacer la última acción"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Deshacer</button>
             <button class="btn btn-secondary" id="manRedoBtn" type="button" disabled title="Rehacer lo último que deshiciste"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>Rehacer</button>
+            <button class="btn btn-secondary man-empty-btn" id="manClearBtn" type="button" disabled title="Sacar todos los artículos (se puede deshacer)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Vaciar presupuesto</button>
           </div>
           <div class="art-scroll man-scroll">
             <table class="art-table cot-table man-table" id="manTable">
               <thead><tr>
-                <th>SKU</th><th>Nombre del artículo</th><th>Texto adicional</th><th>Marca</th>
+                <th>SKU</th><th>Nombre del artículo</th><th>Texto adicional</th><th>Marca</th><th class="num col-stock">Stock real</th>
                 <th class="num"><span id="manQtyHead">Cantidad</span></th><th class="num"><span id="manPriceHead">Precio</span></th><th class="num col-sub">Subtotal</th><th></th>
               </tr></thead>
               <tbody id="manBody"></tbody>
-              <tfoot><tr><td colspan="6" class="num cot-total-label">Total</td><td class="num cot-total" id="manTotal">$ 0</td><td></td></tr></tfoot>
+              <tfoot><tr><td colspan="4"></td><td class="col-stock"></td><td colspan="2" class="num cot-total-label">Total</td><td class="num cot-total col-sub" id="manTotal">$ 0</td><td></td></tr></tfoot>
             </table>
             <div class="empty-state man-empty" id="manEmpty">Todavía no agregaste artículos. Buscalos arriba por SKU o nombre.</div>
           </div>
@@ -600,17 +613,17 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=3.4"></script>
-<script src="js/core.js?v=3.4"></script>
-<script src="js/facturas.js?v=3.4"></script>
-<script src="js/articulos.js?v=3.4"></script>
-<script src="js/relaciones.js?v=3.4"></script>
-<script src="js/clientes.js?v=3.4"></script>
-<script src="js/presupuesto-comun.js?v=3.4"></script>
-<script src="js/cotizaciones.js?v=3.4"></script>
-<script src="js/cot-archivos.js?v=3.4"></script>
-<script src="js/cot-ia.js?v=3.4"></script>
-<script src="js/manual.js?v=3.4"></script>
-<script src="js/main.js?v=3.4"></script>
+<script src="js/changelog.js?v=3.5"></script>
+<script src="js/core.js?v=3.5"></script>
+<script src="js/facturas.js?v=3.5"></script>
+<script src="js/articulos.js?v=3.5"></script>
+<script src="js/relaciones.js?v=3.5"></script>
+<script src="js/clientes.js?v=3.5"></script>
+<script src="js/presupuesto-comun.js?v=3.5"></script>
+<script src="js/cotizaciones.js?v=3.5"></script>
+<script src="js/cot-archivos.js?v=3.5"></script>
+<script src="js/cot-ia.js?v=3.5"></script>
+<script src="js/manual.js?v=3.5"></script>
+<script src="js/main.js?v=3.5"></script>
 </body>
 </html>
