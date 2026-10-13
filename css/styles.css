@@ -647,3 +647,8 @@ select.ds-input{cursor:pointer;}
 }
 .art-selbar #artSelCount{margin-right:auto;}
 .art-selbar .btn{display:inline-flex; align-items:center; gap:6px;}
+/* v3.6 — el botón ocupado muestra el % y, al pasar el mouse, "Detener" */
+.sync-btn.is-busy::after{content:attr(data-pct); font:600 11.5px var(--mono); color:var(--text-cyan-muted, var(--cyan)); margin-left:2px;}
+.sync-btn.is-busy:hover::after{content:"Detener"; color:var(--red); font-family:var(--sans);}
+.sync-btn.is-busy:hover svg{animation-play-state:paused;}
+.sync-btn:disabled{cursor:default;}

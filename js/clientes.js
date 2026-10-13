@@ -28,22 +28,25 @@ const clientesStore = {
     this.loading = true; this.error = ""; this.notify();
     const btn = document.getElementById("syncCliBtn");
     syncBtnProgress(btn, 0.02);
-    btn.disabled = true;
+    btn.title = "Actualizando clientes… tocá para detener";
+    const ctrl = this.abort = new AbortController();
+    let stopped = false;
     try {
-      const ctrl = new AbortController();
       const result = await loadAllPages(`${WORKER_BASE}/clientes`, ctrl.signal, snap => syncBtnProgress(btn, snap.done / snap.totalPages));
+      if (result.aborted) { stopped = true; return; }   // detenido: se siguen usando los clientes que ya había
       if (result.failed.length && !result.rows.length) throw new Error("No se pudieron descargar los clientes.");
       this.list = cliParse(result.rows, result.columns);
       this.savedAt = Date.now(); this.loaded = true;
       if (!result.failed.length) cacheSet("clientes", { list: this.list, savedAt: this.savedAt });
     } catch (error) {
       if (error instanceof SessionExpired) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); }
-      this.error = String(error?.message || error);
+      if (ctrl.signal.aborted) stopped = true;
+      else this.error = String(error?.message || error);
     } finally {
-      this.loading = false; this.notify();
-      btn.disabled = false;
-      syncBtnProgress(btn, null, !!this.error);
-      btn.title = this.error ? `No se pudieron actualizar los clientes: ${this.error}`
+      this.loading = false; this.abort = null; this.notify();
+      syncBtnProgress(btn, null, !!this.error, !stopped);
+      btn.title = stopped ? "Actualización de clientes detenida. Tocá para volver a intentar."
+        : this.error ? `No se pudieron actualizar los clientes: ${this.error}`
         : `Traer los clientes actualizados desde YiQi · ${numberFormatter.format(this.list.length)} clientes · Última actualización: ${new Date(this.savedAt).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })}`;
       if (this.error && this.manual) alert(`No se pudieron actualizar los clientes.\n\n${this.error}`);
       this.manual = false;
@@ -51,7 +54,7 @@ const clientesStore = {
   },
 
   notify(){ this.listeners.forEach(fn => { try { fn(); } catch {} }); },
-  reset(){ this.list = []; this.loaded = false; this.savedAt = 0; this.error = ""; this.notify(); },
+  reset(){ if (this.abort) this.abort.abort(); this.list = []; this.loaded = false; this.savedAt = 0; this.error = ""; this.notify(); },
 
   /* Cliente "Consumidor Final" (para cuando el campo queda vacío) */
   consumidorFinal(){
@@ -194,6 +197,7 @@ function clientePicker(inputId, onChange){
 
 document.getElementById("syncCliBtn").addEventListener("click", () => {
   if (!getAuthToken()) return;
+  if (clientesStore.loading && clientesStore.abort) { clientesStore.abort.abort(); return; }   // detener
   clientesStore.manual = true;
   clientesStore.refresh();
 });

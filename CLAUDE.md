@@ -97,6 +97,10 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   LISTA_DE_PRECIO (LIDP_NOMBRE, se compara con el título de la columna de precio), CLIENTE "Consumidor Final".
   Origen de pedido: entidad sin confirmar (prueba EXTERNAL_SYSTEM, ORIGEN_DE_PEDIDO…) o variable `ORIGEN_PEDIDO_ID`.
   `GET /yiqi/diagnostico` muestra origen, listas y Consumidor Final encontrados.
+- Clientes (v3.6): el Worker usa `POST /CLIENTE/query?schemaId=` `{ page, pageSize: 1000, columns:[{field}] }` (CLIE_NOMBRE,
+  CLIE_RAZON_SOCIAL, CLIE_CUIT + IVA probando COIV_DESCRIPCION / COIV_NOMBRE); si YiQi rechaza (400) vuelve a la smartie.
+  `/{ENTIDAD}/file` y `/{ENTIDAD}/report` son archivos/PDF de UNA instancia (no exportan listas a Excel).
+  `/query` existe para todas las entidades (pageSize máx. 1000): candidato para acelerar Artículos y Facturas.
 - Clientes: entidad `CLIENTE`, smartie **1834** (columnas Nombre, Razón Social, CUIT/Documento, Condición IVA - Descripción, `id`).
 - Las especificaciones de la API (OpenAPI) se descargan de `https://apidoc.yiqi.com.ar/erpdemo.schema-<Módulo>-api.json`
   (desde acá el dominio está bloqueado: pedirle al usuario que las adjunte).
@@ -117,7 +121,7 @@ o **todos** los precios en 0/vacíos; `bySku` sigue teniendo todos (para mostrar
 Columna Identificador oculta (`ART_HIDDEN_TITLE`). Anchos de columna a mano en localStorage `aruki-art-colw` ({field: px}).
 v3.5: los `.runtime-banner` solo se ven con `data-state="error"` (CSS). Los botones de actualizar están en la barra
 superior (`.sync-btn`: `#syncCliBtn` → `clientesStore.refresh()`, `#artRefreshBtn` y `#refreshBtn` = `ids.refresh` de
-Artículos y Facturas); `syncBtnProgress(btn, progress|null, error)` los rellena (`--p`). Artículos: selección por SKU
+Artículos y Facturas); `syncBtnProgress(btn, progress|null, error, done)` los rellena (`--p`, `data-pct`); tocarlos mientras cargan detiene (v3.6). Artículos: selección por SKU
 (`artSel`, barra `#artSelBar`) → `manAddSkus()` en Armar presupuesto. Columna optativa "Stock real" (`.col-stock`,
 clase `show-stock` en la tabla, `presStockHtml()`); en Cotizaciones la tabla tiene 11 columnas (anchos guardados de 11).
 Para un módulo nuevo: sección `view-<nombre>` + ítem `data-module="<nombre>"` en `index.html`,

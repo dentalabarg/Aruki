@@ -365,16 +365,17 @@ function fmtAgo(ms){
 }
 
 /* Botones "Actualizar …" de la barra superior: se van rellenando con el avance */
-function syncBtnProgress(btn, progress, error){
+function syncBtnProgress(btn, progress, error, done = true){
   if (!btn) return;
   const busy = typeof progress === "number";
   const wasBusy = btn.classList.contains("is-busy");
   btn.classList.toggle("is-busy", busy);
   btn.classList.toggle("is-error", !busy && !!error);
   btn.style.setProperty("--p", busy ? String(Math.max(0.02, Math.min(1, progress))) : "0");
+  btn.dataset.pct = busy ? `${Math.round(Math.max(0, Math.min(1, progress)) * 100)} %` : "";
   if (!busy) {
     btn.classList.remove("is-done");
-    if (!error && wasBusy) { void btn.offsetWidth; btn.classList.add("is-done"); setTimeout(() => btn.classList.remove("is-done"), 1200); }
+    if (!error && done && wasBusy) { void btn.offsetWidth; btn.classList.add("is-done"); setTimeout(() => btn.classList.remove("is-done"), 1200); }
   }
 }
 
@@ -402,11 +403,10 @@ function createDataModule(cfg){
     if (showProgress) $("progressFill").style.width = `${Math.max(2, Math.min(100, progress * 100))}%`;
     $("stop").classList.toggle("hidden", state !== "loading");
     $("retry").classList.toggle("hidden", state !== "error");
-    syncBtnProgress($("refresh"), state === "loading" ? (showProgress ? progress : 0.02) : null, state === "error");
+    syncBtnProgress($("refresh"), state === "loading" ? (showProgress ? progress : 0.02) : null, state === "error", state === "connected");
     const rb = $("refresh");
     if (!rb.dataset.title) rb.dataset.title = rb.title;
-    rb.title = state === "error" ? `${title}: ${text}` : rb.dataset.title;
-    $("refresh").disabled = m.loading || m.refreshing;
+    rb.title = state === "loading" ? "Actualizando… tocá para detener" : state === "error" ? `${title}: ${text}` : rb.dataset.title;
   };
 
   /* Aviso cuando se están usando los datos guardados */
@@ -469,7 +469,6 @@ function createDataModule(cfg){
     });
     $("first").disabled = m.viewPage <= 1;
     $("last").disabled = m.viewPage >= totalPages;
-    $("refresh").disabled = m.loading || m.refreshing;
   };
 
   m.load = async function(){
@@ -536,6 +535,11 @@ function createDataModule(cfg){
         showLogin("La sesión venció. Volvé a ingresar.");
         return;
       }
+      if (m.abort?.signal.aborted) {
+        m.setState("idle", "Carga detenida", `Se cargaron ${numberFormatter.format(m.rows.length)} registros.`);
+        m.render();
+        return;
+      }
       m.setState("error", "No se pudieron obtener los datos", String(error?.message || error));
       m.render();
     }
@@ -582,6 +586,7 @@ function createDataModule(cfg){
       if (id !== m.loadId) return;
       m.refreshing = false;
       if (error instanceof SessionExpired) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); return; }
+      if (m.abort?.signal.aborted) { if (m.savedAt) m.showSavedState(); else m.setState("idle", "Actualización detenida", ""); return; }
       m.setState("error", "No se pudo actualizar",
         `${String(error?.message || error)} Seguís usando ${savedAgo()}.`);
     }
@@ -639,7 +644,8 @@ function createDataModule(cfg){
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => { m.search = this.value; m.viewPage = 1; m.render(); }, 150);
   });
-  $("refresh").addEventListener("click", () => m.load());
+  // El mismo botón actualiza o, si ya está actualizando, detiene
+  $("refresh").addEventListener("click", () => (m.loading || m.refreshing) ? m.stop() : m.load());
   $("retry").addEventListener("click", () => m.load());
   $("stop").addEventListener("click", () => m.stop());
   $("first").addEventListener("click", () => { m.viewPage = 1; m.render(); });

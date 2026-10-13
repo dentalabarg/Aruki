@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "3.5";
+const LATEST_VERSION = "3.6";
 const CHANGELOG = [
+  {
+    version: "3.6",
+    date: "2026-10-13",
+    title: "Detener la actualización desde el mismo botón y clientes más rápidos",
+    items: [
+      { type: "nuevo", text: "Los botones Actualizar de la barra superior muestran el % de avance y, si los tocás mientras actualizan, se detienen (al pasar el mouse dicen \"Detener\")" },
+      { type: "mejora", text: "Clientes: se descargan de a 1000 por consulta en vez de 50 (requiere actualizar el conector de Cloudflare)" }
+    ]
+  },
   {
     version: "3.5",
     date: "2026-10-13",

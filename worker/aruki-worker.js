@@ -16,7 +16,8 @@
   - FACTURAS_SMARTIE_ID
   - ARTICULOS_ENTITY (por defecto CONSULTA_DE_STOCK)
   - ARTICULOS_SMARTIE_ID (por defecto 2377)
-  - CLIENTES_SMARTIE_ID (por defecto 1834, entidad CLIENTE)
+  - CLIENTES_SMARTIE_ID (por defecto 1834, entidad CLIENTE; solo si la consulta rápida no anda)
+  - CLIENTES_MODO (opcional: "smartie" para forzar la lectura vieja de a 50)
   - ORIGEN_PEDIDO_ID (opcional: id del Origen de pedido "Local"; si no está, se busca solo)
   - ORIGEN_PEDIDO_NOMBRE (opcional, por defecto "Local")
 
@@ -83,7 +84,7 @@ export default {
 
       if (url.pathname === "/clientes" && request.method === "GET") {
         const page = normalizePage(url.searchParams.get("page"));
-        return json(await getSmartiePage(env, "CLIENTE", env.CLIENTES_SMARTIE_ID || "1834", page), corsHeaders);
+        return json(await getClientesPage(env, page), corsHeaders);
       }
 
       if (url.pathname === "/pedido" && request.method === "POST") {
@@ -618,6 +619,57 @@ async function getSmartiePage(env, entity, smartieId, page) {
     throw new HttpError(502, `La consulta a /${entity}/smartie falló (status ${response.status}): ${text}`);
   }
   return response.json();
+}
+
+/* ---------- Clientes: consulta rápida (POST /CLIENTE/query, 1000 por página) ----------
+   Mucho más rápida que la smartie (50 por página). Devuelve el mismo formato que la smartie
+   ({ data, total, columns: [{ field, title }] }) para que Aruki no note la diferencia.
+   La condición de IVA viene de una entidad relacionada: se prueban los nombres de columna posibles;
+   si YiQi no acepta ninguno, se usa la smartie 1834 como antes. */
+const CLI_IVA_CANDIDATES = ["COIV_DESCRIPCION", "COIV_NOMBRE"];
+let cliIvaField; // undefined = sin probar · string = el que anda · null = ninguno (usar smartie)
+
+async function clientesQuery(env, page, ivaField) {
+  const schemaId = await getSchemaId(env);
+  const columns = [
+    { field: "CLIE_NOMBRE" }, { field: "CLIE_RAZON_SOCIAL" }, { field: "CLIE_CUIT" },
+    ...(ivaField ? [{ field: ivaField }] : []),
+  ];
+  const response = await yiqiFetch(env, `/CLIENTE/query?schemaId=${encodeURIComponent(schemaId)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ page, pageSize: 1000, columns }),
+  });
+  const text = await response.text();
+  let payload = null;
+  try { payload = JSON.parse(text); } catch { /* no JSON */ }
+  return { ok: response.ok && Array.isArray(payload?.data), status: response.status, payload, text };
+}
+
+async function getClientesPage(env, page) {
+  if (env.CLIENTES_MODO === "smartie" || cliIvaField === null) {
+    return { ...(await getSmartiePage(env, "CLIENTE", env.CLIENTES_SMARTIE_ID || "1834", page)), modo: "smartie" };
+  }
+  const tryFields = cliIvaField ? [cliIvaField] : CLI_IVA_CANDIDATES;
+  for (const field of tryFields) {
+    const r = await clientesQuery(env, page, field);
+    if (r.ok) {
+      cliIvaField = field;
+      const titles = { CLIE_NOMBRE: "Nombre", CLIE_RAZON_SOCIAL: "Razón Social", CLIE_CUIT: "CUIT/Documento", [field]: "Condición IVA - Descripción" };
+      return {
+        data: r.payload.data,
+        total: r.payload.total,
+        columns: Object.entries(titles).map(([f, title]) => ({ field: f, title })),
+        modo: "rapido",
+      };
+    }
+    if (r.status !== 400) {
+      throw new HttpError(502, `La consulta rápida de clientes falló (status ${r.status}): ${String(r.payload?.error || r.text).slice(0, 300)}`);
+    }
+  }
+  // Ningún nombre de columna de IVA fue aceptado: se vuelve a la smartie (más lenta, pero completa)
+  cliIvaField = null;
+  return { ...(await getSmartiePage(env, "CLIENTE", env.CLIENTES_SMARTIE_ID || "1834", page)), modo: "smartie" };
 }
 
 /* ---------- Pedidos en YiQi (POST /PEDIDO) ----------
