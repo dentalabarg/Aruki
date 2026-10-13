@@ -16,6 +16,9 @@
   - FACTURAS_SMARTIE_ID
   - ARTICULOS_ENTITY (por defecto CONSULTA_DE_STOCK)
   - ARTICULOS_SMARTIE_ID (por defecto 2377)
+  - CLIENTES_SMARTIE_ID (por defecto 1834, entidad CLIENTE)
+  - ORIGEN_PEDIDO_ID (opcional: id del Origen de pedido "Local"; si no está, se busca solo)
+  - ORIGEN_PEDIDO_NOMBRE (opcional, por defecto "Local")
 
   Para la ayuda con IA en Cotizaciones (renglones dudosos):
   - GEMINI_API_KEY (secret, clave de Google AI Studio)
@@ -78,6 +81,19 @@ export default {
         return json(data, corsHeaders);
       }
 
+      if (url.pathname === "/clientes" && request.method === "GET") {
+        const page = normalizePage(url.searchParams.get("page"));
+        return json(await getSmartiePage(env, "CLIENTE", env.CLIENTES_SMARTIE_ID || "1834", page), corsHeaders);
+      }
+
+      if (url.pathname === "/pedido" && request.method === "POST") {
+        return json(await crearPedido(request, env, session), corsHeaders);
+      }
+
+      if (url.pathname === "/yiqi/diagnostico" && request.method === "GET") {
+        return json(await diagnosticoPedido(env), corsHeaders);
+      }
+
       if (url.pathname === "/relaciones" && request.method === "GET") {
         return json(await readRelaciones(env), corsHeaders);
       }
@@ -96,7 +112,7 @@ export default {
 
       throw new HttpError(
         404,
-        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas, /articulos, /relaciones, /ia/elegir o /ia/leer."
+        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas, /articulos, /clientes, /pedido, /relaciones, /ia/elegir o /ia/leer."
       );
     } catch (error) {
       const status = error instanceof HttpError ? error.status : 500;
@@ -588,6 +604,212 @@ function normalizePage(value) {
     throw new HttpError(400, "El número de página no es válido.");
   }
   return page;
+}
+
+/* ---------- Smartie genérica (Clientes) ---------- */
+
+async function getSmartiePage(env, entity, smartieId, page) {
+  const token = await getToken(env);
+  const schemaId = await getSchemaId(env);
+  const query = new URLSearchParams({ smartieId: String(smartieId), schemaId, page: String(page) });
+  const response = await fetchSmartie(env, entity, query, token);
+  if (!response.ok) {
+    const text = await response.text();
+    throw new HttpError(502, `La consulta a /${entity}/smartie falló (status ${response.status}): ${text}`);
+  }
+  return response.json();
+}
+
+/* ---------- Pedidos en YiQi (POST /PEDIDO) ----------
+   Única escritura en YiQi de Aruki, a pedido del usuario: crea un pedido con
+   Origen "Local", el cliente elegido (o Consumidor Final) y la lista de precios elegida. */
+
+async function yiqiFetch(env, path, init = {}) {
+  const url = `${API_BASE}${path}`;
+  const run = async token => fetch(url, {
+    ...init,
+    headers: { Authorization: "Bearer " + token, Accept: "application/json", ...(init.headers || {}) },
+  });
+  let response = await run(await getToken(env));
+  if (response.status === 401) {
+    cachedToken = null;
+    response = await run(await getToken(env));
+  }
+  return response;
+}
+
+async function yiqiSearch(env, entity, params = {}) {
+  const schemaId = await getSchemaId(env);
+  const query = new URLSearchParams({ schemaId: String(schemaId), ...params });
+  const response = await yiqiFetch(env, `/${entity}/search?${query.toString()}`);
+  if (!response.ok) {
+    const text = await response.text();
+    const error = new HttpError(502, `La búsqueda en /${entity} falló (status ${response.status}): ${text.slice(0, 300)}`);
+    error.yiqiStatus = response.status;
+    throw error;
+  }
+  const data = await response.json();
+  return Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+}
+
+const foldName = value => String(value ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+
+let lookupCache = { at: 0, origenId: null, origenNombre: "", listas: null };
+const LOOKUP_TTL = 30 * 60 * 1000;
+
+async function getOrigenLocal(env) {
+  if (env.ORIGEN_PEDIDO_ID) return { id: Number(env.ORIGEN_PEDIDO_ID), nombre: env.ORIGEN_PEDIDO_NOMBRE || "Local" };
+  if (lookupCache.origenId && Date.now() - lookupCache.at < LOOKUP_TTL) return { id: lookupCache.origenId, nombre: lookupCache.origenNombre };
+  const wanted = foldName(env.ORIGEN_PEDIDO_NOMBRE || "Local");
+  const entities = (env.ORIGEN_PEDIDO_ENTITY ? [env.ORIGEN_PEDIDO_ENTITY] : [])
+    .concat(["EXTERNAL_SYSTEM", "ORIGEN_DE_PEDIDO", "ORIGEN_PEDIDO", "SISTEMA_EXTERNO"]);
+  const tried = [];
+  for (const entity of entities) {
+    let rows;
+    try { rows = await yiqiSearch(env, entity); }
+    catch (error) { tried.push(`${entity} (${error.yiqiStatus || "error"})`); continue; }
+    const nameOf = r => {
+      const k = Object.keys(r).find(key => /_NOMBRE$|_DESCRIPCION$|^NOMBRE$/i.test(key) && typeof r[key] === "string");
+      return k ? r[k] : "";
+    };
+    const hit = rows.find(r => foldName(nameOf(r)) === wanted) || rows.find(r => foldName(nameOf(r)).includes(wanted));
+    if (hit) {
+      lookupCache = { ...lookupCache, at: Date.now(), origenId: Number(hit.id), origenNombre: nameOf(hit) };
+      return { id: Number(hit.id), nombre: nameOf(hit) };
+    }
+    tried.push(`${entity} (sin "${env.ORIGEN_PEDIDO_NOMBRE || "Local"}" entre ${rows.length})`);
+  }
+  throw new HttpError(500,
+    `No se encontró el Origen de pedido "${env.ORIGEN_PEDIDO_NOMBRE || "Local"}" en YiQi. Probé: ${tried.join(", ")}. ` +
+    `Solución: cargar en el conector la variable ORIGEN_PEDIDO_ID con el id del origen "Local".`);
+}
+
+async function getListasPrecio(env) {
+  if (lookupCache.listas && Date.now() - lookupCache.at < LOOKUP_TTL) return lookupCache.listas;
+  const rows = await yiqiSearch(env, "LISTA_DE_PRECIO");
+  const listas = rows.map(r => ({ id: Number(r.id), nombre: String(r.LIDP_NOMBRE || "") })).filter(l => l.id && l.nombre);
+  lookupCache = { ...lookupCache, at: Date.now(), listas };
+  return listas;
+}
+
+function matchLista(listas, title) {
+  const t = foldName(title);
+  const exact = listas.find(l => foldName(l.nombre) === t);
+  if (exact) return exact;
+  const contains = listas.filter(l => { const n = foldName(l.nombre); return n && (t.includes(n) || n.includes(t)); });
+  if (contains.length === 1) return contains[0];
+  // Por palabras: "Lista Reventa" ↔ "Reventa", "Lista 2 - General" ↔ "General"
+  const stop = new Set(["lista", "de", "precio", "precios", "venta"]);
+  const words = t.split(" ").filter(w => w && !stop.has(w));
+  let best = null, bestScore = 0;
+  for (const l of listas) {
+    const lw = foldName(l.nombre).split(" ").filter(w => w && !stop.has(w));
+    if (!lw.length || !words.length) continue;
+    const common = words.filter(w => lw.includes(w)).length;
+    const score = common / Math.max(words.length, lw.length);
+    if (score > bestScore) { best = l; bestScore = score; }
+  }
+  return bestScore >= 0.5 ? best : null;
+}
+
+async function findConsumidorFinal(env) {
+  for (const field of ["CLIE_RAZON_SOCIAL", "CLIE_NOMBRE"]) {
+    try {
+      const rows = await yiqiSearch(env, "CLIENTE", { [field]: "Consumidor Final" });
+      if (rows.length) return Number(rows[0].id);
+    } catch { /* se prueba el siguiente */ }
+  }
+  return null;
+}
+
+async function findMaterialIds(env, skus) {
+  const ids = new Map();
+  const missing = [];
+  const queue = [...new Set(skus)];
+  async function worker() {
+    while (queue.length) {
+      const sku = queue.shift();
+      const rows = await yiqiSearch(env, "MATERIAL", { MATE_CODIGO: sku });
+      const hit = rows.find(r => String(r.MATE_CODIGO || "").trim().toLowerCase() === sku.toLowerCase()) || (rows.length === 1 ? rows[0] : null);
+      if (hit) ids.set(sku, Number(hit.id)); else missing.push(sku);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(4, queue.length) }, worker));
+  return { ids, missing };
+}
+
+async function crearPedido(request, env, session) {
+  let body;
+  try { body = await request.json(); } catch { throw new HttpError(400, "El pedido no tiene un formato válido."); }
+  const items = Array.isArray(body?.items) ? body.items.filter(i => i && String(i.sku || "").trim()) : [];
+  if (!items.length) throw new HttpError(400, "El pedido no tiene artículos.");
+  if (items.length > 300) throw new HttpError(400, "El pedido tiene demasiados artículos (máximo 300).");
+
+  const origen = await getOrigenLocal(env);
+
+  const listas = await getListasPrecio(env);
+  const lista = matchLista(listas, body.lista || "");
+  if (!lista) {
+    throw new HttpError(400, `No encontré en YiQi la lista de precios "${body.lista}". Listas en YiQi: ${listas.map(l => l.nombre).join(", ") || "(ninguna)"}.`);
+  }
+
+  let clienteId = Number(body.clienteId) || null;
+  if (!clienteId) clienteId = await findConsumidorFinal(env);
+  if (!clienteId) throw new HttpError(400, "No se encontró el cliente \"Consumidor Final\" en YiQi. Elegí un cliente de la lista.");
+
+  const { ids, missing } = await findMaterialIds(env, items.map(i => String(i.sku).trim()));
+  if (missing.length) {
+    throw new HttpError(400, `Estos SKU no se encontraron como artículos en YiQi: ${missing.slice(0, 15).join(", ")}${missing.length > 15 ? "…" : ""}.`);
+  }
+
+  const productos = items.map(i => {
+    const p = {
+      MATE_ID_MATE: ids.get(String(i.sku).trim()),
+      DEDP_CANTIDAD: Number(i.cantidad) > 0 ? Number(i.cantidad) : 1,
+    };
+    const precio = Number(i.precio);
+    if (i.precio !== null && i.precio !== undefined && i.precio !== "" && Number.isFinite(precio) && precio >= 0) p.DEDP_PRECIO_UNITARIO = precio;
+    const texto = String(i.texto || "").trim();
+    if (texto) p.DEDP_TEXTO_ADICIONAL = texto.slice(0, 500);
+    return p;
+  });
+
+  const schemaId = await getSchemaId(env);
+  const data = {
+    EXTE_ID_EXTE: origen.id,
+    CLIE_ID_CLIE: clienteId,
+    LIDP_ID_LIDP: lista.id,
+    PEDI_OBSERVACIONES: `Creado desde Aruki por ${session?.name || "usuario"}`,
+    Productos: productos,
+  };
+  const response = await yiqiFetch(env, "/PEDIDO", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ schemaId: Number(schemaId), data }),
+  });
+  const text = await response.text();
+  let payload = null;
+  try { payload = JSON.parse(text); } catch { /* respuesta no JSON */ }
+  if (!response.ok) {
+    const detail = payload?.errors ? JSON.stringify(payload.errors) : (payload?.error || payload?.message || text);
+    throw new HttpError(502, `YiQi no aceptó el pedido (status ${response.status}): ${String(detail).slice(0, 500)}`);
+  }
+  if (!payload?.ok) throw new HttpError(502, `YiQi no aceptó el pedido: ${payload?.error || text.slice(0, 500)}`);
+
+  let numero = "";
+  try {
+    const saved = typeof payload.parameter === "string" ? JSON.parse(payload.parameter) : payload.parameter;
+    numero = String(saved?.PEDI_NRO_PEDIDO || saved?.PEDI_NUMERO || "").trim();
+  } catch { /* sin número */ }
+  return { ok: true, id: payload.newId, numero: numero ? `N° ${numero}` : "", lista: lista.nombre, origen: origen.nombre };
+}
+
+async function diagnosticoPedido(env) {
+  const out = {};
+  try { out.origen = await getOrigenLocal(env); } catch (e) { out.origenError = String(e.message || e); }
+  try { out.listas = await getListasPrecio(env); } catch (e) { out.listasError = String(e.message || e); }
+  try { out.consumidorFinalId = await findConsumidorFinal(env); } catch (e) { out.consumidorFinalError = String(e.message || e); }
+  return out;
 }
 
 /* ---------- Helpers ---------- */

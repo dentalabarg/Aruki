@@ -21,6 +21,7 @@ const cot = {
 };
 
 function cotEl(id){ return document.getElementById(id); }
+const cotClientePk = clientePicker("cotCliente", () => cotSave());
 
 /* ---------- Estado y avisos ---------- */
 function cotSetState(state, title, text){
@@ -513,7 +514,7 @@ function cotRender(){
   cotEl("cotTable").classList.toggle("mode-disp", cot.modo === "disponibilidad");
   cotApplyWidths(cotLoadWidths());
   cotEl("cotResultPanel").classList.toggle("hidden", !cot.rows.length);
-  cotEl("cotExportBtn").disabled = !cot.rows.length;
+  ["cotExportBtn", "cotPdfBtn", "cotYiqiBtn"].forEach(id => { cotEl(id).disabled = !cot.rows.length; });
   cotRenderUndo();
   cotEl("cotRelAllBtn").disabled = !cot.rows.some(r => r.sku && r.solicitado && r.estado !== "relacion");
   if (typeof cotIaRefresh === "function") cotIaRefresh();
@@ -831,71 +832,61 @@ function cotLoadXlsx(){
   return cotXlsxPromise;
 }
 
-async function cotExport(){
-  if (!cot.rows.length) return;
-  const pending = new Set(cot.rows.filter(r => r.estado === "dudosa" && cot.rows.some(o => o.grupo === r.grupo && o.id !== r.id)).map(r => r.grupo)).size;
-  if (pending && !confirm(`Hay ${pending} renglón(es) con varias opciones sin elegir. Se van a exportar todas las opciones. ¿Continuar?`)) return;
-  const btn = cotEl("cotExportBtn");
-  btn.disabled = true;
-  try {
-    const XLSX = await cotLoadXlsx();
-    const cat = getArticulosCatalog();
-    const cliente = cotEl("cotCliente").value.trim();
-    const disp = cot.modo === "disponibilidad";
-    const fecha = new Date().toLocaleDateString("es-AR");
-    const aoa = [
-      ["Presupuesto Dentalab"],
-      ["Cliente", cliente || "—"],
-      ["Fecha", fecha],
-      ["Lista de precios", cotPriceTitle()],
-      [],
-      ["Solicitado", "SKU", "Nombre del artículo", "Texto adicional", "Marca",
-        disp ? "Disponibilidad" : "Cantidad", "Precio unitario", ...(disp ? [] : ["Subtotal"])]
-    ];
-    const firstData = aoa.length + 1;
-    cot.rows.forEach((r, i) => {
+/* Arma el documento (para Excel y PDF) con lo que hay en la tabla */
+function cotDoc(){
+  const cat = getArticulosCatalog();
+  return {
+    cliente: cotClientePk.display(), lista: cotPriceTitle(), disp: cot.modo === "disponibilidad",
+    conSolicitado: true, conExtra: true,
+    rows: cot.rows.map(r => {
       const item = r.sku ? cat.bySku.get(r.sku) : null;
-      const price = cotRowPrice(r);
-      const rowNum = firstData + i;
-      const base = [r.solicitado, r.sku, item ? item.nombre : "", r.extra, item ? item.marca : ""];
-      if (disp) {
-        const d = cotDisponibilidad(r.sku);
-        aoa.push([...base, d ? d.txt : "", price ?? ""]);
-      } else {
-        aoa.push([...base, Number(r.cantidad) || 0,
-          price ?? "", price !== null ? { t: "n", f: `F${rowNum}*G${rowNum}`, v: price * (Number(r.cantidad) || 0) } : ""]);
-      }
-    });
-    const lastData = firstData + cot.rows.length - 1;
-    const total = cot.rows.reduce((s, r) => s + (cotRowSubtotal(r) || 0), 0);
-    if (!disp) {
-      aoa.push([]);
-      aoa.push(["", "", "", "", "", "", "Total", { t: "n", f: `SUM(H${firstData}:H${lastData})`, v: total }]);
-    }
+      const d = cotDisponibilidad(r.sku);
+      return { solicitado: r.solicitado, sku: r.sku, nombre: item ? item.nombre : "", extra: r.extra || "",
+        marca: item ? item.marca : "", cantidad: r.cantidad, dispTxt: d ? d.txt : "", precio: cotRowPrice(r) };
+    })
+  };
+}
+function cotPendingGroups(){
+  return new Set(cot.rows.filter(r => r.estado === "dudosa" && cot.rows.some(o => o.grupo === r.grupo && o.id !== r.id)).map(r => r.grupo)).size;
+}
+function cotExpStatus(text, kind){
+  const el = cotEl("cotExpStatus");
+  el.textContent = text || "";
+  el.className = `cot-status ${kind || ""}`;
+}
+async function cotRunExport(btnId, fn, okText){
+  if (!cot.rows.length) return;
+  const pending = cotPendingGroups();
+  if (pending && !confirm(`Hay ${pending} renglón(es) con varias opciones sin elegir. Se van a incluir todas las opciones. ¿Continuar?`)) return;
+  const btn = cotEl(btnId);
+  btn.disabled = true;
+  try { await fn(cotDoc()); cotExpStatus(okText, "ok"); }
+  catch (error) { cotExpStatus(String(error?.message || error), "error"); }
+  finally { btn.disabled = !cot.rows.length; }
+}
+const cotExport = () => cotRunExport("cotExportBtn", presExcel, "Excel descargado.");
+const cotPdf = () => cotRunExport("cotPdfBtn", presPdf, "PDF descargado.");
 
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = [{ wch: 40 }, { wch: 14 }, { wch: 52 }, { wch: 28 }, { wch: 18 }, { wch: 10 }, { wch: 16 }, { wch: 16 }];
-    const fmt = '"$" #,##0.00';
-    for (let r = firstData; r <= lastData + 2; r++) {
-      ["G", "H"].forEach(c => { const cell = ws[`${c}${r}`]; if (cell && (typeof cell.v === "number")) cell.z = fmt; });
-    }
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Presupuesto");
-    const safe = (cliente || "cliente").replace(/[\\/:*?"<>|]+/g, " ").trim().slice(0, 60);
-    const data = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `Presupuesto - ${safe} - ${new Date().toISOString().slice(0, 10)}.xlsx`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-    cotStatus("Excel descargado.", "ok");
+async function cotSendYiqi(){
+  if (!cot.rows.length) return;
+  if (cotPendingGroups()) { cotExpStatus("Hay renglones con varias opciones sin elegir. Elegí una con ✓ (o borrá las que no sirvan) antes de enviar.", "error"); return; }
+  const sinSku = cot.rows.filter(r => !r.sku || !getArticulosCatalog().bySku.has(r.sku));
+  if (sinSku.length) { cotExpStatus(`Hay ${sinSku.length} renglón(es) sin artículo elegido. Completalos o borralos antes de enviar.`, "error"); return; }
+  const cli = cotClientePk.forYiqi();
+  if (cli.error) { cotExpStatus(cli.error, "error"); cotEl("cotCliente").focus(); return; }
+  const pedido = {
+    clienteId: cli.id, cliente: cli.nombre, lista: cotPriceTitle(),
+    items: cot.rows.map(r => ({ sku: r.sku, cantidad: Number(r.cantidad) || 1,
+      precio: r.precio !== null && r.precio !== undefined && r.precio !== "" ? Number(r.precio) : null, texto: r.extra || "" }))
+  };
+  try {
+    const res = await presConfirmAndSend(cotEl("cotYiqiBtn"), pedido, cot.lastSent, cotExpStatus);
+    if (!res) return;
+    cot.lastSent = res.numero || `ID ${res.id}`;
+    cotSave();
+    cotExpStatus(`Pedido creado en YiQi: ${cot.lastSent}.`, "ok");
   } catch (error) {
-    cotStatus(String(error?.message || error), "error");
-  } finally {
-    btn.disabled = !cot.rows.length;
+    cotExpStatus(`No se pudo crear el pedido: ${String(error?.message || error)}`, "error");
   }
 }
 
@@ -903,7 +894,7 @@ async function cotExport(){
 function cotSave(){
   try {
     localStorage.setItem(COT_DRAFT_KEY, JSON.stringify({
-      rows: cot.rows, seq: cot.seq, cliente: cotEl("cotCliente").value,
+      rows: cot.rows, seq: cot.seq, cliente: cotClientePk.text(), clienteSel: cotClientePk.get(), lastSent: cot.lastSent || "",
       priceField: cot.priceField, texto: cotEl("cotTexto").value, modo: cot.modo
     }));
   } catch {}
@@ -917,15 +908,16 @@ function cotRestore(){
     cot.priceField = d.priceField || "";
     cot.modo = d.modo === "disponibilidad" ? "disponibilidad" : "cantidad";
     cotEl("cotModo").value = cot.modo;
-    cotEl("cotCliente").value = d.cliente || "";
+    cotClientePk.set(d.clienteSel || null, d.cliente || "");
+    cot.lastSent = d.lastSent || "";
     cotEl("cotTexto").value = d.texto || "";
   } catch {}
 }
 
 function cotClear(){
   if (cot.rows.length && !confirm("¿Borrar el presupuesto actual y empezar uno nuevo?")) return;
-  cot.rows = []; cot.undo = []; cot.redo = [];
-  cotEl("cotCliente").value = "";
+  cot.rows = []; cot.undo = []; cot.redo = []; cot.lastSent = "";
+  cotClientePk.clear();
   cotEl("cotTexto").value = "";
   try { localStorage.removeItem(COT_DRAFT_KEY); } catch {}
   cotStatus("");
@@ -936,12 +928,13 @@ function cotClear(){
 const cotizacionesModule = {
   ensureLoaded(){
     relacionesModule.ensureLoaded();   // carga artículos + relaciones
+    clientesStore.ensureLoaded();
     cotRefreshState();
     cotRender();
   },
   reset(){
     cot.rows = []; cot.undo = []; cot.redo = []; cot.priceField = "";
-    cotEl("cotCliente").value = "";
+    cotClientePk.clear(); cot.lastSent = "";
     cotEl("cotTexto").value = "";
     try { localStorage.removeItem(COT_DRAFT_KEY); } catch {}
     cotStatus("");
@@ -954,6 +947,8 @@ const cotizacionesModule = {
 cotEl("cotProcessBtn").addEventListener("click", cotProcess);
 cotEl("cotNewBtn").addEventListener("click", cotClear);
 cotEl("cotExportBtn").addEventListener("click", cotExport);
+cotEl("cotPdfBtn").addEventListener("click", cotPdf);
+cotEl("cotYiqiBtn").addEventListener("click", cotSendYiqi);
 cotEl("cotUndoBtn").addEventListener("click", cotUndo);
 cotEl("cotRelAllBtn").addEventListener("click", cotSaveAllRelations);
 cotEl("cotRedoBtn").addEventListener("click", cotRedo);
@@ -970,7 +965,6 @@ document.addEventListener("keydown", e => {
   e.preventDefault();
   isUndo ? cotUndo() : cotRedo();
 });
-cotEl("cotCliente").addEventListener("input", cotSave);
 cotEl("cotTexto").addEventListener("input", cotSave);
 cotEl("cotTexto").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); cotProcess(); } });
 cotEl("cotModo").addEventListener("change", function(){

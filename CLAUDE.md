@@ -11,8 +11,9 @@ Publicada con GitHub Pages: https://dentalabarg.github.io/Aruki/
 - Valora gastar pocos tokens: leer solo los archivos necesarios, editar con cambios puntuales,
   no reescribir archivos enteros.
 
-## Menú (v2.9)
-Presupuestos (Cotizaciones, Relaciones) → Consultas (Artículos, Control Facturas). Al entrar se abre Cotizaciones.
+## Menú (v3.4)
+Presupuesto automático (Cotizaciones, Relaciones) → Presupuesto manual (Armar presupuesto, módulo `manual`) →
+Consultas (Artículos, Control Facturas). Al entrar se abre Cotizaciones.
 
 ## Estructura
 ```
@@ -26,11 +27,15 @@ js/relaciones.js    Presupuestos › Relaciones (CRUD contra /relaciones) + getR
 js/cotizaciones.js  Presupuestos › Cotizaciones (lectura de lista, búsqueda, tabla editable, Excel)
 js/cot-archivos.js  Cotizaciones: lectura de archivos (Excel/Word/PDF/txt) → texto en el cuadro → cotProcess()
 js/cot-ia.js        Cotizaciones: revisión con IA (Gemini vía Worker /ia/elegir) de renglones dudosos/sin coincidencia
+js/clientes.js      Clientes de YiQi (`clientesStore`, smartie 1834 vía /clientes, caché IndexedDB 4 h) + `clientePicker(inputId)`
+js/presupuesto-comun.js  Compartido: `presExcel(doc)`, `presPdf(doc)` (jsPDF 2.5.1 + autotable 3.8.2 de cdnjs), `presSendYiqi()`
+js/manual.js        Presupuesto manual (estado `man`, borrador localStorage `aruki-manual`)
 js/main.js          Navegación entre módulos (MODULES) + inicio
 worker/aruki-worker.js  Copia del conector de Cloudflare (ver abajo)
 ```
 Los scripts son clásicos (no módulos ES) y comparten el ámbito global; el orden de carga en
-`index.html` importa: changelog → core → módulos → main.
+`index.html` importa: changelog → core → facturas → articulos → relaciones → clientes → presupuesto-comun →
+cotizaciones → cot-archivos → cot-ia → manual → main.
 
 ## Reglas de cada cambio (obligatorias)
 1. Subir `LATEST_VERSION` en `js/changelog.js` (1.5 → 1.6 …).
@@ -84,6 +89,17 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   La tabla se arma sola desde `columns`.
 - Materiales: entidad `MATERIAL`, smartie 1539 (`MATE_CODIGO` = SKU, `id`, `MATE_NOMBRE`).
 - Aruki es **solo lectura**: no crear ni modificar nada en YiQi salvo pedido explícito del usuario.
+  **Única escritura (v3.4, pedida por el usuario): crear Pedido.** Worker `POST /pedido` `{ clienteId, cliente, lista, items:[{sku,cantidad,precio|null,texto}] }`
+  → `POST /PEDIDO` `{ schemaId, data:{ EXTE_ID_EXTE (Origen "Local"), CLIE_ID_CLIE, LIDP_ID_LIDP, PEDI_OBSERVACIONES,
+  Productos:[{ MATE_ID_MATE, DEDP_CANTIDAD, DEDP_PRECIO_UNITARIO (solo si se cambió a mano), DEDP_TEXTO_ADICIONAL }] } }`;
+  respuesta `{ ok, newId, error, parameter(JSON string) }` (HTTP 200 con ok=false = error de negocio).
+  Búsquedas: `GET /{ENTIDAD}/search?schemaId&CAMPO=valor` (array plano, filtros por igualdad): MATERIAL por MATE_CODIGO,
+  LISTA_DE_PRECIO (LIDP_NOMBRE, se compara con el título de la columna de precio), CLIENTE "Consumidor Final".
+  Origen de pedido: entidad sin confirmar (prueba EXTERNAL_SYSTEM, ORIGEN_DE_PEDIDO…) o variable `ORIGEN_PEDIDO_ID`.
+  `GET /yiqi/diagnostico` muestra origen, listas y Consumidor Final encontrados.
+- Clientes: entidad `CLIENTE`, smartie **1834** (columnas Nombre, Razón Social, CUIT/Documento, Condición IVA - Descripción, `id`).
+- Las especificaciones de la API (OpenAPI) se descargan de `https://apidoc.yiqi.com.ar/erpdemo.schema-<Módulo>-api.json`
+  (desde acá el dominio está bloqueado: pedirle al usuario que las adjunte).
 - Uso responsable: pocas consultas en paralelo (hoy 4), reintentos con espera.
 
 ## Cómo funcionan los módulos de datos

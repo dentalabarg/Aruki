@@ -4,8 +4,21 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "3.3";
+const LATEST_VERSION = "3.4";
 const CHANGELOG = [
+  {
+    version: "3.4",
+    date: "2026-10-13",
+    title: "Presupuesto manual, PDF, clientes de YiQi y envío de pedidos a YiQi",
+    items: [
+      { type: "nuevo", text: "Menú dividido en Presupuesto automático (Cotizaciones y Relaciones) y Presupuesto manual" },
+      { type: "nuevo", text: "Presupuesto manual: cliente, lista de precios y modo de cantidad; agregar artículos por SKU o nombre, cambiar cantidad, precio y texto adicional, Deshacer/Rehacer y aviso flotante de cada acción" },
+      { type: "nuevo", text: "Generar PDF del presupuesto (Manual y Cotizaciones)" },
+      { type: "mejora", text: "Exportar a Excel ahora está abajo de todo, junto a Generar PDF y Enviar pedido a YiQi" },
+      { type: "nuevo", text: "El campo Cliente busca entre los clientes reales de YiQi (nombre, razón social o CUIT). Vacío = Consumidor Final" },
+      { type: "nuevo", text: "Enviar pedido a YiQi: crea el pedido con Origen Local, el cliente y la lista de precios elegidos (requiere actualizar el conector de Cloudflare)" }
+    ]
+  },
   {
     version: "3.3",
     date: "2026-10-13",

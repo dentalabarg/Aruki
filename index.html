@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=3.3">
+<link rel="stylesheet" href="css/styles.css?v=3.4">
 </head>
 <body>
 
@@ -102,7 +102,7 @@
   <div class="app-layout">
     <div class="sidebar-backdrop hidden" id="sidebarBackdrop"></div>
     <nav class="sidebar" id="sidebar">
-      <div class="nav-kicker">Presupuestos</div>
+      <div class="nav-kicker">Presupuesto automático</div>
       <div class="nav-item sub active" data-module="cotizaciones" title="Cotizaciones">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/>
@@ -114,6 +114,13 @@
           <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>
         </svg>
         <span>Relaciones</span>
+      </div>
+      <div class="nav-kicker">Presupuesto manual</div>
+      <div class="nav-item sub" data-module="manual" title="Armar presupuesto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="3" width="16" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        <span>Armar presupuesto</span>
       </div>
       <div class="nav-kicker">Consultas</div>
       <div class="nav-item" data-module="articulos">
@@ -287,12 +294,11 @@
       <section id="view-cotizaciones">
         <div class="page-head">
           <div>
-            <div class="page-kicker">Presupuestos</div>
+            <div class="page-kicker">Presupuesto automático</div>
             <h1 class="page-title">Cotizaciones</h1>
           </div>
           <div class="page-head-actions">
             <button class="btn btn-ghost" id="cotNewBtn" type="button" title="Borrar todo y empezar una cotización nueva">Nueva cotización</button>
-            <button class="btn btn-primary" id="cotExportBtn" type="button" disabled>Exportar a Excel</button>
           </div>
         </div>
 
@@ -380,12 +386,100 @@
             <button class="btn btn-secondary cot-ia-btn" id="cotIaBtn" type="button" disabled title="Mandar a Gemini los renglones en amarillo o rojo"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>Revisar dudosos con IA</button>
           </div>
           <div class="cot-status" id="cotStatus"></div>
+          <div class="pres-export">
+            <div class="cot-status" id="cotExpStatus"></div>
+            <div class="pres-export-btns">
+              <button class="btn btn-secondary" id="cotExportBtn" type="button" disabled><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><path d="M8 13l4 5M12 13l-4 5"/></svg>Exportar a Excel</button>
+              <button class="btn btn-secondary" id="cotPdfBtn" type="button" disabled><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>Generar PDF</button>
+              <button class="btn btn-primary" id="cotYiqiBtn" type="button" disabled title="Crear el pedido en YiQi con el cliente, la lista de precios y los artículos"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>Enviar pedido a YiQi</button>
+            </div>
+          </div>
         </div>
         <div class="rel-results cot-floating hidden" id="cotSkuResults"></div>
         <div class="cot-toast hidden" id="cotToast" role="status" aria-live="polite">
           <span id="cotToastText"></span>
           <button type="button" class="cot-toast-undo" id="cotToastUndo">Deshacer</button>
           <button type="button" class="cot-toast-close" id="cotToastClose" aria-label="Cerrar aviso">×</button>
+        </div>
+      </section>
+
+      <!-- PRESUPUESTO MANUAL -->
+      <section id="view-manual" class="hidden">
+        <div class="page-head">
+          <div>
+            <div class="page-kicker">Presupuesto manual</div>
+            <h1 class="page-title">Armar presupuesto</h1>
+          </div>
+          <div class="page-head-actions">
+            <button class="btn btn-ghost" id="manNewBtn" type="button" title="Borrar todo y empezar un presupuesto nuevo">Nuevo presupuesto</button>
+          </div>
+        </div>
+
+        <div class="runtime-banner" id="manBanner" data-state="idle">
+          <div>
+            <span id="manKicker">Presupuesto manual</span>
+            <strong id="manTitle">Preparando</strong>
+            <p id="manText">Se cargan los artículos al abrir este módulo.</p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">1. Datos del presupuesto</div>
+          <div class="cot-grid">
+            <div class="field">
+              <label for="manCliente">Cliente (opcional)</label>
+              <input class="ds-input" id="manCliente" type="text" maxlength="200" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="manLista">Lista de precios</label>
+              <select class="ds-input" id="manLista"></select>
+            </div>
+            <div class="field">
+              <label for="manModo">Cantidad</label>
+              <select class="ds-input" id="manModo">
+                <option value="cantidad">Respetar cantidad solicitada</option>
+                <option value="disponibilidad">Disponibilidad simplificada</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">2. Artículos · <span id="manRowCount">0</span> renglones</div>
+          </div>
+          <div class="cot-actions man-actions">
+            <div class="rel-picker cot-add man-add">
+              <input class="ds-input" id="manAddSearch" type="text" placeholder="Agregar artículo: buscá por SKU o nombre y tocá Enter" autocomplete="off">
+              <div class="rel-results hidden" id="manAddResults"></div>
+            </div>
+            <button class="btn btn-secondary" id="manUndoBtn" type="button" disabled title="Deshacer la última acción"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Deshacer</button>
+            <button class="btn btn-secondary" id="manRedoBtn" type="button" disabled title="Rehacer lo último que deshiciste"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>Rehacer</button>
+          </div>
+          <div class="art-scroll man-scroll">
+            <table class="art-table cot-table man-table" id="manTable">
+              <thead><tr>
+                <th>SKU</th><th>Nombre del artículo</th><th>Texto adicional</th><th>Marca</th>
+                <th class="num"><span id="manQtyHead">Cantidad</span></th><th class="num"><span id="manPriceHead">Precio</span></th><th class="num col-sub">Subtotal</th><th></th>
+              </tr></thead>
+              <tbody id="manBody"></tbody>
+              <tfoot><tr><td colspan="6" class="num cot-total-label">Total</td><td class="num cot-total" id="manTotal">$ 0</td><td></td></tr></tfoot>
+            </table>
+            <div class="empty-state man-empty" id="manEmpty">Todavía no agregaste artículos. Buscalos arriba por SKU o nombre.</div>
+          </div>
+          <div class="pres-export">
+            <div class="cot-status" id="manStatus"></div>
+            <div class="pres-export-btns">
+              <button class="btn btn-secondary" id="manExcelBtn" type="button" disabled><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><path d="M8 13l4 5M12 13l-4 5"/></svg>Exportar a Excel</button>
+              <button class="btn btn-secondary" id="manPdfBtn" type="button" disabled><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>Generar PDF</button>
+              <button class="btn btn-primary" id="manYiqiBtn" type="button" disabled title="Crear el pedido en YiQi con el cliente, la lista de precios y los artículos"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>Enviar pedido a YiQi</button>
+            </div>
+          </div>
+        </div>
+        <div class="cot-toast hidden" id="manToast" role="status" aria-live="polite">
+          <span id="manToastText"></span>
+          <button type="button" class="cot-toast-undo" id="manToastUndo">Deshacer</button>
+          <button type="button" class="cot-toast-close" id="manToastClose" aria-label="Cerrar aviso">×</button>
         </div>
       </section>
 
@@ -506,14 +600,17 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=3.3"></script>
-<script src="js/core.js?v=3.3"></script>
-<script src="js/facturas.js?v=3.3"></script>
-<script src="js/articulos.js?v=3.3"></script>
-<script src="js/relaciones.js?v=3.3"></script>
-<script src="js/cotizaciones.js?v=3.3"></script>
-<script src="js/cot-archivos.js?v=3.3"></script>
-<script src="js/cot-ia.js?v=3.3"></script>
-<script src="js/main.js?v=3.3"></script>
+<script src="js/changelog.js?v=3.4"></script>
+<script src="js/core.js?v=3.4"></script>
+<script src="js/facturas.js?v=3.4"></script>
+<script src="js/articulos.js?v=3.4"></script>
+<script src="js/relaciones.js?v=3.4"></script>
+<script src="js/clientes.js?v=3.4"></script>
+<script src="js/presupuesto-comun.js?v=3.4"></script>
+<script src="js/cotizaciones.js?v=3.4"></script>
+<script src="js/cot-archivos.js?v=3.4"></script>
+<script src="js/cot-ia.js?v=3.4"></script>
+<script src="js/manual.js?v=3.4"></script>
+<script src="js/main.js?v=3.4"></script>
 </body>
 </html>

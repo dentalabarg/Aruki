@@ -561,3 +561,21 @@ select.ds-input{cursor:pointer;}
 .rel-dup-warn{font:500 12.5px var(--sans); color:var(--amber); background:var(--amber-soft); padding:6px 10px; border-radius:var(--radius-sm);}
 .rel-filtro-n{font:500 11px var(--mono); opacity:.7;}
 #relFiltro{flex-wrap:wrap;}
+
+/* ============================================================
+   v3.4 — Presupuesto manual, exportar (Excel / PDF / YiQi), clientes
+   ============================================================ */
+.pres-export{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  margin-top:14px; padding-top:14px; border-top:1px solid var(--line);}
+.pres-export-btns{display:flex; gap:8px; flex-wrap:wrap; margin-left:auto;}
+.pres-export .btn{display:inline-flex; align-items:center; gap:6px;}
+.pres-export .btn:disabled{opacity:.45; cursor:default;}
+.cli-picker{width:100%;}
+.cli-info{margin-top:6px; min-height:18px; font:400 12.5px var(--sans); color:var(--muted); display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+.man-actions{margin-bottom:12px;}
+.man-add{flex:1 1 360px; max-width:560px;}
+.man-table td.man-sku{font:500 13px var(--mono); color:var(--cyan); white-space:nowrap;}
+.man-table .cell-input.extra{min-width:140px;}
+.man-table.mode-disp .col-sub{display:none;}
+.man-table.mode-disp tfoot{display:none;}
+.man-empty{padding:28px 20px;}

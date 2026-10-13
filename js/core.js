@@ -148,6 +148,8 @@ document.getElementById("logoutBtn").addEventListener("click", function(){
   articulosModule.reset();
   relacionesModule.reset();
   cotizacionesModule.reset();
+  manualModule.reset();
+  clientesStore.reset();
   showModule("cotizaciones");
 });
 

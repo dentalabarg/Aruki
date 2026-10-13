@@ -1,7 +1,7 @@
 /* ============================================================
    NAVEGACIÓN ENTRE MÓDULOS
    ============================================================ */
-const MODULES = ["facturas", "articulos", "cotizaciones", "relaciones"];
+const MODULES = ["facturas", "articulos", "cotizaciones", "relaciones", "manual"];
 
 function showModule(name){
   if (!MODULES.includes(name)) return;
@@ -20,6 +20,7 @@ function showModule(name){
   if (name === "articulos") articulosModule.ensureLoaded();
   if (name === "relaciones") relacionesModule.ensureLoaded();
   if (name === "cotizaciones") cotizacionesModule.ensureLoaded();
+  if (name === "manual") manualModule.ensureLoaded();
 }
 
 document.querySelectorAll(".sidebar .nav-item[data-module]").forEach(item => {
