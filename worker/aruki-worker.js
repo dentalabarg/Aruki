@@ -576,25 +576,49 @@ async function getSmartiePage(env, entity, smartieId, page) {
 /* ---------- Consulta rápida (POST /{ENTIDAD}/query, hasta 1000 por página) ----------
    La smartie entrega de a 50 filas; /query entrega hasta 1000. Para no cambiar nada en Aruki:
    1) se lee la página 1 de la smartie para saber sus columnas (field/title) y su total;
-   2) se pide /query con esas mismas columnas;
-   3) solo si YiQi la acepta Y el total coincide con el de la smartie (o sea, la smartie no tiene filtros
-      que la consulta no conoce) se usa la consulta rápida. Si no, se sigue con la smartie como siempre.
+   2) se pide /query con esas mismas columnas y con los mismos filtros que tiene la smartie en YiQi
+      (los filtros no vienen en la API: se copian a mano en FAST_FILTERS);
+   3) solo si YiQi la acepta Y el total coincide con el de la smartie se usa la consulta rápida.
+      Si no, se sigue con la smartie como siempre y se informa el motivo ("motivo").
+   Como no se sabe de antemano cómo espera YiQi algunos valores (true / 1 / "S", formato de fecha), se prueban
+   variantes con pageSize 1 (consultas livianas) hasta que el total coincide.
    Respuesta con el mismo formato que la smartie ({ data, total, columns }) + "modo": "rapido" | "smartie". */
 const FAST_PAGE_SIZE = 1000;
 const FAST_TTL = 15 * 60 * 1000;
-const fastPlans = new Map();   // "ENTIDAD:smartie" → { ok, columns, queryColumns, at }
+const fastPlans = new Map();   // "ENTIDAD:smartie" → { ok, columns, queryColumns, filters, motivo, at }
 const SKIP_FIELDS = new Set(["id", "ESTA_CODIGO", "ckeck", "check", "__s"]);
+
+/* Filtros de cada smartie (copiados de YiQi). Cada entrada es una lista de variantes a probar, en orden. */
+function fastFilterCandidates(entity) {
+  const f = (columnName, operator, value) => ({ columnName, operator, value });
+  if (entity === "CLIENTE") {
+    // Smartie 1834: solo clientes con "Activo (cliente)" marcado
+    return [true, 1, "true", "1", "S", "Si"].map(v => [f("CLIE_ACTIVO", "=", v)]).concat([[]]);
+  }
+  if (entity === "FACTURA") {
+    // Smartie 2355: emitidas desde 01/07/2026, sin origen "Mercado Libre" y sin cliente "Consumidor Final"
+    const desde = ["2026-07-01", "2026-07-01T00:00:00", "01/07/2026"];
+    const out = [];
+    for (const d of desde) {
+      out.push([f("FACT_FECHA_EMISION", ">=", d), f("FACT_EXTE_NOMBRE", "!=", "Mercado Libre"), f("CLIE_ID_CLIE", "!=", 8192)]);
+    }
+    return out;
+  }
+  return [[]];
+}
 
 async function getClientesPage(env, page, modo) {
   return fastSmartie(env, "CLIENTE", env.CLIENTES_SMARTIE_ID || "1834", page, modo);
 }
 
-async function runQuery(env, entity, page, queryColumns) {
+async function runQuery(env, entity, page, queryColumns, filters = [], pageSize = FAST_PAGE_SIZE) {
   const schemaId = await getSchemaId(env);
+  const body = { page, pageSize, columns: queryColumns };
+  if (filters.length) body.filters = filters;
   const response = await yiqiFetch(env, `/${entity}/query?schemaId=${encodeURIComponent(schemaId)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ page, pageSize: FAST_PAGE_SIZE, columns: queryColumns }),
+    body: JSON.stringify(body),
   });
   const text = await response.text();
   let payload = null;
@@ -625,60 +649,74 @@ function buildQueryColumns(columns) {
   return out;
 }
 
+const shortErr = r => String(r.payload?.errors ? JSON.stringify(r.payload.errors) : (r.payload?.error || r.payload?.message || r.payload?.title || r.text || "")).replace(/\s+/g, " ").slice(0, 160);
+
+/* Arma el plan: qué columnas y filtros usar en /query para que dé lo mismo que la smartie */
+async function buildFastPlan(env, entity, smartieId) {
+  const smartie = await getSmartiePage(env, entity, smartieId, 1);
+  const base = buildQueryColumns(smartie.columns);
+  const plan = { ok: false, columns: smartie.columns, queryColumns: base, filters: [], motivo: "", at: Date.now(), smartie };
+  if (!base.length) { plan.motivo = "la smartie no informa sus columnas"; return plan; }
+  const total = Number(smartie.total);
+  const needsId = (smartie.data || []).some(row => row && row.id !== undefined && row.id !== null);
+  const notas = [];
+
+  // 1) ¿Con qué columnas acepta YiQi la consulta? (primero con el id de cada fila)
+  let cols = null;
+  for (const c of [[{ field: "id" }, ...base], base]) {
+    const r = await runQuery(env, entity, 1, c, [], 1);
+    if (r.ok) {
+      const row = r.payload.data[0];
+      if (needsId && row && (row.id === undefined || row.id === null)) { notas.push("la consulta no trae el número (id) de cada fila"); continue; }
+      cols = c; break;
+    }
+    if (r.status === 404) { plan.motivo = `YiQi no tiene consulta rápida para ${entity} (404)`; return plan; }
+    notas.push(`columnas rechazadas (${r.status}): ${shortErr(r)}`);
+    if (r.status !== 400) break;
+  }
+  if (!cols) { plan.motivo = notas.join(" · ") || "YiQi rechazó la consulta"; return plan; }
+
+  // 2) ¿Con qué filtros da el mismo total que la smartie?
+  const totales = [];
+  for (const filters of fastFilterCandidates(entity)) {
+    const r = await runQuery(env, entity, 1, cols, filters, 1);
+    if (!r.ok) { totales.push(`filtro rechazado (${r.status}): ${shortErr(r)}`); continue; }
+    if (Number(r.payload.total) === total) {
+      Object.assign(plan, { ok: true, queryColumns: cols, filters, motivo: "" });
+      return plan;
+    }
+    totales.push(String(r.payload.total));
+  }
+  plan.motivo = `la smartie tiene ${total} registros y la consulta rápida dio ${[...new Set(totales)].join(" / ")}`
+    + " (la smartie tiene filtros distintos a los cargados en Aruki)";
+  return plan;
+}
+
 async function fastSmartie(env, entity, smartieId, page, forced = "") {
   const key = `${entity}:${smartieId}`;
   let plan = fastPlans.get(key);
   if (plan && Date.now() - plan.at > FAST_TTL) plan = null;
   const disabled = env.CONSULTA_RAPIDA === "no" || (entity === "CLIENTE" && env.CLIENTES_MODO === "smartie");
+  const viaSmartie = async (motivo) => ({ ...(await getSmartiePage(env, entity, smartieId, page)), modo: "smartie", ...(motivo ? { motivo } : {}) });
 
-  if (disabled || (plan && !plan.ok)) {
-    return { ...(await getSmartiePage(env, entity, smartieId, page)), modo: "smartie" };
-  }
-  // Aruki ya sabe (por la página 1) que va por consulta rápida: se sigue igual aunque este Worker no tenga el plan
-  if (forced === "rapido" && page > 1 && !(plan && plan.ok)) {
-    fastPlans.delete(key);
-    await fastSmartie(env, entity, smartieId, 1);          // rearma el plan (elige con o sin id)
-    plan = fastPlans.get(key);
-    if (!plan || !plan.ok) throw new HttpError(503, "La lectura rápida cambió a mitad de la descarga. Tocá Actualizar de nuevo.");
-  }
-  if (forced === "smartie" && page > 1) {
-    return { ...(await getSmartiePage(env, entity, smartieId, page)), modo: "smartie" };
-  }
-  if (plan && plan.ok && page > 1) {
-    const r = await runQuery(env, entity, page, plan.queryColumns);
-    if (r.ok) return { data: r.payload.data, total: r.payload.total, columns: plan.columns, modo: "rapido" };
-    throw new HttpError(502, `La consulta rápida a /${entity} falló (status ${r.status}): ${String(r.payload?.error || r.text).slice(0, 300)}`);
-  }
+  if (disabled) return viaSmartie("lectura rápida apagada (CONSULTA_RAPIDA=no)");
+  if (forced === "smartie" && page > 1) return viaSmartie("");
 
-  // Página 1 (o primera vez en este Worker): se arma el plan comparando con la smartie
-  const smartie = await getSmartiePage(env, entity, smartieId, 1);
-  let queryColumns = buildQueryColumns(smartie.columns);
-  let ok = false, first = null;
-  // Si la smartie trae el id de cada fila (clientes, facturas), la consulta rápida también tiene que traerlo
-  const needsId = (smartie.data || []).some(row => row && row.id !== undefined && row.id !== null);
-  if (queryColumns.length) {
-    // Primero se pide el id explícitamente; si YiQi no acepta esa columna, se prueba sin ella
-    for (const cols of [[{ field: "id" }, ...queryColumns], queryColumns]) {
-      try {
-        const r = await runQuery(env, entity, 1, cols);
-        if (!r.ok) { if (r.status === 400) continue; break; }
-        const hasIds = !needsId || r.payload.data.length === 0 || r.payload.data.every(row => row && row.id !== undefined && row.id !== null);
-        ok = hasIds && Number(r.payload.total) === Number(smartie.total);
-        if (ok) { first = r.payload; queryColumns = cols; }
-        break;
-      } catch { break; }
+  if (!plan || (page === 1 && forced !== "rapido")) {
+    if (!plan || page === 1) {
+      try { plan = await buildFastPlan(env, entity, smartieId); }
+      catch (error) { plan = { ok: false, motivo: String(error?.message || error).slice(0, 200), at: Date.now() }; }
+      fastPlans.set(key, plan);
     }
   }
-  fastPlans.set(key, { ok, columns: smartie.columns, queryColumns, at: Date.now() });
-
-  if (!ok) {
-    if (page === 1) return { ...smartie, modo: "smartie" };
-    return { ...(await getSmartiePage(env, entity, smartieId, page)), modo: "smartie" };
+  if (!plan.ok) {
+    if (forced === "rapido" && page > 1) throw new HttpError(503, "La lectura rápida cambió a mitad de la descarga. Tocá Actualizar de nuevo.");
+    if (page === 1 && plan.smartie) return { ...plan.smartie, modo: "smartie", motivo: plan.motivo };
+    return viaSmartie(plan.motivo);
   }
-  if (page === 1) return { data: first.data, total: first.total, columns: smartie.columns, modo: "rapido" };
-  const r = await runQuery(env, entity, page, queryColumns);
-  if (!r.ok) throw new HttpError(502, `La consulta rápida a /${entity} falló (status ${r.status}).`);
-  return { data: r.payload.data, total: r.payload.total, columns: smartie.columns, modo: "rapido" };
+  const r = await runQuery(env, entity, page, plan.queryColumns, plan.filters);
+  if (!r.ok) throw new HttpError(502, `La consulta rápida a /${entity} falló (status ${r.status}): ${shortErr(r)}`);
+  return { data: r.payload.data, total: r.payload.total, columns: plan.columns, modo: "rapido" };
 }
 
 

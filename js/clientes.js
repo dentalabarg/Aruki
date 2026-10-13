@@ -37,7 +37,7 @@ const clientesStore = {
       if (result.aborted) { stopped = true; return; }   // detenido: se siguen usando los clientes que ya había
       if (result.failed.length && !result.rows.length) throw new Error("No se pudieron descargar los clientes.");
       this.list = cliParse(result.rows, result.columns);
-      this.modo = result.modo;
+      this.modo = result.modo; this.motivo = result.motivo;
       this.savedAt = Date.now(); this.loaded = true;
       if (!result.failed.length) cacheSet("clientes", { list: this.list, savedAt: this.savedAt });
     } catch (error) {
@@ -49,7 +49,7 @@ const clientesStore = {
       syncBtnProgress(btn, null, !!this.error, !stopped);
       btn.title = stopped ? "Actualización de clientes detenida. Tocá para volver a intentar."
         : this.error ? `No se pudieron actualizar los clientes: ${this.error}`
-        : `Traer los clientes actualizados desde YiQi · ${numberFormatter.format(this.list.length)} clientes · Última actualización: ${new Date(this.savedAt).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })}${this.modo === "rapido" ? " · lectura rápida" : this.modo === "smartie" ? " · lectura por smartie" : ""}`;
+        : `Traer los clientes actualizados desde YiQi · ${numberFormatter.format(this.list.length)} clientes · Última actualización: ${new Date(this.savedAt).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })}${modoTexto(this.modo, this.motivo)}`;
       if (this.error && this.manual) alert(`No se pudieron actualizar los clientes.\n\n${this.error}`);
       this.manual = false;
     }

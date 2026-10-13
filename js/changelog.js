@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "4.0";
+const LATEST_VERSION = "4.1";
 const CHANGELOG = [
+  {
+    version: "4.1",
+    date: "2026-10-13",
+    title: "Lectura rápida con los filtros de las smarties",
+    items: [
+      { type: "mejora", text: "Clientes: la lectura rápida aplica el mismo filtro que la smartie (solo clientes activos)" },
+      { type: "mejora", text: "Facturas: la lectura rápida aplica los mismos filtros que la smartie (desde 01/07/2026, sin origen Mercado Libre y sin Consumidor Final)" },
+      { type: "mejora", text: "Si alguna lectura sigue yendo por smartie, al pasar el mouse por el botón Actualizar se ve el motivo. Requiere actualizar el conector de Cloudflare" }
+    ]
+  },
   {
     version: "4.0",
     date: "2026-10-13",

@@ -23,6 +23,7 @@ let currentStatus = "todas";
 
 const facturasModule = createDataModule({
   endpoint: `${WORKER_BASE}/facturas`,
+  syncTitle: "Traer las facturas actualizadas desde YiQi",
   viewSize: 50,
   loadingTitle: "Cargando todas las facturas desde YiQi",
   idleText: "Aruki carga todas las facturas al abrir este módulo.",

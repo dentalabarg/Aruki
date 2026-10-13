@@ -322,7 +322,7 @@ async function loadAllPages(endpoint, signal, onProgress){
   await Promise.all(workers);
 
   return {
-    rows: flatten(), columns: first.columns, total, totalPages, modo: first.modo || "",
+    rows: flatten(), columns: first.columns, total, totalPages, modo: first.modo || "", motivo: first.motivo || "",
     failed: failed.sort((a, b) => a - b), aborted: signal.aborted
   };
 }
@@ -396,6 +396,13 @@ if (window.ResizeObserver) {
   }).observe(document.querySelector(".content"));
 }
 
+/* Texto para los tooltips: cómo se leyó (rápida de a 1000 o smartie de a 50) y por qué */
+function modoTexto(modo, motivo){
+  if (modo === "rapido") return " · lectura rápida";
+  if (modo === "smartie") return ` · lectura por smartie${motivo ? ` (motivo: ${motivo})` : ""}`;
+  return "";
+}
+
 /* Botones "Actualizar …" de la barra superior: se van rellenando con el avance */
 function syncBtnProgress(btn, progress, error, done = true){
   if (!btn) return;
@@ -448,7 +455,7 @@ function createDataModule(cfg){
     m.setState("connected", `${numberFormatter.format(m.rows.length)} registros listos`,
       `Actualizados el ${when} (${fmtAgo(Date.now() - m.savedAt)}). Se actualizan solos cada ${cfg.cache.maxAgeHours} horas; con Actualizar lo hacés ahora.`);
     $("kicker").textContent = "Guardado en esta computadora";
-    $("refresh").title = `${cfg.syncTitle || "Traer los datos actualizados desde YiQi"} · ${numberFormatter.format(m.rows.length)} registros · Última actualización: ${when} (${fmtAgo(Date.now() - m.savedAt)})${m.modo === "rapido" ? " · lectura rápida" : m.modo === "smartie" ? " · lectura por smartie" : ""}`;
+    $("refresh").title = `${cfg.syncTitle || "Traer los datos actualizados desde YiQi"} · ${numberFormatter.format(m.rows.length)} registros · Última actualización: ${when} (${fmtAgo(Date.now() - m.savedAt)})${modoTexto(m.modo, m.motivo)}`;
   };
 
   m.filtered = function(){
@@ -540,7 +547,7 @@ function createDataModule(cfg){
       m.rows = result.rows;
       m.columns = result.columns || m.columns;
       m.total = result.total;
-      m.modo = result.modo;
+      m.modo = result.modo; m.motivo = result.motivo;
       m.failed = result.failed;
       m.loaded = !result.aborted;
       m.loading = false;
@@ -555,6 +562,8 @@ function createDataModule(cfg){
         m.saveCache();
         m.showSavedState();
       } else {
+        const rb = $("refresh");
+        rb.dataset.title = `${cfg.syncTitle || "Traer los datos actualizados desde YiQi"} · ${numberFormatter.format(m.rows.length)} registros${modoTexto(m.modo, m.motivo)}`;
         m.setState("connected", "Todos los registros cargados",
           `${numberFormatter.format(m.rows.length)} registros traídos desde YiQi. Actualizá para volver a consultar.`);
       }
@@ -610,7 +619,7 @@ function createDataModule(cfg){
       m.rows = result.rows;
       m.columns = result.columns || m.columns;
       m.total = result.total;
-      m.modo = result.modo;
+      m.modo = result.modo; m.motivo = result.motivo;
       m.failed = [];
       m.saveCache();
       m.showSavedState();

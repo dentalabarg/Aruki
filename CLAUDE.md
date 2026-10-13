@@ -104,7 +104,11 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   smartie (columnas + total), pide `POST /{ENTIDAD}/query?schemaId=` `{ page, pageSize: 1000, columns:[{field,…}] }` con esas
   mismas columnas y la usa solo si YiQi la acepta y el `total` coincide (si no, smartie de a 50). Responde `modo`
   ("rapido" | "smartie"); v3.10: pide también `{field:"id"}` (si YiQi lo rechaza, sin id; si la smartie trae id y la
-  consulta no, usa la smartie). `loadAllPages()` manda `&modo=` en las páginas siguientes para no mezclar. `CONSULTA_RAPIDA=no` la apaga.
+  consulta no, usa la smartie). v4.1: los filtros de cada smartie NO vienen por API: se copian en `fastFilterCandidates()`
+  (CLIENTE: CLIE_ACTIVO = true/1/"S"…; FACTURA: FACT_FECHA_EMISION >= 2026-07-01, FACT_EXTE_NOMBRE != "Mercado Libre",
+  CLIE_ID_CLIE != 8192) y se prueban variantes con pageSize 1 hasta que el total coincide. Si no, responde `motivo`
+  (se ve en el tooltip del botón Actualizar vía `modoTexto()`). Si el usuario cambia filtros en YiQi, actualizar ahí.
+  `loadAllPages()` manda `&modo=` en las páginas siguientes para no mezclar. `CONSULTA_RAPIDA=no` la apaga.
   `/{ENTIDAD}/file` y `/{ENTIDAD}/report` son archivos/PDF de UNA instancia (no exportan listas a Excel).
 - Clientes: entidad `CLIENTE`, smartie **1834** (columnas Nombre, Razón Social, CUIT/Documento, Condición IVA - Descripción, `id`).
 - Las especificaciones de la API (OpenAPI) se descargan de `https://apidoc.yiqi.com.ar/erpdemo.schema-<Módulo>-api.json`
