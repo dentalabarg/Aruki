@@ -95,6 +95,10 @@ v3.2: `cfg.cache = { key, maxAgeHours }` (hoy solo Artículos, 4 h) guarda filas
 pasaron las horas, o con Actualizar, `refreshInBackground()` descarga todo sin tocar `m.rows` (flag `m.refreshing`,
 `m.loading` queda false) y reemplaza solo si terminó completo. Un `setInterval` de 1 min revisa la antigüedad.
 Al cerrar sesión se borra el caché.
+v3.3 (`js/articulos.js`): `artRowExcluded(row)` oculta en Artículos (cfg.filter) y saca de `getArticulosCatalog().list`
+(Cotizaciones/Relaciones) los que tienen en SKU/nombre `ART_EXCLUDE` (discontinuado, mercado libre, para fraccionar, rep wm)
+o **todos** los precios en 0/vacíos; `bySku` sigue teniendo todos (para mostrar nombres de relaciones viejas).
+Columna Identificador oculta (`ART_HIDDEN_TITLE`). Anchos de columna a mano en localStorage `aruki-art-colw` ({field: px}).
 Para un módulo nuevo: sección `view-<nombre>` + ítem `data-module="<nombre>"` en `index.html`,
 archivo `js/<nombre>.js`, sumarlo a `MODULES` en `js/main.js` y a los `<script>`.
 

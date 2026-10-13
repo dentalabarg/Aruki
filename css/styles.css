@@ -479,6 +479,9 @@ select.ds-input{cursor:pointer;}
 .col-resizer::after{content:""; position:absolute; top:25%; bottom:25%; right:0; width:1px; background:var(--line-strong);}
 .col-resizer:hover::after,.col-resizer.active::after{background:var(--cyan); width:2px;}
 .cot-table.is-resized{table-layout:fixed;}
+.art-table.is-resized{table-layout:fixed;}
+.art-table.is-resized td{min-width:0; max-width:none; overflow:hidden; overflow-wrap:anywhere;}
+.art-table.is-resized th{overflow:hidden; text-overflow:ellipsis;}
 .cot-table.is-resized td{min-width:0 !important; max-width:none !important; overflow:hidden; overflow-wrap:anywhere;}
 .cot-table.is-resized .cell-input.sku,.cot-table.is-resized .cell-input.qty,.cot-table.is-resized .cell-input.extra{width:100%; min-width:0;}
 .cot-table .badge{margin-top:4px; font-size:10px; padding:2px 8px;}

@@ -4,8 +4,19 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "3.2";
+const LATEST_VERSION = "3.3";
 const CHANGELOG = [
+  {
+    version: "3.3",
+    date: "2026-10-13",
+    title: "Artículos más limpios y columnas con ancho a gusto",
+    items: [
+      { type: "mejora", text: "Ya no aparecen (ni en Artículos ni al elegir o agregar artículos en Cotizaciones y Relaciones) los que dicen Discontinuado, Mercado Libre, Para fraccionar o REP WM" },
+      { type: "mejora", text: "Tampoco aparecen los artículos que tienen todos los precios en cero o vacíos" },
+      { type: "mejora", text: "Artículos: se oculta la columna Identificador" },
+      { type: "nuevo", text: "Artículos: el ancho de cada columna se puede cambiar arrastrando el borde del título (doble clic vuelve a los anchos originales)" }
+    ]
+  },
   {
     version: "3.2",
     date: "2026-10-10",
