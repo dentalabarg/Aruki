@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "3.6";
+const LATEST_VERSION = "3.7";
 const CHANGELOG = [
+  {
+    version: "3.7",
+    date: "2026-10-13",
+    title: "Lectura rápida también para Artículos y Facturas",
+    items: [
+      { type: "mejora", text: "Clientes, Artículos y Facturas se descargan de a 1000 por consulta (antes 50), usando las mismas columnas de cada smartie. Requiere actualizar el conector de Cloudflare" },
+      { type: "mejora", text: "Si la smartie tiene filtros que la lectura rápida no conoce (el total no coincide), Aruki sigue leyendo la smartie como antes" },
+      { type: "mejora", text: "Al pasar el mouse por Actualizar Clientes / Artículos se ve cuántos registros se trajeron y si fue por lectura rápida o por smartie" }
+    ]
+  },
   {
     version: "3.6",
     date: "2026-10-13",

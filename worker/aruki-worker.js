@@ -16,8 +16,8 @@
   - FACTURAS_SMARTIE_ID
   - ARTICULOS_ENTITY (por defecto CONSULTA_DE_STOCK)
   - ARTICULOS_SMARTIE_ID (por defecto 2377)
-  - CLIENTES_SMARTIE_ID (por defecto 1834, entidad CLIENTE; solo si la consulta rápida no anda)
-  - CLIENTES_MODO (opcional: "smartie" para forzar la lectura vieja de a 50)
+  - CLIENTES_SMARTIE_ID (por defecto 1834, entidad CLIENTE)
+  - CONSULTA_RAPIDA (opcional: "no" para volver a leer las smarties de a 50)
   - ORIGEN_PEDIDO_ID (opcional: id del Origen de pedido "Local"; si no está, se busca solo)
   - ORIGEN_PEDIDO_NOMBRE (opcional, por defecto "Local")
 
@@ -72,19 +72,19 @@ export default {
 
       if (url.pathname === "/facturas" && request.method === "GET") {
         const page = normalizePage(url.searchParams.get("page"));
-        const data = await getFacturas(env, page);
+        const data = await getFacturas(env, page, url.searchParams.get("modo") || "");
         return json(data, corsHeaders);
       }
 
       if (url.pathname === "/articulos" && request.method === "GET") {
         const page = normalizePage(url.searchParams.get("page"));
-        const data = await getArticulos(env, page);
+        const data = await getArticulos(env, page, url.searchParams.get("modo") || "");
         return json(data, corsHeaders);
       }
 
       if (url.pathname === "/clientes" && request.method === "GET") {
         const page = normalizePage(url.searchParams.get("page"));
-        return json(await getClientesPage(env, page), corsHeaders);
+        return json(await getClientesPage(env, page, url.searchParams.get("modo") || ""), corsHeaders);
       }
 
       if (url.pathname === "/pedido" && request.method === "POST") {
@@ -526,65 +526,16 @@ async function getSchemaId(env) {
   return schemaId;
 }
 
-/* ---------- Facturas ---------- */
+/* ---------- Facturas y Artículos (smartie, con consulta rápida si se puede) ---------- */
 
-async function getFacturas(env, page) {
-  const token = await getToken(env);
-  const schemaId = await getSchemaId(env);
-  const entity = env.FACTURAS_ENTITY || "FACTURA";
+async function getFacturas(env, page, modo) {
   const smartieId = env.FACTURAS_SMARTIE_ID;
-
-  if (!smartieId) {
-    throw new HttpError(
-      500,
-      "Falta configurar la variable FACTURAS_SMARTIE_ID en el Worker."
-    );
-  }
-
-  const query = new URLSearchParams({
-    smartieId,
-    schemaId,
-    page: String(page),
-  });
-
-  const response = await fetchSmartie(env, entity, query, token);
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new HttpError(
-      502,
-      `La consulta a /${entity}/smartie falló (status ${response.status}): ${text}`
-    );
-  }
-
-  return response.json();
+  if (!smartieId) throw new HttpError(500, "Falta configurar la variable FACTURAS_SMARTIE_ID en el Worker.");
+  return fastSmartie(env, env.FACTURAS_ENTITY || "FACTURA", smartieId, page, modo);
 }
 
-/* ---------- Artículos (Stock > Consulta de Stock) ---------- */
-
-async function getArticulos(env, page) {
-  const token = await getToken(env);
-  const schemaId = await getSchemaId(env);
-  const entity = env.ARTICULOS_ENTITY || "CONSULTA_DE_STOCK";
-  const smartieId = env.ARTICULOS_SMARTIE_ID || "2377";
-
-  const query = new URLSearchParams({
-    smartieId,
-    schemaId,
-    page: String(page),
-  });
-
-  const response = await fetchSmartie(env, entity, query, token);
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new HttpError(
-      502,
-      `La consulta a /${entity}/smartie falló (status ${response.status}): ${text}`
-    );
-  }
-
-  return response.json();
+async function getArticulos(env, page, modo) {
+  return fastSmartie(env, env.ARTICULOS_ENTITY || "CONSULTA_DE_STOCK", env.ARTICULOS_SMARTIE_ID || "2377", page, modo);
 }
 
 async function fetchSmartie(env, entity, query, token) {
@@ -621,24 +572,28 @@ async function getSmartiePage(env, entity, smartieId, page) {
   return response.json();
 }
 
-/* ---------- Clientes: consulta rápida (POST /CLIENTE/query, 1000 por página) ----------
-   Mucho más rápida que la smartie (50 por página). Devuelve el mismo formato que la smartie
-   ({ data, total, columns: [{ field, title }] }) para que Aruki no note la diferencia.
-   La condición de IVA viene de una entidad relacionada: se prueban los nombres de columna posibles;
-   si YiQi no acepta ninguno, se usa la smartie 1834 como antes. */
-const CLI_IVA_CANDIDATES = ["COIV_DESCRIPCION", "COIV_NOMBRE"];
-let cliIvaField; // undefined = sin probar · string = el que anda · null = ninguno (usar smartie)
+/* ---------- Consulta rápida (POST /{ENTIDAD}/query, hasta 1000 por página) ----------
+   La smartie entrega de a 50 filas; /query entrega hasta 1000. Para no cambiar nada en Aruki:
+   1) se lee la página 1 de la smartie para saber sus columnas (field/title) y su total;
+   2) se pide /query con esas mismas columnas;
+   3) solo si YiQi la acepta Y el total coincide con el de la smartie (o sea, la smartie no tiene filtros
+      que la consulta no conoce) se usa la consulta rápida. Si no, se sigue con la smartie como siempre.
+   Respuesta con el mismo formato que la smartie ({ data, total, columns }) + "modo": "rapido" | "smartie". */
+const FAST_PAGE_SIZE = 1000;
+const FAST_TTL = 15 * 60 * 1000;
+const fastPlans = new Map();   // "ENTIDAD:smartie" → { ok, columns, queryColumns, at }
+const SKIP_FIELDS = new Set(["id", "ESTA_CODIGO", "ckeck", "check", "__s"]);
 
-async function clientesQuery(env, page, ivaField) {
+async function getClientesPage(env, page, modo) {
+  return fastSmartie(env, "CLIENTE", env.CLIENTES_SMARTIE_ID || "1834", page, modo);
+}
+
+async function runQuery(env, entity, page, queryColumns) {
   const schemaId = await getSchemaId(env);
-  const columns = [
-    { field: "CLIE_NOMBRE" }, { field: "CLIE_RAZON_SOCIAL" }, { field: "CLIE_CUIT" },
-    ...(ivaField ? [{ field: ivaField }] : []),
-  ];
-  const response = await yiqiFetch(env, `/CLIENTE/query?schemaId=${encodeURIComponent(schemaId)}`, {
+  const response = await yiqiFetch(env, `/${entity}/query?schemaId=${encodeURIComponent(schemaId)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ page, pageSize: 1000, columns }),
+    body: JSON.stringify({ page, pageSize: FAST_PAGE_SIZE, columns: queryColumns }),
   });
   const text = await response.text();
   let payload = null;
@@ -646,31 +601,76 @@ async function clientesQuery(env, page, ivaField) {
   return { ok: response.ok && Array.isArray(payload?.data), status: response.status, payload, text };
 }
 
-async function getClientesPage(env, page) {
-  if (env.CLIENTES_MODO === "smartie" || cliIvaField === null) {
-    return { ...(await getSmartiePage(env, "CLIENTE", env.CLIENTES_SMARTIE_ID || "1834", page)), modo: "smartie" };
-  }
-  const tryFields = cliIvaField ? [cliIvaField] : CLI_IVA_CANDIDATES;
-  for (const field of tryFields) {
-    const r = await clientesQuery(env, page, field);
-    if (r.ok) {
-      cliIvaField = field;
-      const titles = { CLIE_NOMBRE: "Nombre", CLIE_RAZON_SOCIAL: "Razón Social", CLIE_CUIT: "CUIT/Documento", [field]: "Condición IVA - Descripción" };
-      return {
-        data: r.payload.data,
-        total: r.payload.total,
-        columns: Object.entries(titles).map(([f, title]) => ({ field: f, title })),
-        modo: "rapido",
-      };
+function buildQueryColumns(columns) {
+  const out = [];
+  for (const c of columns || []) {
+    const field = String(c?.field || "");
+    if (!field || SKIP_FIELDS.has(field)) continue;
+    const col = { field };
+    // Si la smartie trae orden, se respeta (los nombres de esas propiedades pueden variar)
+    const dir = String(c.sortDirection || c.SortDirection || c.direccionOrden || "").toUpperCase();
+    if (dir === "ASC" || dir === "DESC") {
+      col.sortDirection = dir;
+      const ord = Number(c.sortOrder ?? c.SortOrder);
+      if (Number.isFinite(ord)) col.sortOrder = ord;
     }
-    if (r.status !== 400) {
-      throw new HttpError(502, `La consulta rápida de clientes falló (status ${r.status}): ${String(r.payload?.error || r.text).slice(0, 300)}`);
-    }
+    out.push(col);
   }
-  // Ningún nombre de columna de IVA fue aceptado: se vuelve a la smartie (más lenta, pero completa)
-  cliIvaField = null;
-  return { ...(await getSmartiePage(env, "CLIENTE", env.CLIENTES_SMARTIE_ID || "1834", page)), modo: "smartie" };
+  // Facturas sin orden conocido: las más nuevas primero
+  if (!out.some(c => c.sortDirection)) {
+    const fecha = out.find(c => /FECHA_EMISION/.test(c.field));
+    if (fecha) { fecha.sortDirection = "DESC"; fecha.sortOrder = 1; }
+  }
+  return out;
 }
+
+async function fastSmartie(env, entity, smartieId, page, forced = "") {
+  const key = `${entity}:${smartieId}`;
+  let plan = fastPlans.get(key);
+  if (plan && Date.now() - plan.at > FAST_TTL) plan = null;
+  const disabled = env.CONSULTA_RAPIDA === "no" || (entity === "CLIENTE" && env.CLIENTES_MODO === "smartie");
+
+  if (disabled || (plan && !plan.ok)) {
+    return { ...(await getSmartiePage(env, entity, smartieId, page)), modo: "smartie" };
+  }
+  // Aruki ya sabe (por la página 1) que va por consulta rápida: se sigue igual aunque este Worker no tenga el plan
+  if (forced === "rapido" && page > 1 && !(plan && plan.ok)) {
+    const smartieCols = (await getSmartiePage(env, entity, smartieId, 1)).columns;
+    plan = { ok: true, columns: smartieCols, queryColumns: buildQueryColumns(smartieCols), at: Date.now() };
+    fastPlans.set(key, plan);
+  }
+  if (forced === "smartie" && page > 1) {
+    return { ...(await getSmartiePage(env, entity, smartieId, page)), modo: "smartie" };
+  }
+  if (plan && plan.ok && page > 1) {
+    const r = await runQuery(env, entity, page, plan.queryColumns);
+    if (r.ok) return { data: r.payload.data, total: r.payload.total, columns: plan.columns, modo: "rapido" };
+    throw new HttpError(502, `La consulta rápida a /${entity} falló (status ${r.status}): ${String(r.payload?.error || r.text).slice(0, 300)}`);
+  }
+
+  // Página 1 (o primera vez en este Worker): se arma el plan comparando con la smartie
+  const smartie = await getSmartiePage(env, entity, smartieId, 1);
+  const queryColumns = buildQueryColumns(smartie.columns);
+  let ok = false, first = null;
+  if (queryColumns.length) {
+    try {
+      const r = await runQuery(env, entity, 1, queryColumns);
+      ok = r.ok && Number(r.payload.total) === Number(smartie.total);
+      if (ok) first = r.payload;
+    } catch { ok = false; }
+  }
+  fastPlans.set(key, { ok, columns: smartie.columns, queryColumns, at: Date.now() });
+
+  if (!ok) {
+    if (page === 1) return { ...smartie, modo: "smartie" };
+    return { ...(await getSmartiePage(env, entity, smartieId, page)), modo: "smartie" };
+  }
+  if (page === 1) return { data: first.data, total: first.total, columns: smartie.columns, modo: "rapido" };
+  const r = await runQuery(env, entity, page, queryColumns);
+  if (!r.ok) throw new HttpError(502, `La consulta rápida a /${entity} falló (status ${r.status}).`);
+  return { data: r.payload.data, total: r.payload.total, columns: smartie.columns, modo: "rapido" };
+}
+
 
 /* ---------- Pedidos en YiQi (POST /PEDIDO) ----------
    Única escritura en YiQi de Aruki, a pedido del usuario: crea un pedido con

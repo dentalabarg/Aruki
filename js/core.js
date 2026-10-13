@@ -251,13 +251,13 @@ class SessionExpired extends Error {}
 
 function sleep(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
 
-async function fetchSmartiePage(endpoint, page, signal){
+async function fetchSmartiePage(endpoint, page, signal, extra = ""){
   let lastError;
   for (let attempt = 0; attempt <= LOAD_RETRIES; attempt++) {
     const token = getAuthToken();
     if (!token) throw new SessionExpired("Sesión vencida.");
     try {
-      const response = await fetch(`${endpoint}?page=${encodeURIComponent(page)}&_=${Date.now()}`, {
+      const response = await fetch(`${endpoint}?page=${encodeURIComponent(page)}${extra}&_=${Date.now()}`, {
         method: "GET",
         headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
         cache: "no-store",
@@ -282,6 +282,8 @@ async function fetchSmartiePage(endpoint, page, signal){
 
 async function loadAllPages(endpoint, signal, onProgress){
   const first = await fetchSmartiePage(endpoint, 1, signal);
+  // El conector avisa si va por consulta rápida (1000 por página) o por la smartie (50): el resto de las páginas va igual
+  const extra = first.modo ? `&modo=${encodeURIComponent(first.modo)}` : "";
   const pageSize = first.data.length || 1;
   const total = toNumber(first.total) || first.data.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -304,7 +306,7 @@ async function loadAllPages(endpoint, signal, onProgress){
       const page = nextPage++;
       if (page > totalPages) return;
       try {
-        const payload = await fetchSmartiePage(endpoint, page, signal);
+        const payload = await fetchSmartiePage(endpoint, page, signal, extra);
         pages[page] = payload.data;
       } catch (error) {
         if (error instanceof SessionExpired) throw error;
@@ -320,7 +322,7 @@ async function loadAllPages(endpoint, signal, onProgress){
   await Promise.all(workers);
 
   return {
-    rows: flatten(), columns: first.columns, total, totalPages,
+    rows: flatten(), columns: first.columns, total, totalPages, modo: first.modo || "",
     failed: failed.sort((a, b) => a - b), aborted: signal.aborted
   };
 }
@@ -416,7 +418,7 @@ function createDataModule(cfg){
     m.setState("connected", `${numberFormatter.format(m.rows.length)} registros listos`,
       `Actualizados el ${when} (${fmtAgo(Date.now() - m.savedAt)}). Se actualizan solos cada ${cfg.cache.maxAgeHours} horas; con Actualizar lo hacés ahora.`);
     $("kicker").textContent = "Guardado en esta computadora";
-    $("refresh").title = `${cfg.syncTitle || "Traer los datos actualizados desde YiQi"} · Última actualización: ${when} (${fmtAgo(Date.now() - m.savedAt)})`;
+    $("refresh").title = `${cfg.syncTitle || "Traer los datos actualizados desde YiQi"} · ${numberFormatter.format(m.rows.length)} registros · Última actualización: ${when} (${fmtAgo(Date.now() - m.savedAt)})${m.modo === "rapido" ? " · lectura rápida" : m.modo === "smartie" ? " · lectura por smartie" : ""}`;
   };
 
   m.filtered = function(){
@@ -508,6 +510,7 @@ function createDataModule(cfg){
       m.rows = result.rows;
       m.columns = result.columns || m.columns;
       m.total = result.total;
+      m.modo = result.modo;
       m.failed = result.failed;
       m.loaded = !result.aborted;
       m.loading = false;
@@ -577,6 +580,7 @@ function createDataModule(cfg){
       m.rows = result.rows;
       m.columns = result.columns || m.columns;
       m.total = result.total;
+      m.modo = result.modo;
       m.failed = [];
       m.saveCache();
       m.showSavedState();
