@@ -110,7 +110,8 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   (se ve en el tooltip del botón Actualizar vía `modoTexto()`). v4.2: ante error 500 prueba sin id y diagnostica columna
   por columna. v4.3: si no hay filtros cargados y el total no coincide, `estadoFilters()` agrupa por ESTA_CODIGO/DESC_ESTADO
   (COUNT del SKU) y excluye (!=) los estados cuya suma explica la diferencia. CONSULTA_DE_STOCK: con `id` da 500;
-  sin filtros da 8352 vs 7318 de la smartie (a confirmar qué estado sobra). Si el usuario cambia filtros en YiQi, actualizar ahí.
+  sin filtros da 8352 vs 7318 de la smartie y el agrupado por estado da 500 → v4.4: Artículos va SIEMPRE por smartie
+  (variable `ARTICULOS_RAPIDA=si` para reintentar). Clientes y Facturas confirmados por lectura rápida. Si el usuario cambia filtros en YiQi, actualizar ahí.
   `loadAllPages()` manda `&modo=` en las páginas siguientes para no mezclar. `CONSULTA_RAPIDA=no` la apaga.
   `/{ENTIDAD}/file` y `/{ENTIDAD}/report` son archivos/PDF de UNA instancia (no exportan listas a Excel).
 - Clientes: entidad `CLIENTE`, smartie **1834** (columnas Nombre, Razón Social, CUIT/Documento, Condición IVA - Descripción, `id`).

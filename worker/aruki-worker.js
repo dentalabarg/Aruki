@@ -754,6 +754,12 @@ async function fastSmartie(env, entity, smartieId, page, forced = "") {
   const viaSmartie = async (motivo) => ({ ...(await getSmartiePage(env, entity, smartieId, page)), modo: "smartie", ...(motivo ? { motivo } : {}) });
 
   if (disabled) return viaSmartie("lectura rápida apagada (CONSULTA_RAPIDA=no)");
+  // Artículos (Consulta de stock): la consulta rápida de YiQi trae registros de más (8352 vs 7318) y da error 500 al
+  // pedir el id o agrupar por estado, así que se lee siempre la smartie (se guarda 4 h en la computadora igual).
+  // Para volver a probarla: variable ARTICULOS_RAPIDA = "si".
+  if (entity === (env.ARTICULOS_ENTITY || "CONSULTA_DE_STOCK") && env.ARTICULOS_RAPIDA !== "si") {
+    return viaSmartie(page === 1 ? "la consulta rápida de YiQi no sirve para esta smartie; se lee de a 50 (se guarda en la computadora 4 h)" : "");
+  }
   if (forced === "smartie" && page > 1) return viaSmartie("");
 
   if (!plan || (page === 1 && forced !== "rapido")) {

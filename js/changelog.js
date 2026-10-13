@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "4.3";
+const LATEST_VERSION = "4.4";
 const CHANGELOG = [
+  {
+    version: "4.4",
+    date: "2026-10-13",
+    title: "Artículos vuelve a leerse por smartie",
+    items: [
+      { type: "mejora", text: "Artículos se lee siempre por smartie: la consulta rápida de YiQi trae registros de más para esa smartie. Se siguen guardando en la computadora y actualizando solos cada 4 horas. Clientes y Facturas siguen con lectura rápida" }
+    ]
+  },
   {
     version: "4.3",
     date: "2026-10-13",
