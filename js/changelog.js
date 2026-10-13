@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "4.2";
+const LATEST_VERSION = "4.3";
 const CHANGELOG = [
+  {
+    version: "4.3",
+    date: "2026-10-13",
+    title: "Lectura rápida de Artículos: detecta los artículos dados de baja",
+    items: [
+      { type: "mejora", text: "Si la consulta rápida trae más registros que la smartie, Aruki cuenta los registros por estado (activo, baja, etc.) y excluye solo los estados que la smartie no muestra. Requiere actualizar el conector" }
+    ]
+  },
   {
     version: "4.2",
     date: "2026-10-13",

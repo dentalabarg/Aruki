@@ -699,9 +699,51 @@ async function buildFastPlan(env, entity, smartieId) {
     }
     totales.push(String(r.payload.total));
   }
+
+  // 3) Sin filtros cargados: muchas smarties esconden solo los registros dados de baja (estado). Se cuentan los
+  //    registros por estado y, si sacando algunos estados el total coincide, se usan esos filtros.
+  let porEstado = "";
+  if (fastFilterCandidates(entity).every(c => !c.length)) {
+    try {
+      const est = await estadoFilters(env, entity, smartie, base, total);
+      porEstado = est.resumen;
+      if (est.filters) {
+        const r = await runQuery(env, entity, 1, cols, est.filters, 1);
+        if (r.ok && Number(r.payload.total) === total) {
+          Object.assign(plan, { ok: true, queryColumns: cols, filters: est.filters, motivo: "" });
+          return plan;
+        }
+      }
+    } catch (error) { porEstado = `no se pudo contar por estado: ${String(error?.message || error).slice(0, 80)}`; }
+  }
   plan.motivo = `la smartie tiene ${total} registros y la consulta rápida dio ${[...new Set(totales)].join(" / ")}`
+    + (porEstado ? ` · por estado: ${porEstado}` : "")
     + " (la smartie tiene filtros distintos a los cargados en Aruki)";
   return plan;
+}
+
+/* Cuenta registros por estado (ESTA_CODIGO / DESC_ESTADO) y busca qué estados excluir para llegar al total de la smartie */
+async function estadoFilters(env, entity, smartie, base, total) {
+  const key = (smartie.columns || []).find(c => /sku|c[oó]digo/i.test(String(c.title || "")))?.field || base[0].field;
+  const r = await runQuery(env, entity, 1, [{ field: "ESTA_CODIGO" }, { field: "DESC_ESTADO" }, { field: key, aggregation: "COUNT" }], [], 100);
+  if (!r.ok) return { resumen: `error ${r.status} ${shortErr(r)}`.slice(0, 120) };
+  const grupos = r.payload.data.map(g => ({ code: g.ESTA_CODIGO, name: g.DESC_ESTADO, n: Number(g[key]) || 0 }));
+  const resumen = grupos.map(g => `${g.name ?? g.code}=${g.n}`).join(", ");
+  if (!grupos.length || grupos.length > 10) return { resumen };
+  // Se buscan los estados a EXCLUIR (combinación más chica) para que la suma dé el total de la smartie
+  let mejor = null;
+  for (let mask = 1; mask < (1 << grupos.length); mask++) {
+    const excl = grupos.filter((_, i) => mask & (1 << i));
+    const quedan = grupos.reduce((s, g) => s + g.n, 0) - excl.reduce((s, g) => s + g.n, 0);
+    if (quedan === total && (!mejor || excl.length < mejor.length)) mejor = excl;
+  }
+  if (!mejor) return { resumen };
+  return {
+    resumen,
+    filters: mejor.map(g => (g.code !== undefined && g.code !== null)
+      ? { columnName: "ESTA_CODIGO", operator: "!=", value: g.code }
+      : { columnName: "DESC_ESTADO", operator: "!=", value: g.name }),
+  };
 }
 
 async function fastSmartie(env, entity, smartieId, page, forced = "") {
