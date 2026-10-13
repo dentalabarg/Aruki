@@ -194,21 +194,23 @@ function manAddSku(sku){
   }
 }
 /* Agregar varios de una vez (desde el módulo Artículos). Devuelve cuántos se agregaron / sumaron. */
-function manAddSkus(skus){
+function manAddSkus(items){
   const cat = getArticulosCatalog();
-  const valid = skus.filter(sku => cat.bySku.has(sku));
+  // Acepta ["SKU", …] o [{ sku, qty }, …]
+  const valid = items.map(it => typeof it === "string" ? { sku: it, qty: 1 } : { sku: it.sku, qty: Math.max(1, Number(it.qty) || 1) })
+    .filter(it => cat.bySku.has(it.sku));
   if (!valid.length) return 0;
   manPushUndo(`agregar ${valid.length} artículo(s) desde Artículos`);
   let nuevos = 0, sumados = 0;
-  valid.forEach(sku => {
+  valid.forEach(({ sku, qty }) => {
     const existing = man.rows.find(r => r.sku === sku);
-    if (existing) { existing.cantidad = (Number(existing.cantidad) || 0) + 1; sumados++; }
-    else { man.rows.push({ id: `m${++man.seq}`, sku, cantidad: 1, precio: null, extra: "" }); nuevos++; }
+    if (existing) { existing.cantidad = (Number(existing.cantidad) || 0) + qty; sumados++; }
+    else { man.rows.push({ id: `m${++man.seq}`, sku, cantidad: qty, precio: null, extra: "" }); nuevos++; }
   });
   manRender(); manSave();
   const partes = [];
   if (nuevos) partes.push(`${nuevos} agregado${nuevos === 1 ? "" : "s"}`);
-  if (sumados) partes.push(`${sumados} ya estaba${sumados === 1 ? "" : "n"} (se sumó 1)`);
+  if (sumados) partes.push(`${sumados} ya estaba${sumados === 1 ? "" : "n"} (se sumó la cantidad)`);
   setTimeout(() => manToast(`Desde Artículos: ${partes.join(", ")}`), 50);
   return valid.length;
 }

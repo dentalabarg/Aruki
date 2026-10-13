@@ -95,14 +95,16 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   respuesta `{ ok, newId, error, parameter(JSON string) }` (HTTP 200 con ok=false = error de negocio).
   Búsquedas: `GET /{ENTIDAD}/search?schemaId&CAMPO=valor` (array plano, filtros por igualdad): MATERIAL por MATE_CODIGO,
   LISTA_DE_PRECIO (LIDP_NOMBRE, se compara con el título de la columna de precio), CLIENTE "Consumidor Final".
-  Cliente vacío → "Consumidor Final" = **id 8192** (`CLI_CONSUMIDOR_FINAL_ID` en clientes.js; Worker `CONSUMIDOR_FINAL_ID`).
+  Cliente vacío → "Consumidor Final" = **id 8192** (hay otro "consumidor final" en minúsculas que NO se usa); el
+  picker lo autoselecciona al quedar vacío y despliega todos los clientes al hacer foco (`cliAll()`). (`CLI_CONSUMIDOR_FINAL_ID` en clientes.js; Worker `CONSUMIDOR_FINAL_ID`).
   Origen de pedido "Local" = **id 3** (confirmado por el usuario; variable `ORIGEN_PEDIDO_ID` lo cambia). Las entidades
   EXTERNAL_SYSTEM / ORIGEN_DE_PEDIDO / ORIGEN_PEDIDO / SISTEMA_EXTERNO dan 404.
   `GET /yiqi/diagnostico` muestra origen, listas y Consumidor Final encontrados.
 - Lectura rápida (v3.7, `fastSmartie()` en el Worker) para /clientes, /articulos y /facturas: lee la página 1 de la
   smartie (columnas + total), pide `POST /{ENTIDAD}/query?schemaId=` `{ page, pageSize: 1000, columns:[{field,…}] }` con esas
   mismas columnas y la usa solo si YiQi la acepta y el `total` coincide (si no, smartie de a 50). Responde `modo`
-  ("rapido" | "smartie"); `loadAllPages()` manda `&modo=` en las páginas siguientes para no mezclar. `CONSULTA_RAPIDA=no` la apaga.
+  ("rapido" | "smartie"); v3.10: pide también `{field:"id"}` (si YiQi lo rechaza, sin id; si la smartie trae id y la
+  consulta no, usa la smartie). `loadAllPages()` manda `&modo=` en las páginas siguientes para no mezclar. `CONSULTA_RAPIDA=no` la apaga.
   `/{ENTIDAD}/file` y `/{ENTIDAD}/report` son archivos/PDF de UNA instancia (no exportan listas a Excel).
 - Clientes: entidad `CLIENTE`, smartie **1834** (columnas Nombre, Razón Social, CUIT/Documento, Condición IVA - Descripción, `id`).
 - Las especificaciones de la API (OpenAPI) se descargan de `https://apidoc.yiqi.com.ar/erpdemo.schema-<Módulo>-api.json`
@@ -125,7 +127,7 @@ Columna Identificador oculta (`ART_HIDDEN_TITLE`). Anchos de columna a mano en l
 v3.5: los `.runtime-banner` solo se ven con `data-state="error"` (CSS). Los botones de actualizar están en la barra
 superior (`.sync-btn`: `#syncCliBtn` → `clientesStore.refresh()`, `#artRefreshBtn` y `#refreshBtn` = `ids.refresh` de
 Artículos y Facturas); `syncBtnProgress(btn, progress|null, error, done)` los rellena (`--p`, `data-pct`); tocarlos mientras cargan detiene (v3.6). Artículos: selección por SKU
-(`artSel`, barra `#artSelBar`) → `manAddSkus()` en Armar presupuesto. Columna optativa "Stock real" (`.col-stock`,
+(`artSel` = Map SKU→cantidad, input `.art-qty` al lado de la casilla, barra `#artSelBar`) → `manAddSkus([{sku, qty}])`. Columna optativa "Stock real" (`.col-stock`,
 clase `show-stock` en la tabla, `presStockHtml(item, cantidad)` → rojo si stock < cantidad); v3.8: va después de Cantidad
 (en Cotizaciones col 6 = Cantidad, 7 = Stock; 11 columnas). `fitScrollArea(viewId)` (core.js) ajusta el alto de `.art-scroll`
 en Artículos y Relaciones para que la página no tenga scroll propio (ResizeObserver sobre `.content`).
@@ -179,7 +181,8 @@ computadoras), con botón de respaldo (descargar/importar).
      palabras con números ×1,5, prefijos 0,75, plurales simples, penaliza medidas distintas (4g vs 2g),
      excluye artículos con precio 0 en la lista elegida.
    - `cotResolve()`: Relación (texto exacto con `relKey`) → "relacion"; score ≥ 0,75 y 0,08 de ventaja → "buena";
-     ≥ 0,4 → hasta 4 opciones "dudosa" (mismo `grupo`); si no, "sin". Umbrales a ajustar con listas reales.
+     ≥ 0,4 → hasta `COT_MAX_OPTIONS` (10) opciones "dudosa" (mismo `grupo`); si no, "sin". Enviar a YiQi manda todas
+     las opciones; solo frenan los renglones "sin" (rojo) o sin SKU. Umbrales a ajustar con listas reales.
    - Excel con SheetJS desde cdnjs (se carga al exportar). Borrador en localStorage `aruki-cotizacion`.
    - v1.8: nombre buscable (`.name-view` → input `data-field="nombre"`), Deshacer (`cot.undo`, snapshots de filas;
      revierte también la relación creada/actualizada), anchos de columna en localStorage `aruki-cot-colw`

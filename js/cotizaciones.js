@@ -373,6 +373,8 @@ function cotSearch(text, limit = 6){
   return results.slice(0, limit);
 }
 
+const COT_MAX_OPTIONS = 10;   // cuántas opciones se muestran como máximo cuando hay dudas
+
 /* Decide qué filas genera un renglón pedido */
 function cotResolve(item, relIndex){
   const grupo = ++cot.seq;
@@ -382,7 +384,7 @@ function cotResolve(item, relIndex){
   if (relHit && relHit.skus.length) {
     return relHit.skus.map(sku => cotMakeRow({ ...base, sku, estado: "relacion" }));
   }
-  const found = cotSearch(item.solicitado, 6);
+  const found = cotSearch(item.solicitado, COT_MAX_OPTIONS + 2);
   const top = found[0];
   if (!top || top.score < 0.4) {
     return [cotMakeRow({ ...base, sku: "", estado: "sin" })];
@@ -391,7 +393,7 @@ function cotResolve(item, relIndex){
   if (top.score >= 0.75 && (!second || top.score - second.score >= 0.08)) {
     return [cotMakeRow({ ...base, sku: top.a.sku, estado: "buena" })];
   }
-  const options = found.filter(r => r.score >= top.score * 0.8).slice(0, 4);
+  const options = found.filter(r => r.score >= top.score * 0.8).slice(0, COT_MAX_OPTIONS);
   // Una sola opción posible: se muestra como "Coincide"
   if (options.length === 1) return [cotMakeRow({ ...base, sku: top.a.sku, estado: "buena" })];
   return options.map(r => cotMakeRow({ ...base, sku: r.a.sku, estado: "dudosa" }));
@@ -875,9 +877,11 @@ const cotPdf = () => cotRunExport("cotPdfBtn", presPdf, "PDF descargado.");
 
 async function cotSendYiqi(){
   if (!cot.rows.length) return;
-  if (cotPendingGroups()) { cotExpStatus("Hay renglones con varias opciones sin elegir. Elegí una con ✓ (o borrá las que no sirvan) antes de enviar.", "error"); return; }
-  const sinSku = cot.rows.filter(r => !r.sku || !getArticulosCatalog().bySku.has(r.sku));
-  if (sinSku.length) { cotExpStatus(`Hay ${sinSku.length} renglón(es) sin artículo elegido. Completalos o borralos antes de enviar.`, "error"); return; }
+  // Las opciones (amarillo) se mandan todas; los renglones sin coincidencia (rojo) o sin artículo frenan el envío
+  const groups = cotGroupInfo();
+  const sinSku = cot.rows.filter(r => !r.sku || !getArticulosCatalog().bySku.has(r.sku) || cotShownEstado(r, groups) === "sin");
+  if (sinSku.length) { cotExpStatus(`Hay ${sinSku.length} renglón(es) en rojo, sin artículo. Elegí un artículo o borralos antes de enviar.`, "error"); return; }
+  const conOpciones = cotPendingGroups();
   const cli = cotClientePk.forYiqi();
   if (cli.error) { cotExpStatus(cli.error, "error"); cotEl("cotCliente").focus(); return; }
   const pedido = {
@@ -886,7 +890,8 @@ async function cotSendYiqi(){
       precio: r.precio !== null && r.precio !== undefined && r.precio !== "" ? Number(r.precio) : null, texto: r.extra || "" }))
   };
   try {
-    const res = await presConfirmAndSend(cotEl("cotYiqiBtn"), pedido, cot.lastSent, cotExpStatus);
+    const note = conOpciones ? `\n\nHay ${conOpciones} renglón(es) con opciones sin elegir: se mandan TODAS las opciones.` : "";
+    const res = await presConfirmAndSend(cotEl("cotYiqiBtn"), pedido, cot.lastSent, cotExpStatus, note);
     if (!res) return;
     cot.lastSent = res.numero || `ID ${res.id}`;
     cotSave();

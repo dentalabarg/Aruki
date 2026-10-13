@@ -4,8 +4,20 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "3.9";
+const LATEST_VERSION = "3.10";
 const CHANGELOG = [
+  {
+    version: "3.10",
+    date: "2026-10-13",
+    title: "Clientes, cantidades desde Artículos y opciones en Cotizaciones",
+    items: [
+      { type: "correccion", text: "Cliente: al tocar el campo se despliega la lista de todos los clientes (Consumidor Final primero) y se puede elegir cualquiera. Si queda vacío se elige solo \"Consumidor Final\" (id 8192)" },
+      { type: "correccion", text: "Lectura rápida: ahora se pide también el número de cada cliente/factura para que se puedan elegir (requiere actualizar el conector)" },
+      { type: "nuevo", text: "Artículos: al lado de la casilla se elige la cantidad que se manda a Armar presupuesto" },
+      { type: "mejora", text: "Cotizaciones: hasta 10 opciones cuando hay dudas (antes 4)" },
+      { type: "mejora", text: "Cotizaciones: se puede enviar el pedido a YiQi con opciones sin elegir (se mandan todas). Los renglones en rojo, sin artículo, siguen frenando el envío" }
+    ]
+  },
   {
     version: "3.9",
     date: "2026-10-13",

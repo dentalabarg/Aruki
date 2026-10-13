@@ -636,9 +636,10 @@ async function fastSmartie(env, entity, smartieId, page, forced = "") {
   }
   // Aruki ya sabe (por la página 1) que va por consulta rápida: se sigue igual aunque este Worker no tenga el plan
   if (forced === "rapido" && page > 1 && !(plan && plan.ok)) {
-    const smartieCols = (await getSmartiePage(env, entity, smartieId, 1)).columns;
-    plan = { ok: true, columns: smartieCols, queryColumns: buildQueryColumns(smartieCols), at: Date.now() };
-    fastPlans.set(key, plan);
+    fastPlans.delete(key);
+    await fastSmartie(env, entity, smartieId, 1);          // rearma el plan (elige con o sin id)
+    plan = fastPlans.get(key);
+    if (!plan || !plan.ok) throw new HttpError(503, "La lectura rápida cambió a mitad de la descarga. Tocá Actualizar de nuevo.");
   }
   if (forced === "smartie" && page > 1) {
     return { ...(await getSmartiePage(env, entity, smartieId, page)), modo: "smartie" };
@@ -651,14 +652,22 @@ async function fastSmartie(env, entity, smartieId, page, forced = "") {
 
   // Página 1 (o primera vez en este Worker): se arma el plan comparando con la smartie
   const smartie = await getSmartiePage(env, entity, smartieId, 1);
-  const queryColumns = buildQueryColumns(smartie.columns);
+  let queryColumns = buildQueryColumns(smartie.columns);
   let ok = false, first = null;
+  // Si la smartie trae el id de cada fila (clientes, facturas), la consulta rápida también tiene que traerlo
+  const needsId = (smartie.data || []).some(row => row && row.id !== undefined && row.id !== null);
   if (queryColumns.length) {
-    try {
-      const r = await runQuery(env, entity, 1, queryColumns);
-      ok = r.ok && Number(r.payload.total) === Number(smartie.total);
-      if (ok) first = r.payload;
-    } catch { ok = false; }
+    // Primero se pide el id explícitamente; si YiQi no acepta esa columna, se prueba sin ella
+    for (const cols of [[{ field: "id" }, ...queryColumns], queryColumns]) {
+      try {
+        const r = await runQuery(env, entity, 1, cols);
+        if (!r.ok) { if (r.status === 400) continue; break; }
+        const hasIds = !needsId || r.payload.data.length === 0 || r.payload.data.every(row => row && row.id !== undefined && row.id !== null);
+        ok = hasIds && Number(r.payload.total) === Number(smartie.total);
+        if (ok) { first = r.payload; queryColumns = cols; }
+        break;
+      } catch { break; }
+    }
   }
   fastPlans.set(key, { ok, columns: smartie.columns, queryColumns, at: Date.now() });
 

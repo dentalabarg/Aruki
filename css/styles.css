@@ -651,3 +651,13 @@ select.ds-input{cursor:pointer;}
 .sync-btn.is-busy:hover::after{content:"Detener"; color:var(--red); font-family:var(--sans);}
 .sync-btn.is-busy:hover svg{animation-play-state:paused;}
 .sync-btn:disabled{cursor:default;}
+.rel-result.is-current{box-shadow:inset 3px 0 0 var(--cyan);}
+/* v3.10 — cantidad al lado de la casilla en Artículos */
+.art-main .art-check{width:112px;}
+.art-pick{display:flex; align-items:center; gap:8px;}
+.art-qty{width:58px; padding:4px 6px; border:1px solid var(--line-strong); border-radius:var(--radius-xs); background:var(--bg-elev-2);
+  color:var(--text); font:500 13px var(--sans); text-align:right; font-variant-numeric:tabular-nums;}
+.art-qty:focus{outline:none; border-color:var(--cyan); box-shadow:var(--glow);}
+.art-main tbody tr:not(.is-selected) .art-qty{opacity:.55;}
+.art-check .art-qty{width:58px; height:28px; cursor:text; accent-color:auto;}
+.art-main th.art-check{text-align:left !important; padding-left:12px !important;}

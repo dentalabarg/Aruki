@@ -196,10 +196,10 @@ async function presSendYiqi(pedido){
 }
 
 /* Confirmación + envío con el botón deshabilitado mientras tanto */
-async function presConfirmAndSend(btn, pedido, lastSent, onStatus){
+async function presConfirmAndSend(btn, pedido, lastSent, onStatus, note = ""){
   const n = pedido.items.length;
   const warn = lastSent ? `\n\nAtención: este presupuesto ya se envió antes (pedido ${lastSent}). Si seguís se crea otro pedido.` : "";
-  if (!confirm(`¿Crear el pedido en YiQi?\n\nCliente: ${pedido.cliente}\nLista de precios: ${pedido.lista}\nArtículos: ${n}${warn}`)) return null;
+  if (!confirm(`¿Crear el pedido en YiQi?\n\nCliente: ${pedido.cliente}\nLista de precios: ${pedido.lista}\nArtículos: ${n}${note}${warn}`)) return null;
   btn.disabled = true;
   const label = btn.innerHTML;
   btn.textContent = "Enviando a YiQi…";

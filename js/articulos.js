@@ -77,7 +77,7 @@ function artLoadWidths(){
 function artApplyWidths(table, ths, cols, w){
   const has = !!w && cols.some(c => w[c.field]);
   table.classList.toggle("is-resized", has);
-  let total = has ? 44 : 0;                       // + columna de selección
+  let total = has ? 112 : 0;                      // + columna de selección y cantidad
   ths.forEach((th, i) => {
     const px = has ? (w[cols[i].field] || 120) : 0;
     th.style.width = has ? `${px}px` : "";
@@ -163,7 +163,7 @@ const articulosModule = createDataModule({
       if (sku) artPageSkus.push(sku);
       const sel = sku && artSel.has(sku);
       return `<tr data-sku="${escapeHtml(sku)}" class="${sel ? "is-selected" : ""}"><td class="art-check">${sku
-        ? `<input type="checkbox" ${sel ? "checked" : ""} aria-label="Seleccionar ${escapeHtml(sku)}">` : ""}</td>${cols.map(c => {
+        ? `<div class="art-pick"><input type="checkbox" ${sel ? "checked" : ""} aria-label="Seleccionar ${escapeHtml(sku)}"><input class="art-qty" type="number" min="1" step="1" value="${escapeHtml(sel ? artSel.get(sku) : 1)}" title="Cantidad para Armar presupuesto" aria-label="Cantidad de ${escapeHtml(sku)}"></div>` : ""}</td>${cols.map(c => {
         const cell = artFormatCell(r[c.field], c);
         const isName = /nombre|descripci/i.test(c.title || "");
         const cls = [cell.num ? "num" : "", cell.zero ? "zero" : "", isName ? "name" : ""].filter(Boolean).join(" ");
@@ -214,7 +214,7 @@ function getArticulosCatalog(){
 
 
 /* ---------- Selección de artículos → Armar presupuesto ---------- */
-const artSel = new Set();
+const artSel = new Map();   // SKU → cantidad a mandar a Armar presupuesto
 let artPageSkus = [];
 function artRenderSel(){
   const n = artSel.size;
@@ -222,7 +222,8 @@ function artRenderSel(){
   const wasHidden = bar.classList.contains("hidden");
   bar.classList.toggle("hidden", !n);
   if (wasHidden !== !n) fitScrollArea("view-articulos");
-  document.getElementById("artSelCount").textContent = `${numberFormatter.format(n)} artículo${n === 1 ? "" : "s"} seleccionado${n === 1 ? "" : "s"}`;
+  const u = artTotalUnits();
+  document.getElementById("artSelCount").textContent = `${numberFormatter.format(n)} artículo${n === 1 ? "" : "s"} seleccionado${n === 1 ? "" : "s"}${u !== n ? ` · ${numberFormatter.format(u)} unidades` : ""}`;
   const all = document.getElementById("artCheckAll");
   if (all) {
     const onPage = artPageSkus.filter(s => artSel.has(s)).length;
@@ -230,19 +231,37 @@ function artRenderSel(){
     all.indeterminate = onPage > 0 && onPage < artPageSkus.length;
   }
 }
-function artToggle(sku, on){
+function artToggle(sku, on, qty){
   if (!sku) return;
-  if (on) artSel.add(sku); else artSel.delete(sku);
   const tr = document.querySelector(`#artBody tr[data-sku="${CSS.escape(sku)}"]`);
-  if (tr) { tr.classList.toggle("is-selected", on); const cb = tr.querySelector("input"); if (cb) cb.checked = on; }
+  const qInput = tr && tr.querySelector(".art-qty");
+  if (on) artSel.set(sku, Math.max(1, Number(qty ?? (qInput ? qInput.value : artSel.get(sku))) || 1));
+  else artSel.delete(sku);
+  if (tr) {
+    tr.classList.toggle("is-selected", on);
+    const cb = tr.querySelector("input[type=checkbox]"); if (cb) cb.checked = on;
+    if (qInput && on) qInput.value = artSel.get(sku);
+  }
   artRenderSel();
 }
+function artTotalUnits(){ let n = 0; artSel.forEach(q => { n += q; }); return n; }
 document.getElementById("artBody").addEventListener("click", e => {
   const tr = e.target.closest("tr[data-sku]");
   if (!tr || !tr.dataset.sku) return;
+  if (e.target.matches(".art-qty")) return;                 // tocar la cantidad no cambia la selección
   if (window.getSelection && String(window.getSelection()).length && !e.target.matches("input")) return;   // estaba seleccionando texto
   const on = e.target.matches("input[type=checkbox]") ? e.target.checked : !artSel.has(tr.dataset.sku);
   artToggle(tr.dataset.sku, on);
+});
+/* Cambiar la cantidad selecciona el artículo con esa cantidad */
+document.getElementById("artBody").addEventListener("input", e => {
+  if (!e.target.matches(".art-qty")) return;
+  const tr = e.target.closest("tr[data-sku]");
+  const q = Number(e.target.value);
+  if (tr && q > 0) artToggle(tr.dataset.sku, true, q);
+});
+document.getElementById("artBody").addEventListener("keydown", e => {
+  if (e.target.matches(".art-qty") && e.key === "Enter") { e.preventDefault(); e.target.blur(); }
 });
 document.getElementById("artHead").addEventListener("change", e => {
   if (e.target.id !== "artCheckAll") return;
@@ -252,10 +271,10 @@ document.getElementById("artSelClear").addEventListener("click", () => {
   [...artSel].forEach(sku => artToggle(sku, false));
 });
 document.getElementById("artSelAdd").addEventListener("click", () => {
-  const skus = [...artSel];
-  if (!skus.length) return;
+  const items = [...artSel].map(([sku, qty]) => ({ sku, qty }));
+  if (!items.length) return;
   showModule("manual");
-  manAddSkus(skus);
+  manAddSkus(items);
   artSel.clear();
   articulosModule.render();
 });

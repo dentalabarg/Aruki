@@ -59,11 +59,10 @@ const clientesStore = {
   reset(){ if (this.abort) this.abort.abort(); this.list = []; this.loaded = false; this.savedAt = 0; this.error = ""; this.notify(); },
 
   /* Cliente "Consumidor Final" (para cuando el campo queda vacío) */
+  /* Siempre el de id 8192 ("Consumidor Final" con mayúsculas; hay otro en minúsculas que no se usa) */
   consumidorFinal(){
     return this.list.find(c => Number(c.id) === CLI_CONSUMIDOR_FINAL_ID)
-      || this.list.find(c => /^consumidor\s+final$/i.test(c.razon.trim()))
-      || this.list.find(c => /^consumidor\s+final$/i.test(c.nombre.trim()))
-      || this.list.find(c => /consumidor\s+final/i.test(`${c.razon} ${c.nombre}`)) || null;
+      || { id: CLI_CONSUMIDOR_FINAL_ID, nombre: "Consumidor Final", razon: "Consumidor Final", cuit: "", iva: "", s: "consumidor final" };
   }
 };
 
@@ -98,8 +97,20 @@ function cliSearch(query, limit = 12){
     out.push({ c, score: r.startsWith(terms[0]) ? 0 : 1 });
     if (out.length > 400) break;
   }
-  out.sort((a, b) => a.score - b.score || a.c.razon.localeCompare(b.c.razon));
+  out.sort((a, b) => cliIsCF(b.c) - cliIsCF(a.c) || a.score - b.score || a.c.razon.localeCompare(b.c.razon));
   return out.slice(0, limit).map(x => x.c);
+}
+const cliIsCF = c => Number(c.id) === CLI_CONSUMIDOR_FINAL_ID ? 1 : 0;
+
+/* Lista completa (campo vacío): Consumidor Final primero y después todos por orden alfabético */
+let cliSortedCache = { list: null, value: [] };
+function cliAll(limit = 300){
+  if (cliSortedCache.list !== clientesStore.list) {
+    const cf = clientesStore.consumidorFinal();
+    const rest = clientesStore.list.filter(c => !cliIsCF(c)).sort((a, b) => a.razon.localeCompare(b.razon));
+    cliSortedCache = { list: clientesStore.list, value: [cf, ...rest] };
+  }
+  return cliSortedCache.value.slice(0, limit);
 }
 
 /* Convierte un input en buscador de clientes.
@@ -127,8 +138,8 @@ function clientePicker(inputId, onChange){
     else info.innerHTML = `<span class="badge badge-amber">No elegido de la lista</span> <span class="source-note">Elegí un cliente de la lista para poder enviarlo a YiQi.</span>`;
   };
   const show = () => {
-    const q = input.value.trim();
-    const res = q ? cliSearch(q) : [];
+    const q = p.selected ? "" : input.value.trim();     // con un cliente elegido se muestra la lista completa
+    const res = q ? cliSearch(q, 50) : (clientesStore.list.length ? cliAll() : []);
     if (!res.length) {
       box.innerHTML = q && clientesStore.list.length ? `<div class="rel-result-empty">No hay clientes con ese texto.</div>`
         : (q && clientesStore.loading ? `<div class="rel-result-empty">Cargando clientes de YiQi…</div>` : "");
@@ -136,8 +147,10 @@ function clientePicker(inputId, onChange){
       return;
     }
     p.active = Math.min(p.active, res.length - 1);
-    box.innerHTML = res.map((c, i) => `<div class="rel-result ${i === p.active ? "is-active" : ""}" data-i="${i}">
-      <span>${escapeHtml(cliLabel(c))}</span><span class="marca">${escapeHtml(c.cuit)}</span></div>`).join("");
+    box.innerHTML = res.map((c, i) => `<div class="rel-result ${i === p.active ? "is-active" : ""} ${p.selected && p.selected.id === c.id ? "is-current" : ""}" data-i="${i}">
+      <span>${escapeHtml(cliLabel(c))}</span><span class="marca">${escapeHtml(c.cuit)}</span></div>`).join("")
+      + (!q && clientesStore.list.length > res.length
+        ? `<div class="rel-result-empty">Se muestran ${res.length} de ${numberFormatter.format(clientesStore.list.length)} clientes. Escribí para buscar el resto.</div>` : "");
     box.classList.remove("hidden");
     box.querySelectorAll("[data-i]").forEach(el => el.addEventListener("mousedown", e => {
       e.preventDefault(); pick(res[Number(el.dataset.i)]);
@@ -155,8 +168,13 @@ function clientePicker(inputId, onChange){
     if (p.selected) { p.selected = null; onChange && onChange(null); }
     p.active = 0; show(); renderInfo();
   });
-  input.addEventListener("focus", () => { clientesStore.ensureLoaded(); if (!p.selected) show(); });
-  input.addEventListener("blur", () => setTimeout(() => box.classList.add("hidden"), 150));
+  input.addEventListener("focus", () => { clientesStore.ensureLoaded(); p.active = 0; input.select(); show(); });
+  input.addEventListener("click", () => { if (box.classList.contains("hidden")) show(); });
+  input.addEventListener("blur", () => setTimeout(() => {
+    box.classList.add("hidden");
+    // Campo vacío → se elige solo "Consumidor Final" (id 8192)
+    if (!p.selected && !input.value.trim()) pick(clientesStore.consumidorFinal());
+  }, 150));
   input.addEventListener("keydown", e => {
     const n = box.classList.contains("hidden") ? 0 : (p.results || []).length;
     if ((e.key === "ArrowDown" || e.key === "ArrowUp") && n) {
@@ -172,7 +190,7 @@ function clientePicker(inputId, onChange){
     get: () => p.selected,
     text: () => input.value.trim(),
     set(c, text){
-      p.selected = c && c.id !== undefined ? c : null;
+      p.selected = c && c.id !== undefined ? c : (text ? null : clientesStore.consumidorFinal());   // vacío = Consumidor Final
       input.value = p.selected ? cliLabel(p.selected) : (text || "");
       renderInfo();
     },
@@ -193,7 +211,7 @@ function clientePicker(inputId, onChange){
       return { id: CLI_CONSUMIDOR_FINAL_ID, nombre: "Consumidor Final" };
     }
   };
-  renderInfo();
+  api.set(null, "");
   return api;
 }
 
