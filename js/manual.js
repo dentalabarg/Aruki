@@ -211,8 +211,7 @@ function manAddSkus(items){
   const partes = [];
   if (nuevos) partes.push(`${nuevos} agregado${nuevos === 1 ? "" : "s"}`);
   if (sumados) partes.push(`${sumados} ya estaba${sumados === 1 ? "" : "n"} (se sumó la cantidad)`);
-  setTimeout(() => manToast(`Desde Artículos: ${partes.join(", ")}`), 50);
-  return valid.length;
+  return partes.join(", ");   // Artículos muestra su propio aviso (no cambia de módulo)
 }
 
 /* Vaciar: saca todos los artículos (deja cliente, lista y modo) */

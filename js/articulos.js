@@ -265,16 +265,32 @@ document.getElementById("artBody").addEventListener("keydown", e => {
 });
 document.getElementById("artHead").addEventListener("change", e => {
   if (e.target.id !== "artCheckAll") return;
-  artPageSkus.forEach(sku => artToggle(sku, e.target.checked));
+  const on = e.target.checked;   // leerlo antes: cada artToggle vuelve a calcular la casilla
+  artPageSkus.forEach(sku => artToggle(sku, on));
 });
 document.getElementById("artSelClear").addEventListener("click", () => {
-  [...artSel].forEach(sku => artToggle(sku, false));
+  [...artSel.keys()].forEach(sku => artToggle(sku, false));
 });
 document.getElementById("artSelAdd").addEventListener("click", () => {
   const items = [...artSel].map(([sku, qty]) => ({ sku, qty }));
   if (!items.length) return;
-  showModule("manual");
-  manAddSkus(items);
+  const texto = manAddSkus(items);   // se queda en Artículos: solo aviso flotante
   artSel.clear();
   articulosModule.render();
+  if (texto) artShowToast(`Agregados a Armar presupuesto: ${texto}`);
 });
+
+/* Aviso flotante de Artículos (5 s) con Deshacer y acceso a Armar presupuesto */
+let artToastTimer = null;
+function artShowToast(text){
+  document.getElementById("artToastText").textContent = text;
+  const t = document.getElementById("artToast");
+  t.classList.remove("hidden");
+  t.style.animation = "none"; void t.offsetWidth; t.style.animation = "";
+  clearTimeout(artToastTimer);
+  artToastTimer = setTimeout(artHideToast, 5000);
+}
+function artHideToast(){ clearTimeout(artToastTimer); document.getElementById("artToast").classList.add("hidden"); }
+document.getElementById("artToastUndo").addEventListener("click", () => { artHideToast(); manUndo(); });
+document.getElementById("artToastGo").addEventListener("click", () => { artHideToast(); showModule("manual"); });
+document.getElementById("artToastClose").addEventListener("click", artHideToast);

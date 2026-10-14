@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=4.6">
+<link rel="stylesheet" href="css/styles.css?v=4.7">
 </head>
 <body>
 
@@ -273,6 +273,12 @@
             <button class="btn btn-primary" id="artSelAdd" type="button"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Agregar a Armar presupuesto</button>
             <button class="btn btn-ghost" id="artSelClear" type="button">Quitar selección</button>
           </div>
+          <div class="cot-toast hidden" id="artToast" role="status" aria-live="polite">
+            <span id="artToastText"></span>
+            <button type="button" class="cot-toast-undo" id="artToastUndo">Deshacer</button>
+            <button type="button" class="cot-toast-undo" id="artToastGo">Ver presupuesto</button>
+            <button type="button" class="cot-toast-close" id="artToastClose" aria-label="Cerrar aviso">×</button>
+          </div>
           <div class="art-scroll">
             <table class="art-table art-main">
               <thead><tr id="artHead"></tr></thead>
@@ -507,7 +513,7 @@
             <button class="btn btn-ghost" id="relExportBtn" type="button" title="Descargar una copia de todas las relaciones">Descargar respaldo</button>
             <button class="btn btn-ghost" id="relImportBtn" type="button" title="Sumar relaciones desde un respaldo">Importar respaldo</button>
             <input type="file" id="relImportFile" accept=".json,application/json" class="hidden">
-            <button class="btn btn-primary" id="relNewBtn" type="button">Nueva relación</button>
+            <button class="btn btn-new" id="relNewBtn" type="button"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva relación</button>
           </div>
         </div>
 
@@ -619,17 +625,17 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=4.6"></script>
-<script src="js/core.js?v=4.6"></script>
-<script src="js/facturas.js?v=4.6"></script>
-<script src="js/articulos.js?v=4.6"></script>
-<script src="js/relaciones.js?v=4.6"></script>
-<script src="js/clientes.js?v=4.6"></script>
-<script src="js/presupuesto-comun.js?v=4.6"></script>
-<script src="js/cotizaciones.js?v=4.6"></script>
-<script src="js/cot-archivos.js?v=4.6"></script>
-<script src="js/cot-ia.js?v=4.6"></script>
-<script src="js/manual.js?v=4.6"></script>
-<script src="js/main.js?v=4.6"></script>
+<script src="js/changelog.js?v=4.7"></script>
+<script src="js/core.js?v=4.7"></script>
+<script src="js/facturas.js?v=4.7"></script>
+<script src="js/articulos.js?v=4.7"></script>
+<script src="js/relaciones.js?v=4.7"></script>
+<script src="js/clientes.js?v=4.7"></script>
+<script src="js/presupuesto-comun.js?v=4.7"></script>
+<script src="js/cotizaciones.js?v=4.7"></script>
+<script src="js/cot-archivos.js?v=4.7"></script>
+<script src="js/cot-ia.js?v=4.7"></script>
+<script src="js/manual.js?v=4.7"></script>
+<script src="js/main.js?v=4.7"></script>
 </body>
 </html>

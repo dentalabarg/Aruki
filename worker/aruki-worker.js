@@ -1058,7 +1058,7 @@ Reglas:
 - Tené en cuenta sinónimos y abreviaturas odontológicas (ej.: "fresa" = "piedra", "FG" = turbina, "CA" = contraángulo, "jer." = jeringa).
 - Si ningún candidato es razonablemente el mismo producto, devolvé sku vacío ("").
 - En "motivo" explicá en pocas palabras (máximo 15) por qué elegiste ese artículo.
-- Si te paso "reglas" de Dentalab, seguilas (pesan más que tu criterio general), pero siempre eligiendo entre los candidatos.
+- Si abajo hay "Reglas de Dentalab", seguilas (pesan más que tu criterio general), pero siempre eligiendo entre los candidatos.
 - Si te paso "ejemplos" (cómo escribieron antes otros clientes → qué artículo era el correcto), usalos para entender cómo piden los clientes y qué artículo esperamos; si el mismo artículo del ejemplo está entre los candidatos y el pedido es equivalente, elegilo.`;
 
 async function iaElegir(request, env) {
@@ -1089,9 +1089,12 @@ async function iaElegir(request, env) {
   const inicio = Date.now();
   const { result, model } = await geminiJSON(env, {
     fast: true,
-    system: IA_PROMPT,
+    // v4.7: las reglas (Reglas para la IA + palabras equivalentes) van en las instrucciones de sistema,
+    // que Gemini lee antes que nada y con más prioridad; los ejemplos van antes de los renglones.
+    system: IA_PROMPT + (reglas.length
+      ? `\n\nReglas de Dentalab (cargadas en Aruki › Relaciones; seguilas siempre):\n${reglas.map(r => `- ${r}`).join("\n")}`
+      : ""),
     parts: [{ text: JSON.stringify({
-      ...(reglas.length ? { reglas } : {}),
       ...(ejemplos.length ? { ejemplos } : {}),
       renglones,
     }) }],

@@ -136,7 +136,8 @@ Columna Identificador oculta (`ART_HIDDEN_TITLE`). Anchos de columna a mano en l
 v3.5: los `.runtime-banner` solo se ven con `data-state="error"` (CSS). Los botones de actualizar están en la barra
 superior (`.sync-btn`: `#syncCliBtn` → `clientesStore.refresh()`, `#artRefreshBtn` y `#refreshBtn` = `ids.refresh` de
 Artículos y Facturas); `syncBtnProgress(btn, progress|null, error, done)` los rellena (`--p`, `data-pct`); tocarlos mientras cargan detiene (v3.6). Artículos: selección por SKU
-(`artSel` = Map SKU→cantidad, input `.art-qty` al lado de la casilla, barra `#artSelBar`) → `manAddSkus([{sku, qty}])`. Columna optativa "Stock real" (`.col-stock`,
+(`artSel` = Map SKU→cantidad, input `.art-qty` al lado de la casilla, barra `#artSelBar`) → `manAddSkus([{sku, qty}])`
+(v4.7: no cambia de módulo; `manAddSkus` devuelve el texto y Artículos muestra `#artToast` con Deshacer = `manUndo()` y Ver presupuesto). Columna optativa "Stock real" (`.col-stock`,
 clase `show-stock` en la tabla, `presStockHtml(item, cantidad)` → rojo si stock < cantidad); v3.8: va después de Cantidad
 (en Cotizaciones col 6 = Cantidad, 7 = Stock; 11 columnas). `fitScrollArea(viewId)` (core.js) ajusta el alto de `.art-scroll`
 en Artículos y Relaciones para que la página no tenga scroll propio (ResizeObserver sobre `.content`).
@@ -221,6 +222,7 @@ computadoras), con botón de respaldo (descargar/importar).
      equivalencias como frase; `cotIaReglas()`, máx. 60) y `ejemplos` (`cotIaEjemplos()`: hasta 3 relaciones texto/condiciones
      parecidas por renglón por palabras en común con `cotTokens`, máx. 30 por tanda: `{escribio, articulos:[{sku,nombre}], nota}`).
      El Worker los suma al JSON del usuario y al prompt, responde `guia: true` (si falta, el aviso dice que hay que actualizar el conector).
+     v4.7: las `reglas` van en el `systemInstruction` (IA_PROMPT + "Reglas de Dentalab"); los `ejemplos` en el JSON del usuario, antes de `renglones`.
      v2.4: el Worker prueba `GEMINI_MODEL` y después `GEMINI_FALLBACK_MODELS` (default gemini-flash-latest,
      gemini-flash-lite-latest): 3 intentos por modelo (esperas 2 s/5 s) ante 429/500/503, salta al siguiente si 404;
      si todos saturados → 503 con mensaje claro. Responde `modelo` usado.

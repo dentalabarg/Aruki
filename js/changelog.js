@@ -4,8 +4,21 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "4.6";
+const LATEST_VERSION = "4.7";
 const CHANGELOG = [
+  {
+    version: "4.7",
+    date: "2026-10-14",
+    title: "Correcciones en Artículos y Relaciones",
+    items: [
+      { type: "correccion", text: "Artículos: la casilla de arriba ahora selecciona o deselecciona todos los artículos de la página (antes dejaba marcado el primero)" },
+      { type: "correccion", text: "Artículos: el botón \"Quitar selección\" vuelve a funcionar" },
+      { type: "mejora", text: "Artículos: \"Agregar a Armar presupuesto\" ya no te cambia de módulo; aparece un aviso flotante con Deshacer y Ver presupuesto" },
+      { type: "correccion", text: "Relaciones: al guardar o cancelar una relación, el cuadro de relaciones guardadas vuelve a su tamaño" },
+      { type: "mejora", text: "Relaciones: el botón \"Nueva relación\" se destaca igual que \"Nueva cotización\" y \"Nuevo presupuesto\"" },
+      { type: "mejora", text: "IA: las Reglas para la IA y las palabras equivalentes van en las instrucciones principales de Gemini, que las lee antes que todo. Requiere actualizar el conector" }
+    ]
+  },
   {
     version: "4.6",
     date: "2026-10-13",

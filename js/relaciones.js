@@ -329,6 +329,7 @@ function relOpenForm(item){
   relEl("relSkuSearch").value = "";
   relEl("relFormError").textContent = "";
   relEl("relForm").classList.remove("hidden");
+  requestAnimationFrame(() => fitScrollArea("view-relaciones"));
   relRenderChips();
   relRenderResults();
   articulosModule.ensureLoaded();
@@ -341,6 +342,7 @@ function relCloseForm(){
   rel.editingId = null;
   rel.formSkus = [];
   relEl("relForm").classList.add("hidden");
+  requestAnimationFrame(() => fitScrollArea("view-relaciones"));   // el cuadro de guardadas vuelve a su alto
 }
 
 async function relSubmitForm(){
