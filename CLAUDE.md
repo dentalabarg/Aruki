@@ -67,7 +67,8 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   (lista completa; 409 si `baseVersion` no coincide → recargar).
 - Binding KV **`ARUKI_KV`**: clave `relaciones` y claves `login-fail:<ip>` (bloqueo de 15 min tras 5 intentos fallidos).
 - Relación: `{ id, texto, skus: [..], nota, creado, actualizado }`; por condiciones agrega `reglas: [{op, valor}]`;
-  **palabra equivalente** (v2.9) tiene `reemplazo` y `skus: []` (`relTipo()` → texto | reglas | palabra). Las equivalencias se aplican
+  **palabra equivalente** (v2.9) tiene `reemplazo` y `skus: []`; **regla para la IA** (v4.6) tiene `ia: true`, `skus: []` y la
+  instrucción en `texto` (`relTipo()` → ia | reglas | palabra | texto; `relEsIa()`). Las equivalencias se aplican
   en `cotTokens()` (pedido y catálogo) además de `COT_ALIAS`.
   v3.1: filtros por tipo (`rel.filtro`), aviso en vivo de relación igual (`relFindDup()`: texto igual, mismas
   condiciones en cualquier orden, o mismo par de palabras en cualquier sentido). Cotizaciones: "Guardar todas como
@@ -216,6 +217,10 @@ computadoras), con botón de respaldo (descargar/importar).
      v4.5: lotes de 20 (`COT_IA_LOTE`), 3 en paralelo (`COT_IA_PARALELO`); `/ia/elegir` usa `geminiJSON({fast:true})` →
      `thinkingConfig` mínimo (`fastThinking()`: Gemini 3 `thinkingLevel:"minimal"`, 2.5 `thinkingBudget:0`; si da 400 se
      reintenta sin), esperas 1,5 s/3 s; responde `modelo` y `ms`, y el aviso muestra modelo y segundos. /ia/leer sin cambios.
+     v4.6 "entrenamiento" desde Relaciones: `/ia/elegir` recibe además `reglas` (textos de las "Reglas para la IA" +
+     equivalencias como frase; `cotIaReglas()`, máx. 60) y `ejemplos` (`cotIaEjemplos()`: hasta 3 relaciones texto/condiciones
+     parecidas por renglón por palabras en común con `cotTokens`, máx. 30 por tanda: `{escribio, articulos:[{sku,nombre}], nota}`).
+     El Worker los suma al JSON del usuario y al prompt, responde `guia: true` (si falta, el aviso dice que hay que actualizar el conector).
      v2.4: el Worker prueba `GEMINI_MODEL` y después `GEMINI_FALLBACK_MODELS` (default gemini-flash-latest,
      gemini-flash-lite-latest): 3 intentos por modelo (esperas 2 s/5 s) ante 429/500/503, salta al siguiente si 404;
      si todos saturados → 503 con mensaje claro. Responde `modelo` usado.

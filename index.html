@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=4.5">
+<link rel="stylesheet" href="css/styles.css?v=4.6">
 </head>
 <body>
 
@@ -528,11 +528,16 @@
             <button type="button" class="range-btn active" data-rel-tipo="texto">Texto exacto</button>
             <button type="button" class="range-btn" data-rel-tipo="reglas">Por condiciones (contiene, comienza con…)</button>
             <button type="button" class="range-btn" data-rel-tipo="palabra">Palabra equivalente</button>
+            <button type="button" class="range-btn" data-rel-tipo="ia">Regla para la IA</button>
           </div>
           <div class="rel-form-grid">
             <div class="field" id="relTextoWrap">
               <label for="relTexto" id="relTextoLabel">Cuando el cliente escribe…</label>
               <input class="ds-input" id="relTexto" type="text" maxlength="500" placeholder="Ej.: algodón en rollos pack x500" autocomplete="off">
+            </div>
+            <div class="field rel-ia-field hidden" id="relIaWrap">
+              <label for="relIa">Instrucción para la IA (se la damos a Gemini cada vez que elige artículos)</label>
+              <textarea class="ds-input" id="relIa" rows="3" maxlength="500" placeholder="Ej.: Si piden &quot;anestesia&quot; sin aclarar, preferir los cartuchos de lidocaína al 2 %."></textarea>
             </div>
             <div class="field hidden" id="relReglasWrap">
               <label>Cuando el renglón del cliente…</label>
@@ -578,6 +583,7 @@
                 <button class="range-btn" type="button" data-rel-filtro="texto">Texto exacto <span class="rel-filtro-n" data-n="texto"></span></button>
                 <button class="range-btn" type="button" data-rel-filtro="reglas">Condiciones <span class="rel-filtro-n" data-n="reglas"></span></button>
                 <button class="range-btn" type="button" data-rel-filtro="palabra">Equivalencias <span class="rel-filtro-n" data-n="palabra"></span></button>
+                <button class="range-btn" type="button" data-rel-filtro="ia">Reglas IA <span class="rel-filtro-n" data-n="ia"></span></button>
               </div>
               <div class="search-wrap">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -613,17 +619,17 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=4.5"></script>
-<script src="js/core.js?v=4.5"></script>
-<script src="js/facturas.js?v=4.5"></script>
-<script src="js/articulos.js?v=4.5"></script>
-<script src="js/relaciones.js?v=4.5"></script>
-<script src="js/clientes.js?v=4.5"></script>
-<script src="js/presupuesto-comun.js?v=4.5"></script>
-<script src="js/cotizaciones.js?v=4.5"></script>
-<script src="js/cot-archivos.js?v=4.5"></script>
-<script src="js/cot-ia.js?v=4.5"></script>
-<script src="js/manual.js?v=4.5"></script>
-<script src="js/main.js?v=4.5"></script>
+<script src="js/changelog.js?v=4.6"></script>
+<script src="js/core.js?v=4.6"></script>
+<script src="js/facturas.js?v=4.6"></script>
+<script src="js/articulos.js?v=4.6"></script>
+<script src="js/relaciones.js?v=4.6"></script>
+<script src="js/clientes.js?v=4.6"></script>
+<script src="js/presupuesto-comun.js?v=4.6"></script>
+<script src="js/cotizaciones.js?v=4.6"></script>
+<script src="js/cot-archivos.js?v=4.6"></script>
+<script src="js/cot-ia.js?v=4.6"></script>
+<script src="js/manual.js?v=4.6"></script>
+<script src="js/main.js?v=4.6"></script>
 </body>
 </html>

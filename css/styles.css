@@ -661,3 +661,8 @@ select.ds-input{cursor:pointer;}
 .art-main tbody tr:not(.is-selected) .art-qty{opacity:.55;}
 .art-check .art-qty{width:58px; height:28px; cursor:text; accent-color:auto;}
 .art-main th.art-check{text-align:left !important; padding-left:12px !important;}
+
+/* v4.6 Reglas para la IA */
+.rel-ia-field{grid-column:1 / -1;}
+#relIa{height:auto; min-height:76px; padding:10px 12px; resize:vertical; font:400 14px/1.5 var(--sans);}
+.rel-ia-text{white-space:pre-wrap; font-weight:500;}

@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "4.5";
+const LATEST_VERSION = "4.6";
 const CHANGELOG = [
+  {
+    version: "4.6",
+    date: "2026-10-13",
+    title: "La IA aprende de tus Relaciones",
+    items: [
+      { type: "nuevo", text: "Relaciones: nuevo tipo \"Regla para la IA\" para escribirle instrucciones a Gemini (por ejemplo, qué marca preferir o cómo interpretar un pedido). Tiene su propio filtro \"Reglas IA\"" },
+      { type: "mejora", text: "Revisar con IA: además de las reglas, Gemini recibe como ejemplo las relaciones más parecidas a cada renglón y las palabras equivalentes, así elige como ya lo corregiste antes" },
+      { type: "mejora", text: "El aviso final dice cuántas reglas y ejemplos usó. Requiere actualizar el conector" }
+    ]
+  },
   {
     version: "4.5",
     date: "2026-10-13",

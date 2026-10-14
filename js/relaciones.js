@@ -26,10 +26,12 @@ const REL_OPS = {
   no_termina:  { label: "no termina con",  pos: false, test: (k, v) => !k.endsWith(v) }
 };
 
-function relEsReglas(r){ return Array.isArray(r?.reglas) && r.reglas.length > 0; }
+/* Regla para la IA (v4.6): instrucción libre que se le da a Gemini; no apunta a artículos. */
+function relEsIa(r){ return r?.ia === true; }
+function relEsReglas(r){ return !relEsIa(r) && Array.isArray(r?.reglas) && r.reglas.length > 0; }
 /* Palabra equivalente: "autocurable" → buscar como "auto". No apunta a artículos. */
-function relEsPalabra(r){ return !relEsReglas(r) && !!String(r?.reemplazo || "").trim(); }
-function relTipo(r){ return relEsReglas(r) ? "reglas" : relEsPalabra(r) ? "palabra" : "texto"; }
+function relEsPalabra(r){ return !relEsIa(r) && !relEsReglas(r) && !!String(r?.reemplazo || "").trim(); }
+function relTipo(r){ return relEsIa(r) ? "ia" : relEsReglas(r) ? "reglas" : relEsPalabra(r) ? "palabra" : "texto"; }
 
 function relReglasTexto(reglas){
   return reglas.map(g => `${REL_OPS[g.op]?.label || g.op} "${g.valor}"`).join(" y ");
@@ -77,7 +79,7 @@ function relFindDup(tipo, data, exceptId){
 }
 function relFormData(){
   return {
-    texto: relEl("relTexto").value.trim(),
+    texto: (rel.formTipo === "ia" ? relEl("relIa") : relEl("relTexto")).value.trim(),
     reemplazo: relEl("relReemplazo").value.trim(),
     reglas: rel.formReglas.map(g => ({ op: g.op, valor: String(g.valor || "").trim() })).filter(g => g.valor)
   };
@@ -89,7 +91,7 @@ function relCheckDup(){
   const dup = empty ? null : relFindDup(rel.formTipo, data, rel.editingId);
   warn.classList.toggle("hidden", !dup);
   if (!dup) { warn.textContent = ""; return null; }
-  const destino = relEsPalabra(dup) ? `⇄ ${dup.reemplazo}` : `→ ${dup.skus.join(", ")}`;
+  const destino = relEsIa(dup) ? "(regla para la IA)" : relEsPalabra(dup) ? `⇄ ${dup.reemplazo}` : `→ ${dup.skus.join(", ")}`;
   warn.textContent = `Ya existe una relación igual: "${dup.texto}" ${destino}`;
   return dup;
 }
@@ -289,9 +291,10 @@ function relRenderChips(){
 function relSetTipo(tipo){
   rel.formTipo = tipo;
   document.querySelectorAll("[data-rel-tipo]").forEach(b => b.classList.toggle("active", b.dataset.relTipo === tipo));
-  relEl("relTextoWrap").classList.toggle("hidden", tipo === "reglas");
+  relEl("relTextoWrap").classList.toggle("hidden", tipo === "reglas" || tipo === "ia");
+  relEl("relIaWrap").classList.toggle("hidden", tipo !== "ia");
   relEl("relReemplazoWrap").classList.toggle("hidden", tipo !== "palabra");
-  relEl("relSkuWrap").classList.toggle("hidden", tipo === "palabra");
+  relEl("relSkuWrap").classList.toggle("hidden", tipo === "palabra" || tipo === "ia");
   relEl("relTextoLabel").textContent = tipo === "palabra" ? "La palabra (o palabras)…" : "Cuando el cliente escribe…";
   relEl("relTexto").placeholder = tipo === "palabra" ? "Ej.: autocurable" : "Ej.: algodón en rollos pack x500";
   relEl("relReglasWrap").classList.toggle("hidden", tipo !== "reglas");
@@ -319,7 +322,8 @@ function relOpenForm(item){
   rel.formReglas = item && relEsReglas(item) ? item.reglas.map(g => ({ ...g })) : [];
   relSetTipo(item ? relTipo(item) : "texto");
   relEl("relFormTitle").textContent = item ? "Editar relación" : "Nueva relación";
-  relEl("relTexto").value = item && !relEsReglas(item) ? item.texto : "";
+  relEl("relTexto").value = item && !relEsReglas(item) && !relEsIa(item) ? item.texto : "";
+  relEl("relIa").value = item && relEsIa(item) ? item.texto : "";
   relEl("relReemplazo").value = item && relEsPalabra(item) ? item.reemplazo : "";
   relEl("relNota").value = item ? (item.nota || "") : "";
   relEl("relSkuSearch").value = "";
@@ -329,7 +333,7 @@ function relOpenForm(item){
   relRenderResults();
   articulosModule.ensureLoaded();
   relCheckDup();
-  relEl("relTexto").focus();
+  relEl(rel.formTipo === "ia" ? "relIa" : "relTexto").focus();
   relEl("relForm").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
@@ -344,8 +348,12 @@ async function relSubmitForm(){
   const error = relEl("relFormError");
   const porReglas = rel.formTipo === "reglas";
   const esPalabra = rel.formTipo === "palabra";
+  const esIa = rel.formTipo === "ia";
   let texto, reglas, reemplazo = "";
-  if (porReglas) {
+  if (esIa) {
+    texto = relEl("relIa").value.trim();
+    if (!texto) { error.textContent = "Escribí la instrucción para la IA."; return; }
+  } else if (porReglas) {
     reglas = rel.formReglas.map(g => ({ op: g.op, valor: String(g.valor || "").trim() })).filter(g => g.valor);
     if (!reglas.length) { error.textContent = "Escribí al menos una condición."; return; }
     if (!reglas.some(g => REL_OPS[g.op]?.pos)) { error.textContent = "Agregá al menos una condición \"contiene\", \"comienza con\" o \"termina con\" (solo con \"no…\" se aplicaría a todo)."; return; }
@@ -358,16 +366,17 @@ async function relSubmitForm(){
     reemplazo = relEl("relReemplazo").value.trim();
     if (!reemplazo) { error.textContent = "Escribí cómo figura esa palabra en los artículos."; return; }
     if (relKey(reemplazo) === relKey(texto)) { error.textContent = "La palabra y su equivalente son iguales."; return; }
-  } else if (!rel.formSkus.length) { error.textContent = "Elegí al menos un artículo."; return; }
+  } else if (!esIa && !rel.formSkus.length) { error.textContent = "Elegí al menos un artículo."; return; }
   const key = relKey(texto);
   const dup = relFindDup(rel.formTipo, { texto, reglas, reemplazo }, rel.editingId);
-  if (dup) { error.textContent = porReglas ? "Ya existe una relación con esas mismas condiciones. Editá esa." : esPalabra ? `Ya existe una equivalencia para "${dup.texto}". Editá esa.` : `Ya existe una relación para "${dup.texto}". Editá esa en lugar de crear otra.`; return; }
+  if (dup) { error.textContent = esIa ? "Ya existe esa misma regla para la IA." : porReglas ? "Ya existe una relación con esas mismas condiciones. Editá esa." : esPalabra ? `Ya existe una equivalencia para "${dup.texto}". Editá esa.` : `Ya existe una relación para "${dup.texto}". Editá esa en lugar de crear otra.`; return; }
 
   const now = Date.now();
-  const fields = porReglas ? { texto, reglas, reemplazo: undefined }
-    : esPalabra ? { texto, reglas: undefined, reemplazo }
-    : { texto, reglas: undefined, reemplazo: undefined };
-  if (esPalabra) rel.formSkus = [];
+  const fields = esIa ? { texto, ia: true, reglas: undefined, reemplazo: undefined }
+    : porReglas ? { texto, reglas, reemplazo: undefined, ia: undefined }
+    : esPalabra ? { texto, reglas: undefined, reemplazo, ia: undefined }
+    : { texto, reglas: undefined, reemplazo: undefined, ia: undefined };
+  if (esPalabra || esIa) rel.formSkus = [];
   const next = rel.editingId
     ? rel.items.map(r => r.id === rel.editingId ? { ...r, ...fields, nota, skus: [...rel.formSkus], actualizado: now } : r)
     : [{ id: crypto.randomUUID(), ...fields, nota, skus: [...rel.formSkus], creado: now, actualizado: now }, ...rel.items];
@@ -375,6 +384,11 @@ async function relSubmitForm(){
   if (ok && esPalabra && !rel.items.some(r => relEsPalabra(r) && relKey(r.texto) === key)) {
     relSetState("error", "La equivalencia no se guardó",
       "Hay que actualizar el conector de Cloudflare para guardar palabras equivalentes (pegá el código nuevo y tocá Deploy).");
+    return;
+  }
+  if (ok && esIa && !rel.items.some(r => relEsIa(r) && relKey(r.texto) === key)) {
+    relSetState("error", "La regla para la IA no se guardó",
+      "Hay que actualizar el conector de Cloudflare para guardar reglas para la IA (pegá el código nuevo y tocá Deploy).");
     return;
   }
   if (ok) relCloseForm();
@@ -407,7 +421,7 @@ async function relImport(file){
   catch { relSetState("error", "No se pudo leer el archivo", "Elegí un respaldo descargado desde Aruki (.json)."); return; }
   const incoming = (Array.isArray(parsed) ? parsed : parsed?.relaciones) || [];
   const valid = incoming.filter(r => r && (String(r.texto || "").trim() || relEsReglas(r)) &&
-    ((Array.isArray(r.skus) && r.skus.length) || relEsPalabra(r)));
+    ((Array.isArray(r.skus) && r.skus.length) || relEsPalabra(r) || relEsIa(r)));
   if (!valid.length) { relSetState("error", "El archivo no tiene relaciones", "Revisá que sea un respaldo de Aruki."); return; }
   if (!confirm(`Se van a sumar ${valid.length} relaciones del archivo a las ${rel.items.length} actuales. Las que tengan el mismo texto se actualizan. ¿Continuar?`)) return;
 
@@ -417,11 +431,12 @@ async function relImport(file){
   let added = 0, updated = 0;
   const now = Date.now();
   valid.forEach(r => {
+    const ia = relEsIa(r);
     const reglas = relEsReglas(r) ? r.reglas.filter(g => REL_OPS[g.op] && String(g.valor || "").trim()).map(g => ({ op: g.op, valor: String(g.valor).trim() })) : null;
     const textoR = reglas && reglas.length ? relReglasTexto(reglas) : String(r.texto || "").trim();
     const palabra = !(reglas && reglas.length) && relEsPalabra(r);
-    const key = keyOf(reglas && reglas.length ? "reglas" : palabra ? "palabra" : "texto", textoR);
-    const clean = { texto: textoR, skus: palabra ? [] : (r.skus || []).map(String), nota: String(r.nota || ""),
+    const key = keyOf(ia ? "ia" : reglas && reglas.length ? "reglas" : palabra ? "palabra" : "texto", textoR);
+    const clean = { texto: textoR, skus: palabra || ia ? [] : (r.skus || []).map(String), nota: String(r.nota || ""), ...(ia ? { ia: true } : {}),
       ...(reglas && reglas.length ? { reglas } : {}), ...(palabra ? { reemplazo: String(r.reemplazo).trim() } : {}) };
     if (index.has(key)) { const i = index.get(key); next[i] = { ...next[i], ...clean, actualizado: now }; updated++; }
     else { next.push({ id: crypto.randomUUID(), ...clean, creado: now, actualizado: now }); index.set(key, next.length - 1); added++; }
@@ -433,7 +448,7 @@ async function relImport(file){
 function relRender(){
   const q = foldText(rel.search).split(/\s+/).filter(Boolean);
   const cat = getArticulosCatalog();
-  const counts = { todas: rel.items.length, texto: 0, reglas: 0, palabra: 0 };
+  const counts = { todas: rel.items.length, texto: 0, reglas: 0, palabra: 0, ia: 0 };
   rel.items.forEach(r => { counts[relTipo(r)]++; });
   document.querySelectorAll("[data-n]").forEach(el => { el.textContent = counts[el.dataset.n] ? `(${numberFormatter.format(counts[el.dataset.n])})` : ""; });
   const rows = rel.items.filter(r => {
@@ -460,8 +475,11 @@ function relRender(){
       <tr>
         <td class="name">${relEsReglas(r)
           ? `<div class="rel-cond">${r.reglas.map((g, i) => `${i ? '<span class="rel-cond-y">y</span>' : ""}<span class="rel-cond-item"><span class="badge ${REL_OPS[g.op]?.pos ? "badge-cyan" : "badge-red"}">${escapeHtml(REL_OPS[g.op]?.label || g.op)}</span>${escapeHtml(g.valor)}</span>`).join("")}</div>`
+          : relEsIa(r) ? `<span class="rel-ia-text">${escapeHtml(r.texto)}</span>`
           : `<strong>${escapeHtml(r.texto)}</strong>`}</td>
-        <td><div class="chips">${relEsPalabra(r)
+        <td><div class="chips">${relEsIa(r)
+          ? `<span class="badge badge-ia" title="Se le da a Gemini cada vez que revisa renglones en Cotizaciones">Regla para la IA</span>`
+          : relEsPalabra(r)
           ? `<span class="chip chip-alias" title="En la búsqueda, «${escapeHtml(r.texto)}» y «${escapeHtml(r.reemplazo)}» se toman como lo mismo, en los dos sentidos"><span class="sku">⇄ equivale a</span>${escapeHtml(r.reemplazo)}</span>`
           : r.skus.map(s => relChipHtml(s, false)).join("")}</div></td>
         <td class="muted-cell">${escapeHtml(r.nota || "")}</td>

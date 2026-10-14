@@ -383,6 +383,16 @@ function cleanRelacion(item) {
     : [];
   // Palabra equivalente: "autocurable" → "auto" (no apunta a artículos)
   const reemplazo = String(item?.reemplazo || "").trim().slice(0, 100);
+  // Regla para la IA (v4.6): instrucción libre para Gemini (no apunta a artículos)
+  if (texto && item?.ia === true) {
+    return {
+      id: String(item?.id || crypto.randomUUID()).slice(0, 64),
+      texto, skus: [], ia: true,
+      nota: String(item?.nota || "").trim().slice(0, 300),
+      creado: Number(item?.creado) || Date.now(),
+      actualizado: Number(item?.actualizado) || Date.now(),
+    };
+  }
   if (!texto || (!skus.length && !reemplazo)) return null;
   // Relaciones por condiciones: [{ op, valor }] (contiene, no_contiene, comienza, no_comienza, termina, no_termina)
   const reglas = Array.isArray(item?.reglas)
@@ -1047,7 +1057,9 @@ Reglas:
 - Después priorizá el mismo tipo de producto, y entre esos la medida/presentación/color/número más parecido.
 - Tené en cuenta sinónimos y abreviaturas odontológicas (ej.: "fresa" = "piedra", "FG" = turbina, "CA" = contraángulo, "jer." = jeringa).
 - Si ningún candidato es razonablemente el mismo producto, devolvé sku vacío ("").
-- En "motivo" explicá en pocas palabras (máximo 15) por qué elegiste ese artículo.`;
+- En "motivo" explicá en pocas palabras (máximo 15) por qué elegiste ese artículo.
+- Si te paso "reglas" de Dentalab, seguilas (pesan más que tu criterio general), pero siempre eligiendo entre los candidatos.
+- Si te paso "ejemplos" (cómo escribieron antes otros clientes → qué artículo era el correcto), usalos para entender cómo piden los clientes y qué artículo esperamos; si el mismo artículo del ejemplo está entre los candidatos y el pedido es equivalente, elegilo.`;
 
 async function iaElegir(request, env) {
   let body;
@@ -1062,12 +1074,27 @@ async function iaElegir(request, env) {
     })).filter(c => c.sku),
   })).filter(r => r.id && r.solicitado && r.candidatos.length);
   if (!renglones.length) return { resultados: [] };
+  // Guía armada desde Relaciones (v4.6): reglas libres + ejemplos de elecciones correctas
+  const reglas = (Array.isArray(body?.reglas) ? body.reglas : [])
+    .map(x => String(x || "").trim().slice(0, 500)).filter(Boolean).slice(0, 60);
+  const ejemplos = (Array.isArray(body?.ejemplos) ? body.ejemplos : []).slice(0, 40).map(e => ({
+    escribio: String(e?.escribio || "").slice(0, 300),
+    articulos: (Array.isArray(e?.articulos) ? e.articulos : []).slice(0, 4).map(a => ({
+      sku: String(a?.sku || "").slice(0, 60),
+      nombre: String(a?.nombre || "").slice(0, 200),
+    })).filter(a => a.sku),
+    ...(e?.nota ? { nota: String(e.nota).slice(0, 300) } : {}),
+  })).filter(e => e.escribio && e.articulos.length);
 
   const inicio = Date.now();
   const { result, model } = await geminiJSON(env, {
     fast: true,
     system: IA_PROMPT,
-    parts: [{ text: JSON.stringify({ renglones }) }],
+    parts: [{ text: JSON.stringify({
+      ...(reglas.length ? { reglas } : {}),
+      ...(ejemplos.length ? { ejemplos } : {}),
+      renglones,
+    }) }],
     schema: {
       type: "OBJECT",
       properties: {
@@ -1090,7 +1117,7 @@ async function iaElegir(request, env) {
     .map(r => ({ id: String(r?.id || ""), sku: String(r?.sku || "").trim(), motivo: String(r?.motivo || "").slice(0, 200) }))
     .filter(r => byId.has(r.id))
     .map(r => (byId.get(r.id).has(r.sku) ? r : { ...r, sku: "" }));
-  return { resultados, modelo: model, ms: Date.now() - inicio };
+  return { resultados, modelo: model, ms: Date.now() - inicio, guia: true, reglas: reglas.length, ejemplos: ejemplos.length };
 }
 
 /* /ia/leer: leer un PDF (con texto o escaneado) o una foto JPG/PNG y devolver la lista

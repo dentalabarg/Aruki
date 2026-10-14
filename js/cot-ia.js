@@ -11,7 +11,66 @@ const COT_IA_KEY = "aruki-cot-ia";
 const COT_IA_LOTE = 20;          // renglones por consulta
 const COT_IA_PARALELO = 3;       // consultas a la vez
 const COT_IA_CANDIDATOS = 12;
+const COT_IA_EJ_POR_RENGLON = 3;  // relaciones parecidas que se mandan como ejemplo por renglón
+const COT_IA_EJ_MAX = 30;          // máximo de ejemplos por consulta
+const COT_IA_REGLAS_MAX = 60;
 let cotIaBusy = false;
+
+/* ---------- "Entrenamiento" con Relaciones (v4.6) ----------
+   · Reglas para la IA (instrucciones libres) + equivalencias de palabras → van siempre.
+   · Relaciones de texto / por condiciones más parecidas a cada renglón → van como ejemplos
+     ("el cliente escribió X → era el artículo Y"). Así Gemini aprende de lo que ya corregiste. */
+function cotIaReglas(){
+  const ia = [], eq = [];
+  for (const r of rel.items) {
+    if (relEsIa(r)) ia.push(r.texto);
+    else if (relEsPalabra(r)) eq.push(`"${r.texto}" es lo mismo que "${r.reemplazo}".`);
+  }
+  return [...ia, ...eq].slice(0, COT_IA_REGLAS_MAX);
+}
+
+function cotIaBaseEjemplos(){
+  const cat = getArticulosCatalog();
+  const out = [];
+  for (const r of rel.items) {
+    const tipo = relTipo(r);
+    if ((tipo !== "texto" && tipo !== "reglas") || !r.skus.length) continue;
+    const texto = tipo === "reglas" ? r.reglas.filter(g => REL_OPS[g.op]?.pos).map(g => g.valor).join(" ") : r.texto;
+    const tokens = new Set(cotTokens(texto));
+    if (!tokens.size) continue;
+    out.push({
+      tokens,
+      ejemplo: {
+        escribio: tipo === "reglas" ? `(cualquier renglón que ${relReglasTexto(r.reglas)})` : r.texto,
+        articulos: r.skus.slice(0, 4).map(sku => ({ sku, nombre: cat.bySku.get(String(sku))?.nombre || "" })),
+        ...(r.nota ? { nota: r.nota } : {})
+      }
+    });
+  }
+  return out;
+}
+
+function cotIaEjemplos(lote, base){
+  if (!base.length) return [];
+  const elegidos = new Map();
+  for (const p of lote) {
+    const t = new Set(cotTokens(p.solicitado));
+    if (!t.size) continue;
+    const scored = [];
+    for (const b of base) {
+      let comunes = 0;
+      t.forEach(x => { if (b.tokens.has(x)) comunes++; });
+      if (!comunes) continue;
+      const score = comunes / Math.sqrt(t.size * b.tokens.size);
+      if (score >= 0.3) scored.push({ b, score });
+    }
+    scored.sort((x, y) => y.score - x.score);
+    scored.slice(0, COT_IA_EJ_POR_RENGLON).forEach(({ b, score }) => {
+      if ((elegidos.get(b)?.score || 0) < score) elegidos.set(b, { score });
+    });
+  }
+  return [...elegidos.entries()].sort((x, y) => y[1].score - x[1].score).slice(0, COT_IA_EJ_MAX).map(([b]) => b.ejemplo);
+}
 
 function cotRenglones(n){ return `${n} ${n === 1 ? "renglón" : "renglones"}`; }
 
@@ -38,13 +97,13 @@ function cotIaRefresh(){
   btn.lastChild.textContent = cotIaBusy ? "La IA está revisando…" : n ? `Revisar ${n} dudoso${n === 1 ? "" : "s"} con IA` : "Revisar dudosos con IA";
 }
 
-async function cotIaPost(renglones){
+async function cotIaPost(renglones, reglas = [], ejemplos = []){
   const token = getAuthToken();
   if (!token) throw new SessionExpired("Sesión vencida.");
   const response = await fetch(`${WORKER_BASE}/ia/elegir`, {
     method: "POST",
     headers: { "Accept": "application/json", "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-    body: JSON.stringify({ renglones }),
+    body: JSON.stringify({ renglones, reglas, ejemplos }),
     cache: "no-store"
   });
   let payload;
@@ -56,7 +115,7 @@ async function cotIaPost(renglones){
   if (response.status === 401) throw new SessionExpired("Sesión vencida.");
   if (response.status === 404) throw new Error("El conector de Cloudflare todavía no tiene la función de IA. Hay que pegar el código nuevo del conector (Deploy).");
   if (!response.ok || payload?.error) throw new Error(payload?.error || `Error HTTP ${response.status}.`);
-  return { resultados: payload.resultados || [], modelo: payload.modelo || "" };
+  return { resultados: payload.resultados || [], modelo: payload.modelo || "", usoGuia: payload.guia === true };
 }
 
 async function cotIaRevisar(){
@@ -93,6 +152,9 @@ async function cotIaRevisar(){
   cotStatus(`La IA está revisando ${cotRenglones(pedidos.length)}…`);
   const resultados = new Map();
   const modelos = new Set();
+  const reglas = cotIaReglas();
+  const baseEj = cotIaBaseEjemplos();
+  let totalEj = 0, usoGuia = false;
   const inicio = Date.now();
   try {
     // Tandas de 20 renglones, hasta 3 a la vez
@@ -102,7 +164,10 @@ async function cotIaRevisar(){
     const worker = async () => {
       while (next < lotes.length) {
         const lote = lotes[next++];
-        const res = await cotIaPost(lote);
+        const ejemplos = cotIaEjemplos(lote, baseEj);
+        totalEj += ejemplos.length;
+        const res = await cotIaPost(lote, reglas, ejemplos);
+        if (res.usoGuia) usoGuia = true;
         res.resultados.forEach(r => resultados.set(r.id, r));
         if (res.modelo) modelos.add(res.modelo);
         hechos += lote.length;
@@ -144,7 +209,14 @@ async function cotIaRevisar(){
   const msg = `IA: ${cotRenglones(elegidos)} resuelto${elegidos === 1 ? "" : "s"}` +
     (sinRespuesta ? `, ${sinRespuesta} sin un artículo que corresponda (buscalos a mano)` : "") + ".";
   const seg = Math.max(1, Math.round((Date.now() - inicio) / 1000));
-  const conModelo = modelos.size ? ` (${[...modelos].join(", ")} · ${seg} s)` : ` (${seg} s)`;
+  const nIa = rel.items.filter(relEsIa).length;
+  const guia = [];
+  if (usoGuia && nIa) guia.push(`${nIa} regla${nIa === 1 ? "" : "s"} tuya${nIa === 1 ? "" : "s"}`);
+  if (usoGuia && totalEj) guia.push(`${totalEj} ejemplo${totalEj === 1 ? "" : "s"} de tus relaciones`);
+  const partes = [...(modelos.size ? [[...modelos].join(", ")] : []), `${seg} s`];
+  if (guia.length) partes.push(`usó ${guia.join(" y ")}`);
+  else if (!usoGuia && (reglas.length || totalEj)) partes.push("no usó tus relaciones: falta actualizar el conector de Cloudflare");
+  const conModelo = ` (${partes.join(" · ")})`;
   cotStatus(`${msg.replace(/\.$/, "")}${conModelo}. Pasá el mouse sobre "Elegido por IA" para ver por qué. Si está bien, podés guardarlo como relación.`, "ok");
   cotShowToast(`IA: ${elegidos} resuelto${elegidos === 1 ? "" : "s"}`);
 }
