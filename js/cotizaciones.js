@@ -174,7 +174,7 @@ function cotParseLine(raw){
   } else if ((m = line.match(new RegExp(`^(.+?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(?:${U})\\.?$`, "i")))) {
     texto = m[1]; cantidad = cotQtyNum(m[2]);
   }
-  texto = texto.replace(/[\s,;:\-–]+$/, "").trim();
+  texto = texto.replace(/[\s.,;:\-–]+$/, "").trim();      // "CEMENTO IRM ." → "CEMENTO IRM"
   if (!texto) return null;
   return { solicitado: texto, cantidad: Number.isFinite(cantidad) ? cantidad : 1, original };
 }
@@ -187,7 +187,10 @@ function cotParseText(text){
    2. BUSCAR CADA RENGLÓN
    ============================================================ */
 const COT_STOP = new Set(("de del la el los las para con en y por a al o e un una sin c x n nro no marca tipo color " +
-  "u uns uni unis und unds unid unids unidad unidade unidades ud uds").split(" "));   // "Uns", "Und.", "Unid." = unidades (presentación)
+  "u uns uni unis und unds unid unids unidad unidade unidades ud uds " +
+  // Rótulos de licitación ("PRESENTACION:", "DROGA GENERICA:", "t/ DYCAL o SIMILAR", "p/ENDODONCIA"…): no describen el artículo
+  "p t s si presentacion forma farmaceutica droga generica uso producto descripcion capacidad sensibilidad proceso " +
+  "utilizacion similar total vs vario odontologico odontologica odontologia envase").split(" "));   // "Uns", "Und.", "Unid." = unidades (presentación)
 
 function cotNorm(text){
   return foldText(text)
@@ -259,6 +262,7 @@ function cotBaseTokens(text){
     t = t.replace(/^\.+|\.+$/g, "");
     if (!t || COT_STOP.has(t)) continue;
     if (!/\d/.test(t)) t = cotSingular(t);
+    if (COT_STOP.has(t)) continue;                 // también en singular (genericas → generica)
     t = COT_ALIAS[t] || t;
     out.push(t);
   }

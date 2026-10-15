@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "4.8";
+const LATEST_VERSION = "4.9";
 const CHANGELOG = [
+  {
+    version: "4.9",
+    date: "2026-10-15",
+    title: "Mejor búsqueda con descripciones de licitación",
+    items: [
+      { type: "mejora", text: "Los rótulos de licitación (\"PRESENTACION:\", \"DROGA GENERICA:\", \"FORMA FARMACEUTICA:\", \"USO:\", \"t/… o SIMILAR\", \"p/…\") ya no cuentan en la búsqueda: el artículo correcto sale con más puntaje y quedan menos renglones dudosos" },
+      { type: "mejora", text: "Se saca el punto suelto del final de cada renglón (\"CEMENTO IRM .\")" }
+    ]
+  },
   {
     version: "4.8",
     date: "2026-10-15",

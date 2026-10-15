@@ -190,6 +190,10 @@ computadoras), con botón de respaldo (descargar/importar).
      v4.8: abreviatura de unidad antes del número final (`COT_UNIT_ONLY`: uns, und, unid, uni, u…): "Guantes Uns 10" → 10
      (se saca la abreviatura); si antes hay un número ("x100 und. 5") es presentación + cantidad. `cotIaReglas()` agrega
      siempre la aclaración de unidades para Gemini.
+     v4.9: `COT_STOP` incluye rótulos de licitación (presentacion, forma farmaceutica, droga generica, uso, producto,
+     descripcion, capacidad, proceso, similar, p, t, si, envase, odontologico…), también después de `cotSingular`; las
+     palabras que no están en ningún artículo restaban mucho puntaje. Probado con un Excel real `RGN | DESCRIPCION | CANTIDAD`
+     (cantidad "10 Uns", presentación en la descripción: "Caja x 10UNs.", "CAJA X 6 UNs.", "(Bolsa por 100 unidades)").
    - `cotSearch()`: índice de palabras del catálogo (excluye discontinuado / mercadolibre / "rep "), peso tipo IDF,
      palabras con números ×1,5, prefijos 0,75, plurales simples, penaliza medidas distintas (4g vs 2g),
      excluye artículos con precio 0 en la lista elegida.
