@@ -382,7 +382,7 @@ function cleanRelacion(item) {
     ? [...new Set(item.skus.map(s => String(s || "").trim()).filter(Boolean))].slice(0, 20)
     : [];
   // Palabra equivalente: "autocurable" → "auto" (no apunta a artículos)
-  const reemplazo = String(item?.reemplazo || "").trim().slice(0, 100);
+  const reemplazo = String(item?.reemplazo || "").trim().slice(0, 400);   // v5.0: varias palabras separadas por coma
   // Regla para la IA (v4.6): instrucción libre para Gemini (no apunta a artículos)
   if (texto && item?.ia === true) {
     return {

@@ -4,8 +4,19 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "4.9";
+const LATEST_VERSION = "5.0";
 const CHANGELOG = [
+  {
+    version: "5.0",
+    date: "2026-10-15",
+    title: "Equivalencias de varias palabras, combos y masculino/femenino",
+    items: [
+      { type: "nuevo", text: "Relaciones: botón \"Reglas de Aruki\" que muestra, solo para leer, todas las reglas que ya vienen programadas" },
+      { type: "mejora", text: "Palabra equivalente: ahora se pueden poner varias palabras separadas por coma (ej.: mix = surtido, kit, combo). Todas se toman como lo mismo en la búsqueda y para la IA" },
+      { type: "mejora", text: "Cotizaciones: los artículos que empiezan con \"COMBO -\" ya no se eligen solos; se pueden buscar y elegir a mano" },
+      { type: "mejora", text: "Cotizaciones: masculino y femenino se toman igual (anodizada = anodizado, importada = importado)" }
+    ]
+  },
   {
     version: "4.9",
     date: "2026-10-15",

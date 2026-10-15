@@ -190,7 +190,7 @@ const COT_STOP = new Set(("de del la el los las para con en y por a al o e un un
   "u uns uni unis und unds unid unids unidad unidade unidades ud uds " +
   // Rótulos de licitación ("PRESENTACION:", "DROGA GENERICA:", "t/ DYCAL o SIMILAR", "p/ENDODONCIA"…): no describen el artículo
   "p t s si presentacion forma farmaceutica droga generica uso producto descripcion capacidad sensibilidad proceso " +
-  "utilizacion similar total vs vario odontologico odontologica odontologia envase").split(" "));   // "Uns", "Und.", "Unid." = unidades (presentación)
+  "utilizacion similar total vs vario odontologico odontologica odontologia envase farmaceutico generico formo").split(" "));   // "Uns", "Und.", "Unid." = unidades (presentación)
 
 function cotNorm(text){
   return foldText(text)
@@ -216,6 +216,15 @@ function cotSingular(t){
   return t;
 }
 
+/* Masculino / femenino da igual: "anodizada" = "anodizado", "importada" = "importado".
+   Se pasa todo a la forma en "o" (igual en el pedido y en los artículos). Excepciones: palabras en "a"
+   que son otra cosa que su versión en "o" (punta ≠ punto, manga ≠ mango…). */
+const COT_GENERO_KEEP = new Set("punta manga cera bolsa plata banda barra pala copa cuenta marca talla tapa".split(" "));
+function cotGenero(t){
+  if (t.length >= 4 && t.endsWith("a") && !COT_GENERO_KEEP.has(t) && !COT_STOP.has(t)) return t.slice(0, -1) + "o";
+  return t;
+}
+
 /* Equivalencias: palabras que en nuestros artículos figuran abreviadas.
    Se aplican igual al pedido y al catálogo (después de pasar a singular).
    Para sumar otra: "palabra completa": "como figura en el artículo". */
@@ -233,9 +242,15 @@ function cotUserAliases(){
   const single = new Map(), multi = [];
   for (const r of rel.items) {
     if (!relEsPalabra(r)) continue;
-    const from = cotBaseTokens(r.texto), to = cotBaseTokens(r.reemplazo);
-    if (!from.length || !to.length) continue;
-    if (from.length === 1) single.set(from[0], to); else multi.push({ from, to });
+    // Grupo de palabras equivalentes ("mix" = "surtido, kit, combo"): todas pasan a la primera del grupo
+    const words = [...relPalabras(r.reemplazo), r.texto];
+    const to = cotBaseTokens(words[0]);
+    if (!to.length) continue;
+    for (const w of words.slice(1)) {
+      const from = cotBaseTokens(w);
+      if (!from.length || from.join(" ") === to.join(" ")) continue;
+      if (from.length === 1) single.set(from[0], to); else multi.push({ from, to });
+    }
   }
   multi.sort((a, b) => b.from.length - a.from.length);
   cotUserAliasCache = { ver, single, multi };
@@ -261,7 +276,7 @@ function cotBaseTokens(text){
   for (let t of cotNorm(text).split(/[^a-z0-9ñ.]+/)) {
     t = t.replace(/^\.+|\.+$/g, "");
     if (!t || COT_STOP.has(t)) continue;
-    if (!/\d/.test(t)) t = cotSingular(t);
+    if (!/\d/.test(t)) t = cotGenero(cotSingular(t));
     if (COT_STOP.has(t)) continue;                 // también en singular (genericas → generica)
     t = COT_ALIAS[t] || t;
     out.push(t);
@@ -270,6 +285,8 @@ function cotBaseTokens(text){
 }
 
 const COT_EXCLUDE = /discontinuad|mercado\s*libre|mercadolibre/i;
+/* "COMBO - …": no se eligen solos (ni como opción ni para la IA); se pueden buscar y elegir a mano */
+const COT_COMBO = /^\s*combo\s*-/i;
 let cotIdxCache = { list: null, value: null };
 
 function cotIndex(){
@@ -283,7 +300,7 @@ function cotIndex(){
     if (COT_EXCLUDE.test(a.nombre) || /^rep /i.test(a.sku) || /^rep /i.test(a.nombre)) continue;
     const toks = [...new Set(cotTokens(`${a.sku} ${a.nombre} ${a.marca || ""}`))];
     const i = items.length;
-    items.push({ a, toks });
+    items.push({ a, toks, combo: COT_COMBO.test(a.nombre || "") });
     for (const t of toks) {
       df.set(t, (df.get(t) || 0) + 1);
       if (!inv.has(t)) inv.set(t, []);
@@ -358,6 +375,7 @@ function cotSearch(text, limit = 6){
   const results = [];
   for (const [i, s] of scores) {
     const it = idx.items[i];
+    if (it.combo) continue;                          // los COMBO solo a mano
     if (priceField) {
       const p = Number(it.a.row[priceField]);
       if (Number.isFinite(p) && p === 0) continue;   // sin precio en esta lista

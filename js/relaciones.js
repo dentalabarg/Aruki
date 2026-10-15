@@ -31,6 +31,10 @@ function relEsIa(r){ return r?.ia === true; }
 function relEsReglas(r){ return !relEsIa(r) && Array.isArray(r?.reglas) && r.reglas.length > 0; }
 /* Palabra equivalente: "autocurable" → buscar como "auto". No apunta a artículos. */
 function relEsPalabra(r){ return !relEsIa(r) && !relEsReglas(r) && !!String(r?.reemplazo || "").trim(); }
+/* Palabras de un grupo equivalente: "surtido, kit, combo" → ["surtido", "kit", "combo"] */
+function relPalabras(text){
+  return String(text || "").split(/\s*[,;\n]\s*/).map(w => w.trim()).filter(Boolean);
+}
 function relTipo(r){ return relEsIa(r) ? "ia" : relEsReglas(r) ? "reglas" : relEsPalabra(r) ? "palabra" : "texto"; }
 
 function relReglasTexto(reglas){
@@ -70,9 +74,9 @@ function relFindDup(tipo, data, exceptId){
     if (r.id === exceptId || relTipo(r) !== tipo) return false;
     if (tipo === "reglas") return relReglasKey(r.reglas) === relReglasKey(data.reglas || []);
     if (tipo === "palabra") {
-      const a = relKey(data.texto), b = relKey(data.reemplazo || "");
-      const x = relKey(r.texto), y = relKey(r.reemplazo);
-      return (a === x && b === y) || (a === y && b === x) || (!b && a === x);
+      // Grupos de palabras: es "igual" si comparten alguna palabra
+      const mine = new Set([data.texto, ...relPalabras(data.reemplazo)].map(relKey).filter(Boolean));
+      return [r.texto, ...relPalabras(r.reemplazo)].map(relKey).some(k => mine.has(k));
     }
     return relKey(r.texto) === relKey(data.texto);
   }) || null;
@@ -366,8 +370,10 @@ async function relSubmitForm(){
   }
   if (esPalabra) {
     reemplazo = relEl("relReemplazo").value.trim();
-    if (!reemplazo) { error.textContent = "Escribí cómo figura esa palabra en los artículos."; return; }
-    if (relKey(reemplazo) === relKey(texto)) { error.textContent = "La palabra y su equivalente son iguales."; return; }
+    const palabras = [];
+    relPalabras(reemplazo).forEach(w => { if (relKey(w) && relKey(w) !== relKey(texto) && !palabras.some(x => relKey(x) === relKey(w))) palabras.push(w); });
+    if (!palabras.length) { error.textContent = relKey(reemplazo) === relKey(texto) ? "La palabra y su equivalente son iguales." : "Escribí al menos una palabra equivalente."; return; }
+    reemplazo = palabras.join(", ");
   } else if (!esIa && !rel.formSkus.length) { error.textContent = "Elegí al menos un artículo."; return; }
   const key = relKey(texto);
   const dup = relFindDup(rel.formTipo, { texto, reglas, reemplazo }, rel.editingId);
@@ -383,9 +389,9 @@ async function relSubmitForm(){
     ? rel.items.map(r => r.id === rel.editingId ? { ...r, ...fields, nota, skus: [...rel.formSkus], actualizado: now } : r)
     : [{ id: crypto.randomUUID(), ...fields, nota, skus: [...rel.formSkus], creado: now, actualizado: now }, ...rel.items];
   const ok = await relSave(next, rel.editingId ? "Relación actualizada" : "Relación creada");
-  if (ok && esPalabra && !rel.items.some(r => relEsPalabra(r) && relKey(r.texto) === key)) {
-    relSetState("error", "La equivalencia no se guardó",
-      "Hay que actualizar el conector de Cloudflare para guardar palabras equivalentes (pegá el código nuevo y tocá Deploy).");
+  if (ok && esPalabra && !rel.items.some(r => relEsPalabra(r) && relKey(r.texto) === key && r.reemplazo === reemplazo)) {
+    relSetState("error", "La equivalencia no se guardó completa",
+      "Hay que actualizar el conector de Cloudflare para guardar listas largas de palabras equivalentes (pegá el código nuevo y tocá Deploy).");
     return;
   }
   if (ok && esIa && !rel.items.some(r => relEsIa(r) && relKey(r.texto) === key)) {
@@ -482,7 +488,7 @@ function relRender(){
         <td><div class="chips">${relEsIa(r)
           ? `<span class="badge badge-ia" title="Se le da a Gemini cada vez que revisa renglones en Cotizaciones">Regla para la IA</span>`
           : relEsPalabra(r)
-          ? `<span class="chip chip-alias" title="En la búsqueda, «${escapeHtml(r.texto)}» y «${escapeHtml(r.reemplazo)}» se toman como lo mismo, en los dos sentidos"><span class="sku">⇄ equivale a</span>${escapeHtml(r.reemplazo)}</span>`
+          ? relPalabras(r.reemplazo).map(w => `<span class="chip chip-alias" title="En la búsqueda y para la IA, todas estas palabras se toman como lo mismo"><span class="sku">⇄</span>${escapeHtml(w)}</span>`).join("")
           : r.skus.map(s => relChipHtml(s, false)).join("")}</div></td>
         <td class="muted-cell">${escapeHtml(r.nota || "")}</td>
         <td class="muted-cell num">${r.actualizado ? new Date(r.actualizado).toLocaleDateString("es-AR") : "—"}</td>
@@ -595,3 +601,47 @@ document.addEventListener("aruki:loaded", e => {
   relRender();
   if (!relEl("relForm").classList.contains("hidden")) { relRenderChips(); relRenderResults(); }
 });
+
+/* ---------- Reglas de Aruki (programadas, solo lectura) ----------
+   Se arma con las mismas constantes que usa el programa, así siempre muestra lo que está vigente. */
+function relBuiltinHtml(){
+  const chips = list => `<div class="rb-words">${[...list].map(w => `<span>${escapeHtml(w)}</span>`).join("")}</div>`;
+  const sec = (title, body) => `<div class="rb-sec"><h4>${title}</h4>${body}</div>`;
+  const alias = Object.entries(COT_ALIAS).map(([a, b]) => `<li><b>${escapeHtml(a)}</b> = ${escapeHtml(b)}</li>`).join("");
+  return [
+    sec("Artículos que nunca se sugieren", `<ul>
+      <li>Los que dicen <b>discontinuado</b>, <b>Mercado Libre</b>, <b>para fraccionar</b> o <b>REP WM</b> en el SKU o el nombre (tampoco se ven en Artículos).</li>
+      <li>Los que tienen <b>todas</b> las listas de precio en 0 o vacías. Si una lista tiene precio, el artículo queda.</li>
+      <li>Los repuestos (SKU o nombre que empieza con "REP ").</li>
+      <li>En Cotizaciones, los que tienen precio 0 en la lista elegida.</li>
+      <li>Los que empiezan con <b>COMBO -</b> no se eligen solos (ni como opción ni por la IA), pero se pueden buscar y elegir a mano.</li></ul>`),
+    sec("Cómo se lee la cantidad de cada renglón", `<ul>
+      <li>Número al principio: "10 guantes" → 10.</li>
+      <li>Número al final con guion, dos puntos, paréntesis o "cant": "Guantes - 10", "Guantes (10)", "Guantes cant 10" → 10.</li>
+      <li>"x 2" es cantidad solo si es 20 o menos; "Algodón x 500" se toma como presentación.</li>
+      <li>Abreviatura sola antes del número: "Guantes Uns 10" → 10. Pegada a un número es presentación: "Eyectores x100 und. 5" → presentación x100, cantidad 5.</li>
+      <li>En Excel, Word y PDF se usa la columna de cantidad ("10 Uns" → 10). Sin cantidad → 1.</li></ul>`),
+    sec("Abreviaturas de unidad (cantidad o presentación)", chips(COT_UNIT_ONLY.split("|"))),
+    sec("Cómo se compara el pedido con los artículos", `<ul>
+      <li>No importan mayúsculas, tildes ni signos.</li>
+      <li>Singular y plural son lo mismo (vasos = vaso, luces = luz).</li>
+      <li>Masculino y femenino son lo mismo (anodizada = anodizado, importada = importado), salvo estas palabras que son otra cosa: ${[...COT_GENERO_KEEP].join(", ")}.</li>
+      <li>Las palabras con números (medidas, colores A2, números de fresa) pesan más. Medidas parecidas suman (g ≈ ml, kg y litros ×1000); muy distintas restan.</li>
+      <li>Si el cliente nombra una marca que tenemos, esa marca va primero.</li>
+      <li>Primero se buscan tus Relaciones (texto exacto y después por condiciones). Si no hay, búsqueda por parecido: desde 75 % (con 8 puntos de ventaja sobre el segundo) se toma directo; desde 40 % se muestran hasta ${COT_MAX_OPTIONS} opciones; menos, "sin coincidencia".</li></ul>`),
+    sec("Equivalencias fijas", `<ul>${alias}</ul>`),
+    sec("Palabras que no cuentan en la búsqueda", `<p class="source-note">Conectores, abreviaturas y rótulos de licitación (PRESENTACION:, DROGA GENERICA:, t/…, p/…).</p>${chips(COT_STOP)}`),
+    sec("Lo que la IA recibe siempre", `<ul>
+      <li>Elige solo entre los candidatos de cada renglón (nunca inventa un SKU). Prioriza la marca pedida, después el mismo tipo de producto y la medida, presentación, color o número más parecido.</li>
+      <li>Entiende sinónimos odontológicos (fresa = piedra, FG = turbina, CA = contraángulo, jer. = jeringa).</li>
+      ${COT_IA_REGLAS_FIJAS.map(r => `<li>${escapeHtml(r)}</li>`).join("")}
+      <li>Además: tus Reglas para la IA, tus palabras equivalentes y, como ejemplo, las relaciones más parecidas a cada renglón.</li></ul>`)
+  ].join("");
+}
+relEl("relBuiltinBtn").addEventListener("click", () => {
+  relEl("relBuiltinList").innerHTML = relBuiltinHtml();
+  relEl("relBuiltinModal").classList.remove("hidden");
+});
+relEl("relBuiltinClose").addEventListener("click", () => relEl("relBuiltinModal").classList.add("hidden"));
+relEl("relBuiltinModal").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden"); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") relEl("relBuiltinModal").classList.add("hidden"); });

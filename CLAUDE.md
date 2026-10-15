@@ -68,7 +68,11 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
 - Binding KV **`ARUKI_KV`**: clave `relaciones` y claves `login-fail:<ip>` (bloqueo de 15 min tras 5 intentos fallidos).
 - Relación: `{ id, texto, skus: [..], nota, creado, actualizado }`; por condiciones agrega `reglas: [{op, valor}]`;
   **palabra equivalente** (v2.9) tiene `reemplazo` y `skus: []`; **regla para la IA** (v4.6) tiene `ia: true`, `skus: []` y la
-  instrucción en `texto` (`relTipo()` → ia | reglas | palabra | texto; `relEsIa()`). Las equivalencias se aplican
+  instrucción en `texto` (`relTipo()` → ia | reglas | palabra | texto; `relEsIa()`). v5.0: palabra equivalente = grupo: `reemplazo`
+  admite varias palabras separadas por coma (`relPalabras()`); `cotUserAliases()` lleva todas a la primera de `reemplazo`;
+  `relFindDup` palabra = comparten alguna palabra; Worker guarda `reemplazo` hasta 400 caracteres. Botón "Reglas de Aruki"
+  (`#relBuiltinBtn`, `relBuiltinHtml()`): ventana solo lectura armada con COT_UNIT_ONLY, COT_ALIAS, COT_STOP,
+  COT_GENERO_KEEP, COT_MAX_OPTIONS y `COT_IA_REGLAS_FIJAS` (cot-ia.js) — si se agrega una regla programada, sumarla ahí. Las equivalencias se aplican
   en `cotTokens()` (pedido y catálogo) además de `COT_ALIAS`.
   v3.1: filtros por tipo (`rel.filtro`), aviso en vivo de relación igual (`relFindDup()`: texto igual, mismas
   condiciones en cualquier orden, o mismo par de palabras en cualquier sentido). Cotizaciones: "Guardar todas como
@@ -190,6 +194,9 @@ computadoras), con botón de respaldo (descargar/importar).
      v4.8: abreviatura de unidad antes del número final (`COT_UNIT_ONLY`: uns, und, unid, uni, u…): "Guantes Uns 10" → 10
      (se saca la abreviatura); si antes hay un número ("x100 und. 5") es presentación + cantidad. `cotIaReglas()` agrega
      siempre la aclaración de unidades para Gemini.
+     v5.0: `COT_COMBO` (nombre "COMBO - …") → `it.combo` en el índice; `cotSearch()` los saltea (no se eligen solos ni van a la IA;
+     la búsqueda manual de SKU/agregar sí los muestra). `cotGenero()` después de `cotSingular`: palabra ≥4 letras terminada en "a"
+     → "o" (anodizada = anodizado), salvo `COT_GENERO_KEEP` (punta, manga, cera, bolsa, plata…).
      v4.9: `COT_STOP` incluye rótulos de licitación (presentacion, forma farmaceutica, droga generica, uso, producto,
      descripcion, capacidad, proceso, similar, p, t, si, envase, odontologico…), también después de `cotSingular`; las
      palabras que no están en ningún artículo restaban mucho puntaje. Probado con un Excel real `RGN | DESCRIPCION | CANTIDAD`

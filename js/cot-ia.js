@@ -14,6 +14,11 @@ const COT_IA_CANDIDATOS = 12;
 const COT_IA_EJ_POR_RENGLON = 3;  // relaciones parecidas que se mandan como ejemplo por renglón
 const COT_IA_EJ_MAX = 30;          // máximo de ejemplos por consulta
 const COT_IA_REGLAS_MAX = 60;
+/* Reglas que se le mandan SIEMPRE a Gemini (además de las de Relaciones). Se ven en Relaciones › "Reglas de Aruki". */
+const COT_IA_REGLAS_FIJAS = [
+  '"Uns", "Und", "Und.", "Unid", "Uni", "U." significan "unidades": indican la cantidad o la presentación (ej.: "x 100 und" = caja de 100 unidades), no son parte del nombre del producto.',
+  'Masculino y femenino son lo mismo (ej.: "anodizada" = "anodizado", "importada" = "importado").'
+];
 let cotIaBusy = false;
 
 /* ---------- "Entrenamiento" con Relaciones (v4.6) ----------
@@ -24,10 +29,13 @@ function cotIaReglas(){
   const ia = [], eq = [];
   for (const r of rel.items) {
     if (relEsIa(r)) ia.push(r.texto);
-    else if (relEsPalabra(r)) eq.push(`"${r.texto}" es lo mismo que "${r.reemplazo}".`);
+    else if (relEsPalabra(r)) {
+      const words = [r.texto, ...relPalabras(r.reemplazo)].map(w => `"${w}"`);
+      eq.push(words.length === 2 ? `${words[0]} es lo mismo que ${words[1]}.` : `${words.slice(0, -1).join(", ")} y ${words[words.length - 1]} significan lo mismo.`);
+    }
   }
   // Siempre: las abreviaturas de unidad no son parte del nombre del producto
-  eq.push('"Uns", "Und", "Und.", "Unid", "Uni", "U." significan "unidades": indican la cantidad o la presentación (ej.: "x 100 und" = caja de 100 unidades), no son parte del nombre del producto.');
+  eq.push(...COT_IA_REGLAS_FIJAS);
   return [...ia, ...eq].slice(0, COT_IA_REGLAS_MAX);
 }
 

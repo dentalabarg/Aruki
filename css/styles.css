@@ -666,3 +666,13 @@ select.ds-input{cursor:pointer;}
 .rel-ia-field{grid-column:1 / -1;}
 #relIa{height:auto; min-height:76px; padding:10px 12px; resize:vertical; font:400 14px/1.5 var(--sans);}
 .rel-ia-text{white-space:pre-wrap; font-weight:500;}
+
+/* v5.0 Reglas de Aruki (solo lectura) */
+.modal.modal-wide{max-width:720px;}
+.rb-sec{padding:14px 0; border-bottom:1px solid var(--line);}
+.rb-sec:last-child{border-bottom:none;}
+.rb-sec h4{font:600 14px var(--sans); color:var(--text); margin:0 0 8px;}
+.rb-sec ul{margin:0; padding-left:18px; display:flex; flex-direction:column; gap:5px; font:400 13px/1.45 var(--sans); color:var(--muted);}
+.rb-sec ul b{color:var(--text); font-weight:600;}
+.rb-words{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
+.rb-words span{font:500 12px var(--mono); padding:2px 8px; border-radius:var(--radius-pill); background:var(--bg-soft); color:var(--text);}

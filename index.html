@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=4.9">
+<link rel="stylesheet" href="css/styles.css?v=5.0">
 </head>
 <body>
 
@@ -510,6 +510,7 @@
             <h1 class="page-title">Relaciones</h1>
           </div>
           <div class="page-head-actions">
+            <button class="btn btn-ghost" id="relBuiltinBtn" type="button" title="Ver las reglas que ya vienen programadas en Aruki (solo lectura)">Reglas de Aruki</button>
             <button class="btn btn-ghost" id="relExportBtn" type="button" title="Descargar una copia de todas las relaciones">Descargar respaldo</button>
             <button class="btn btn-ghost" id="relImportBtn" type="button" title="Sumar relaciones desde un respaldo">Importar respaldo</button>
             <input type="file" id="relImportFile" accept=".json,application/json" class="hidden">
@@ -554,8 +555,8 @@
               </div>
             </div>
             <div class="field hidden" id="relReemplazoWrap">
-              <label for="relReemplazo">…es lo mismo que (vale en los dos sentidos)</label>
-              <input class="ds-input" id="relReemplazo" type="text" maxlength="100" placeholder="Ej.: auto" autocomplete="off">
+              <label for="relReemplazo">…es lo mismo que (podés poner varias, separadas por coma)</label>
+              <input class="ds-input" id="relReemplazo" type="text" maxlength="400" placeholder="Ej.: surtido, kit, combo" autocomplete="off">
             </div>
             <div class="field">
               <label for="relNota">Nota (opcional)</label>
@@ -625,17 +626,31 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=4.9"></script>
-<script src="js/core.js?v=4.9"></script>
-<script src="js/facturas.js?v=4.9"></script>
-<script src="js/articulos.js?v=4.9"></script>
-<script src="js/relaciones.js?v=4.9"></script>
-<script src="js/clientes.js?v=4.9"></script>
-<script src="js/presupuesto-comun.js?v=4.9"></script>
-<script src="js/cotizaciones.js?v=4.9"></script>
-<script src="js/cot-archivos.js?v=4.9"></script>
-<script src="js/cot-ia.js?v=4.9"></script>
-<script src="js/manual.js?v=4.9"></script>
-<script src="js/main.js?v=4.9"></script>
+<!-- MODAL: reglas programadas en Aruki (solo lectura) -->
+<div class="modal-backdrop hidden" id="relBuiltinModal">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <h3>Reglas de Aruki</h3>
+      <button class="close-btn" id="relBuiltinClose" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p class="source-note">Son las reglas que ya vienen programadas (no se editan acá). Las tuyas están en la lista de Relaciones.</p>
+    <div id="relBuiltinList"></div>
+  </div>
+</div>
+
+<script src="js/changelog.js?v=5.0"></script>
+<script src="js/core.js?v=5.0"></script>
+<script src="js/facturas.js?v=5.0"></script>
+<script src="js/articulos.js?v=5.0"></script>
+<script src="js/relaciones.js?v=5.0"></script>
+<script src="js/clientes.js?v=5.0"></script>
+<script src="js/presupuesto-comun.js?v=5.0"></script>
+<script src="js/cotizaciones.js?v=5.0"></script>
+<script src="js/cot-archivos.js?v=5.0"></script>
+<script src="js/cot-ia.js?v=5.0"></script>
+<script src="js/manual.js?v=5.0"></script>
+<script src="js/main.js?v=5.0"></script>
 </body>
 </html>
