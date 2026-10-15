@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "5.0";
+const LATEST_VERSION = "5.1";
 const CHANGELOG = [
+  {
+    version: "5.1",
+    date: "2026-10-15",
+    title: "Palabras equivalentes de a una por renglón",
+    items: [
+      { type: "mejora", text: "Palabra equivalente: cada equivalente va en su propio renglón con el botón \"+ Nuevo equivalente\" (como en Condiciones), en vez de separarlas con comas. Todas las palabras de la relación siguen siendo equivalentes entre sí" },
+      { type: "mejora", text: "Se sacan de la programación las equivalencias autocurable = auto y termocurable = termo (se cargan como Relaciones)" }
+    ]
+  },
   {
     version: "5.0",
     date: "2026-10-15",

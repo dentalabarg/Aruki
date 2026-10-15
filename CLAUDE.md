@@ -70,7 +70,8 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   **palabra equivalente** (v2.9) tiene `reemplazo` y `skus: []`; **regla para la IA** (v4.6) tiene `ia: true`, `skus: []` y la
   instrucción en `texto` (`relTipo()` → ia | reglas | palabra | texto; `relEsIa()`). v5.0: palabra equivalente = grupo: `reemplazo`
   admite varias palabras separadas por coma (`relPalabras()`); `cotUserAliases()` lleva todas a la primera de `reemplazo`;
-  `relFindDup` palabra = comparten alguna palabra; Worker guarda `reemplazo` hasta 400 caracteres. Botón "Reglas de Aruki"
+  `relFindDup` palabra = comparten alguna palabra; v5.1: en el formulario cada equivalente es un renglón (`rel.formEquivs`, `#relEquivs`,
+  "+ Nuevo equivalente", `relEquivsTexto()` los une con coma; se sacan comas internas); Worker guarda `reemplazo` hasta 400 caracteres. Botón "Reglas de Aruki"
   (`#relBuiltinBtn`, `relBuiltinHtml()`): ventana solo lectura armada con COT_UNIT_ONLY, COT_ALIAS, COT_STOP,
   COT_GENERO_KEEP, COT_MAX_OPTIONS y `COT_IA_REGLAS_FIJAS` (cot-ia.js) — si se agrega una regla programada, sumarla ahí. Las equivalencias se aplican
   en `cotTokens()` (pedido y catálogo) además de `COT_ALIAS`.
@@ -240,7 +241,8 @@ computadoras), con botón de respaldo (descargar/importar).
      v2.4: el Worker prueba `GEMINI_MODEL` y después `GEMINI_FALLBACK_MODELS` (default gemini-flash-latest,
      gemini-flash-lite-latest): 3 intentos por modelo (esperas 2 s/5 s) ante 429/500/503, salta al siguiente si 404;
      si todos saturados → 503 con mensaje claro. Responde `modelo` usado.
-   - v2.7: equivalencias `COT_ALIAS` en `cotTokens()` (después de `cotSingular`): autocurable→auto, termocurable→termo.
+   - v2.7: equivalencias `COT_ALIAS` en `cotTokens()` (después de `cotSingular`). v5.1: quedó VACÍO a pedido del usuario
+     (autocurable/termocurable las carga él como Relaciones); no volver a agregar equivalencias fijas sin que lo pida.
      Para sumar otra, agregar una entrada (palabra completa en singular → como figura en el artículo).
    - Tipografía: los datos (tablas, listas, chips, resultados) van 1px más grandes que la interfaz fija.
 3. ✅ Lectura de Excel, Word y PDF con texto (v2.0, `js/cot-archivos.js`). Librerías desde cdnjs, cargadas al usarse:

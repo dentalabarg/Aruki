@@ -530,6 +530,8 @@ select.ds-input{cursor:pointer;}
 .rel-reglas{display:flex; flex-direction:column; gap:8px;}
 .rel-regla{display:grid; grid-template-columns:190px 1fr 32px; gap:8px; align-items:center;}
 .rel-regla .ds-input{height:40px;}
+.rel-equiv{display:grid; grid-template-columns:1fr 32px; gap:8px; align-items:center;}
+.rel-equiv .ds-input{height:40px;}
 .rel-reglas-foot{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:2px;}
 .rel-cond{display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
 .rel-cond-item{display:inline-flex; align-items:center; gap:6px; font-weight:600;}
@@ -676,3 +678,4 @@ select.ds-input{cursor:pointer;}
 .rb-sec ul b{color:var(--text); font-weight:600;}
 .rb-words{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
 .rb-words span{font:500 12px var(--mono); padding:2px 8px; border-radius:var(--radius-pill); background:var(--bg-soft); color:var(--text);}
+#relReemplazoWrap{grid-row:span 2; align-self:start;}

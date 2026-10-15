@@ -11,7 +11,7 @@ const RELACIONES_ENDPOINT = `${WORKER_BASE}/relaciones`;
 const rel = {
   items: [], version: 0, loaded: false, loading: false, saving: false,
   editingId: null, formSkus: [], search: "", activeResult: 0,
-  formTipo: "texto", formReglas: [], filtro: "todas"
+  formTipo: "texto", formReglas: [], formEquivs: [], filtro: "todas"
 };
 
 /* ---------- Relaciones por condiciones ----------
@@ -84,7 +84,7 @@ function relFindDup(tipo, data, exceptId){
 function relFormData(){
   return {
     texto: (rel.formTipo === "ia" ? relEl("relIa") : relEl("relTexto")).value.trim(),
-    reemplazo: relEl("relReemplazo").value.trim(),
+    reemplazo: relEquivsTexto(),
     reglas: rel.formReglas.map(g => ({ op: g.op, valor: String(g.valor || "").trim() })).filter(g => g.valor)
   };
 }
@@ -299,10 +299,12 @@ function relSetTipo(tipo){
   relEl("relIaWrap").classList.toggle("hidden", tipo !== "ia");
   relEl("relReemplazoWrap").classList.toggle("hidden", tipo !== "palabra");
   relEl("relSkuWrap").classList.toggle("hidden", tipo === "palabra" || tipo === "ia");
-  relEl("relTextoLabel").textContent = tipo === "palabra" ? "La palabra (o palabras)…" : "Cuando el cliente escribe…";
+  relEl("relTextoLabel").textContent = tipo === "palabra" ? "La palabra o frase…" : "Cuando el cliente escribe…";
   relEl("relTexto").placeholder = tipo === "palabra" ? "Ej.: autocurable" : "Ej.: algodón en rollos pack x500";
   relEl("relReglasWrap").classList.toggle("hidden", tipo !== "reglas");
   if (tipo === "reglas" && !rel.formReglas.length) rel.formReglas.push({ op: "contiene", valor: "" });
+  if (tipo === "palabra" && !rel.formEquivs.length) rel.formEquivs.push("");
+  relRenderEquivs();
   relRenderReglas();
   relCheckDup();
 }
@@ -320,15 +322,35 @@ function relRenderReglas(){
     </div>`).join("");
 }
 
+/* Equivalentes de una "Palabra equivalente": un renglón por palabra (se guardan juntas, separadas por coma) */
+function relRenderEquivs(){
+  relEl("relEquivs").innerHTML = rel.formEquivs.map((w, i) => `
+    <div class="rel-equiv" data-i="${i}">
+      <input class="ds-input" data-equiv type="text" maxlength="100" value="${escapeHtml(w)}" placeholder="${i ? "Otra palabra equivalente" : "Ej.: auto"}" autocomplete="off">
+      <button class="btn-icon danger" type="button" data-equiv-del title="Quitar" aria-label="Quitar equivalente" ${rel.formEquivs.length < 2 ? "disabled" : ""}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`).join("");
+}
+function relEquivsTexto(){
+  return rel.formEquivs.map(w => String(w || "").replace(/[,;]/g, " ").replace(/\s+/g, " ").trim()).filter(Boolean).join(", ");
+}
+function relAddEquiv(){
+  rel.formEquivs.push("");
+  relRenderEquivs();
+  const inputs = relEl("relEquivs").querySelectorAll("[data-equiv]");
+  inputs[inputs.length - 1]?.focus();
+}
+
 function relOpenForm(item){
   rel.editingId = item ? item.id : null;
   rel.formSkus = item ? [...item.skus] : [];
   rel.formReglas = item && relEsReglas(item) ? item.reglas.map(g => ({ ...g })) : [];
+  rel.formEquivs = item && relEsPalabra(item) ? relPalabras(item.reemplazo) : [];
   relSetTipo(item ? relTipo(item) : "texto");
   relEl("relFormTitle").textContent = item ? "Editar relación" : "Nueva relación";
   relEl("relTexto").value = item && !relEsReglas(item) && !relEsIa(item) ? item.texto : "";
   relEl("relIa").value = item && relEsIa(item) ? item.texto : "";
-  relEl("relReemplazo").value = item && relEsPalabra(item) ? item.reemplazo : "";
   relEl("relNota").value = item ? (item.nota || "") : "";
   relEl("relSkuSearch").value = "";
   relEl("relFormError").textContent = "";
@@ -369,7 +391,7 @@ async function relSubmitForm(){
     if (!texto) { error.textContent = esPalabra ? "Escribí la palabra tal como la pide el cliente." : "Escribí cómo lo pide el cliente."; return; }
   }
   if (esPalabra) {
-    reemplazo = relEl("relReemplazo").value.trim();
+    reemplazo = relEquivsTexto();
     const palabras = [];
     relPalabras(reemplazo).forEach(w => { if (relKey(w) && relKey(w) !== relKey(texto) && !palabras.some(x => relKey(x) === relKey(w))) palabras.push(w); });
     if (!palabras.length) { error.textContent = relKey(reemplazo) === relKey(texto) ? "La palabra y su equivalente son iguales." : "Escribí al menos una palabra equivalente."; return; }
@@ -561,6 +583,25 @@ relEl("relReglas").addEventListener("click", e => {
   rel.formReglas.splice(Number(btn.closest("[data-i]").dataset.i), 1);
   relRenderReglas();
 });
+relEl("relAddEquiv").addEventListener("click", relAddEquiv);
+relEl("relEquivs").addEventListener("input", e => {
+  const row = e.target.closest("[data-i]");
+  if (row && e.target.matches("[data-equiv]")) rel.formEquivs[Number(row.dataset.i)] = e.target.value;
+});
+relEl("relEquivs").addEventListener("click", e => {
+  const btn = e.target.closest("[data-equiv-del]");
+  if (!btn) return;
+  rel.formEquivs.splice(Number(btn.closest("[data-i]").dataset.i), 1);
+  relRenderEquivs();
+  relCheckDup();
+});
+relEl("relEquivs").addEventListener("keydown", e => {   // Enter en el último → agrega otro
+  if (e.key !== "Enter" || !e.target.matches("[data-equiv]")) return;
+  e.preventDefault();
+  const i = Number(e.target.closest("[data-i]").dataset.i);
+  if (i === rel.formEquivs.length - 1 && e.target.value.trim()) relAddEquiv();
+  else relEl("relEquivs").querySelectorAll("[data-equiv]")[i + 1]?.focus();
+});
 relEl("relReglas").addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.matches("[data-regla-valor]")) { e.preventDefault(); relEl("relSkuSearch").focus(); }
 });
@@ -595,7 +636,12 @@ relEl("relSkuSearch").addEventListener("keydown", e => {
     relEl("relSkuResults").classList.add("hidden");
   }
 });
-relEl("relTexto").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); relEl("relSkuSearch").focus(); } });
+relEl("relTexto").addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  if (rel.formTipo === "palabra") relEl("relEquivs").querySelector("[data-equiv]")?.focus();
+  else relEl("relSkuSearch").focus();
+});
 document.addEventListener("aruki:loaded", e => {
   if (e.detail?.endpoint !== `${WORKER_BASE}/articulos`) return;
   relRender();
@@ -629,7 +675,7 @@ function relBuiltinHtml(){
       <li>Las palabras con números (medidas, colores A2, números de fresa) pesan más. Medidas parecidas suman (g ≈ ml, kg y litros ×1000); muy distintas restan.</li>
       <li>Si el cliente nombra una marca que tenemos, esa marca va primero.</li>
       <li>Primero se buscan tus Relaciones (texto exacto y después por condiciones). Si no hay, búsqueda por parecido: desde 75 % (con 8 puntos de ventaja sobre el segundo) se toma directo; desde 40 % se muestran hasta ${COT_MAX_OPTIONS} opciones; menos, "sin coincidencia".</li></ul>`),
-    sec("Equivalencias fijas", `<ul>${alias}</ul>`),
+    ...(alias ? [sec("Equivalencias fijas", `<ul>${alias}</ul>`)] : []),
     sec("Palabras que no cuentan en la búsqueda", `<p class="source-note">Conectores, abreviaturas y rótulos de licitación (PRESENTACION:, DROGA GENERICA:, t/…, p/…).</p>${chips(COT_STOP)}`),
     sec("Lo que la IA recibe siempre", `<ul>
       <li>Elige solo entre los candidatos de cada renglón (nunca inventa un SKU). Prioriza la marca pedida, después el mismo tipo de producto y la medida, presentación, color o número más parecido.</li>

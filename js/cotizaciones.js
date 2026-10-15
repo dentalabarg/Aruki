@@ -229,8 +229,7 @@ function cotGenero(t){
    Se aplican igual al pedido y al catálogo (después de pasar a singular).
    Para sumar otra: "palabra completa": "como figura en el artículo". */
 const COT_ALIAS = {
-  autocurable: "auto",
-  termocurable: "termo"
+  // v5.1: vacío a pedido del usuario (autocurable/termocurable se cargan como Relaciones › Palabra equivalente)
 };
 
 /* Equivalencias cargadas en Relaciones (tipo "Palabra equivalente"). Se aplican igual al pedido y
