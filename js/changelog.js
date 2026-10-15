@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "5.2";
+const LATEST_VERSION = "5.3";
 const CHANGELOG = [
+  {
+    version: "5.3",
+    date: "2026-10-15",
+    title: "Pequeños ajustes de textos",
+    items: [
+      { type: "mejora", text: "Relaciones: el tipo \"Palabra equivalente\" ahora se llama \"Palabras equivalentes\"" },
+      { type: "correccion", text: "Artículos: el texto gris del buscador (\"Buscar en todos los artículos\") ahora se ve completo" }
+    ]
+  },
   {
     version: "5.2",
     date: "2026-10-15",
