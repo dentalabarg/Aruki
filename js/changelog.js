@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "5.9";
+const LATEST_VERSION = "6.0";
 const CHANGELOG = [
+  {
+    version: "6.0",
+    date: "2026-10-15",
+    title: "Clientes ocultos",
+    items: [
+      { type: "mejora", text: "La lista de clientes ya no muestra los que dicen \"discontinuado\" (o \"descontinuado\") ni los que tienen 3 o más asteriscos" }
+    ]
+  },
   {
     version: "5.9",
     date: "2026-10-15",

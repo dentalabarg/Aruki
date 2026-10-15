@@ -141,6 +141,8 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   `loadAllPages()` manda `&modo=` en las páginas siguientes para no mezclar. `CONSULTA_RAPIDA=no` la apaga.
   `/{ENTIDAD}/file` y `/{ENTIDAD}/report` son archivos/PDF de UNA instancia (no exportan listas a Excel).
 - Clientes: entidad `CLIENTE`, smartie **1834** (columnas Nombre, Razón Social, CUIT/Documento, Condición IVA - Descripción, `id`).
+  v6.0: `cliOculto(c)` saca de la lista (y del caché) los que dicen discontinuado/descontinuado o tienen ≥3 asteriscos
+  en nombre o razón social; Consumidor Final (8192) nunca se oculta.
 - Las especificaciones de la API (OpenAPI) se descargan de `https://apidoc.yiqi.com.ar/erpdemo.schema-<Módulo>-api.json`
   (desde acá el dominio está bloqueado: pedirle al usuario que las adjunte).
 - Uso responsable: pocas consultas en paralelo (hoy 4), reintentos con espera.

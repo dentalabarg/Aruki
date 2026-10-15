@@ -15,7 +15,7 @@ const clientesStore = {
     this.loading = true;
     const saved = await cacheGet("clientes");
     if (saved && Array.isArray(saved.list) && saved.list.length) {
-      this.list = saved.list; this.savedAt = saved.savedAt || 0; this.loaded = true;
+      this.list = saved.list.filter(c => !cliOculto(c)); this.savedAt = saved.savedAt || 0; this.loaded = true;
       this.loading = false; this.notify();
       if (Date.now() - this.savedAt >= CLI_MAX_AGE) this.refresh();
       return;
@@ -66,6 +66,15 @@ const clientesStore = {
   }
 };
 
+/* Clientes que no se muestran (v6.0): "discontinuado"/"descontinuado" o 3 o más asteriscos en el nombre o la razón social.
+   Consumidor Final nunca se oculta. */
+const cliStars = t => (String(t || "").match(/\*/g) || []).length;
+function cliOculto(c){
+  if (Number(c.id) === CLI_CONSUMIDOR_FINAL_ID) return false;
+  if (/d[ei]s?continuad/i.test(`${c.nombre} ${c.razon}`)) return true;
+  return Math.max(cliStars(c.nombre), cliStars(c.razon)) >= 3;
+}
+
 function cliParse(rows, columns){
   const cols = Array.isArray(columns) ? columns : [];
   const find = re => (cols.find(c => re.test(String(c.title || "").trim())) || {}).field;
@@ -78,7 +87,7 @@ function cliParse(rows, columns){
       nombre, razon: razon || nombre,
       cuit: String(r[fCuit] ?? "").trim(), iva: String(r[fIva] ?? "").trim()
     };
-  }).filter(c => c.id !== null && (c.razon || c.nombre))
+  }).filter(c => c.id !== null && (c.razon || c.nombre) && !cliOculto(c))
     .map(c => ({ ...c, s: foldText(`${c.razon} ${c.nombre} ${c.cuit} ${c.cuit.replace(/\D/g, "")}`) }));
 }
 
