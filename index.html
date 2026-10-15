@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=5.6">
+<link rel="stylesheet" href="css/styles.css?v=5.7">
 </head>
 <body>
 
@@ -344,15 +344,25 @@
                 <input type="checkbox" id="cotStock"> Mostrar columna Stock real
               </label>
             </div>
+            <div class="field">
+              <label for="cotObsSel">Observaciones</label>
+              <select class="ds-input" id="cotObsSel" title="Elegí una etiqueta: su texto va a las observaciones del presupuesto"></select>
+              <button class="btn btn-ghost btn-sm obs-tags-btn" id="cotTagsBtn" type="button" title="Crear y modificar etiquetas"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Etiquetas</button>
+            </div>
           </div>
           <div class="cot-file" id="cotDrop">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
             <div class="cot-file-text">
               <strong>Subí el archivo del cliente o arrastralo acá</strong>
               <span>Excel, Word, PDF, fotos (JPG o PNG) o texto. Aruki lo lee y arma el presupuesto solo.</span>
-              <label class="cot-check" title="Los PDF (también escaneados) los lee Gemini, que une los artículos que ocupan varios renglones. Si Gemini falla, los PDF se leen con la lectura común. Las fotos siempre se leen con IA.">
-                <input type="checkbox" id="cotIaLeer" checked> Leer PDF con IA (Gemini)
-              </label>
+              <div class="cot-file-checks">
+                <label class="cot-check" title="Los PDF (también escaneados) los lee Gemini, que une los artículos que ocupan varios renglones. Si Gemini falla, los PDF se leen con la lectura común. Las fotos siempre se leen con IA.">
+                  <input type="checkbox" id="cotIaLeer" checked> Leer PDF con IA (Gemini)
+                </label>
+                <label class="cot-check" title="Los renglones en amarillo o rojo se mandan a Gemini junto con los artículos más parecidos, y Gemini elige el correcto">
+                  <input type="checkbox" id="cotIaAuto" checked> Revisar con IA (Gemini)
+                </label>
+              </div>
             </div>
             <button class="btn btn-secondary" id="cotFileBtn" type="button">Elegir archivo</button>
             <input type="file" id="cotFile" class="hidden" accept=".xlsx,.xls,.xlsm,.ods,.csv,.docx,.pdf,.txt,.jpg,.jpeg,.png">
@@ -363,9 +373,6 @@
           </div>
           <div class="rel-form-foot">
             <div class="cot-foot-left">
-              <label class="cot-check" title="Los renglones en amarillo o rojo se mandan a Gemini junto con los artículos más parecidos, y Gemini elige el correcto">
-                <input type="checkbox" id="cotIaAuto" checked> Revisar con IA (Gemini) los renglones sin coincidencias
-              </label>
               <span class="source-note" id="cotInputHint">Aruki busca primero en Relaciones y después por parecido en todos los artículos.</span>
             </div>
             <button class="btn btn-primary" id="cotProcessBtn" type="button">Armar presupuesto</button>
@@ -379,18 +386,6 @@
               <div class="cot-summary" id="cotSummary"></div>
             </div>
           </div>
-          <p class="source-note">Arrastrá desde ⠿ para cambiar el orden. Para cambiar un artículo tocá el SKU o el nombre y buscá. Podés editar el texto adicional y la cantidad. Para cambiar el ancho de una columna arrastrá el borde del título (doble clic vuelve al ancho original). Cuando hay dudas aparecen varias opciones para el mismo renglón: elegí una con ✓ o borrá las que no sirvan.</p>
-          <div class="art-scroll">
-            <table class="art-table cot-table" id="cotTable">
-              <colgroup><col><col><col><col><col><col><col><col class="col-stock"><col><col class="col-sub"><col></colgroup>
-              <thead><tr>
-                <th></th><th>Solicitado</th><th>SKU</th><th>Nombre del artículo</th><th>Texto adicional</th><th>Marca</th>
-                <th class="num"><span id="cotQtyHead">Cantidad</span></th><th class="num col-stock">Stock real</th><th class="num"><span id="cotPriceHead">Precio</span></th><th class="num col-sub">Subtotal</th><th></th>
-              </tr></thead>
-              <tbody id="cotBody"></tbody>
-              <tfoot><tr><td colspan="7"></td><td class="col-stock"></td><td class="num cot-total-label">Total</td><td class="num cot-total col-sub" id="cotTotal">$ 0</td><td></td></tr></tfoot>
-            </table>
-          </div>
           <div class="cot-actions">
             <div class="rel-picker cot-add">
               <input class="ds-input" id="cotAddSearch" type="text" placeholder="Agregar artículo: buscá por SKU o nombre" autocomplete="off">
@@ -402,6 +397,29 @@
             <button class="btn btn-secondary cot-ia-btn" id="cotIaBtn" type="button" disabled title="Mandar a Gemini los renglones en amarillo o rojo"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>Revisar dudosos con IA</button>
           </div>
           <div class="cot-status" id="cotStatus"></div>
+          <div class="art-scroll">
+            <table class="art-table cot-table" id="cotTable">
+              <colgroup><col><col><col><col><col><col><col><col class="col-stock"><col><col class="col-sub"><col></colgroup>
+              <thead><tr>
+                <th></th><th>Solicitado</th><th>SKU</th><th>Nombre del artículo</th><th>Texto adicional</th><th>Marca</th>
+                <th class="num"><span id="cotQtyHead">Cantidad</span></th><th class="num col-stock">Stock real</th><th class="num"><span id="cotPriceHead">Precio</span></th><th class="num col-sub">Subtotal</th><th></th>
+              </tr></thead>
+              <tbody id="cotBody"></tbody>
+              <tfoot><tr><td colspan="7"></td><td class="col-stock"></td><td class="num cot-total-label">Total</td><td class="num cot-total col-sub" id="cotTotal">$ 0</td><td></td></tr></tfoot>
+            </table>
+          </div>
+          <div class="obs-box">
+            <div class="obs-head">
+              <label for="cotObsText">Observaciones del pedido</label>
+              <span class="badge" id="cotObsChip"></span>
+              <div class="obs-tools">
+                <select class="ds-input obs-sel" id="cotObsSel2" title="Cambiar de etiqueta"></select>
+                <button class="btn btn-ghost btn-sm hidden" id="cotObsSave" type="button" title="Pasar este texto a la etiqueta (se usa así de acá en adelante)"></button>
+                <button class="btn btn-ghost btn-sm hidden" id="cotObsNew" type="button" title="Guardar este texto como una etiqueta nueva"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Guardar como etiqueta nueva</button>
+              </div>
+            </div>
+            <textarea class="ds-input obs-text" id="cotObsText" rows="3" maxlength="2000" placeholder="Sin observaciones. Elegí una etiqueta o escribí acá: va abajo de todo en el Excel, el PDF y en las observaciones del pedido de YiQi."></textarea>
+          </div>
           <div class="pres-export">
             <div class="cot-status" id="cotExpStatus"></div>
             <div class="pres-export-btns">
@@ -460,6 +478,11 @@
                 <input type="checkbox" id="manStock"> Mostrar columna Stock real
               </label>
             </div>
+            <div class="field">
+              <label for="manObsSel">Observaciones</label>
+              <select class="ds-input" id="manObsSel" title="Elegí una etiqueta: su texto va a las observaciones del presupuesto"></select>
+              <button class="btn btn-ghost btn-sm obs-tags-btn" id="manTagsBtn" type="button" title="Crear y modificar etiquetas"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Etiquetas</button>
+            </div>
           </div>
         </div>
 
@@ -487,6 +510,18 @@
             </table>
             <div class="rel-results cot-floating hidden" id="manSkuResults"></div>
             <div class="empty-state man-empty" id="manEmpty">Todavía no agregaste artículos. Buscalos arriba por SKU o nombre.</div>
+          </div>
+          <div class="obs-box">
+            <div class="obs-head">
+              <label for="manObsText">Observaciones del pedido</label>
+              <span class="badge" id="manObsChip"></span>
+              <div class="obs-tools">
+                <select class="ds-input obs-sel" id="manObsSel2" title="Cambiar de etiqueta"></select>
+                <button class="btn btn-ghost btn-sm hidden" id="manObsSave" type="button" title="Pasar este texto a la etiqueta (se usa así de acá en adelante)"></button>
+                <button class="btn btn-ghost btn-sm hidden" id="manObsNew" type="button" title="Guardar este texto como una etiqueta nueva"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Guardar como etiqueta nueva</button>
+              </div>
+            </div>
+            <textarea class="ds-input obs-text" id="manObsText" rows="3" maxlength="2000" placeholder="Sin observaciones. Elegí una etiqueta o escribí acá: va abajo de todo en el Excel, el PDF y en las observaciones del pedido de YiQi."></textarea>
           </div>
           <div class="pres-export">
             <div class="cot-status" id="manStatus"></div>
@@ -636,6 +671,31 @@
   </div>
 </div>
 
+<!-- MODAL: Etiquetas de observaciones (v5.7) -->
+<div class="modal-backdrop hidden" id="etqModal">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <h3>Etiquetas de observaciones</h3>
+      <button class="close-btn" id="etqClose" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p class="source-note">El título es lo que elegís en la lista; el texto es lo que va al presupuesto, al Excel, al PDF y al pedido de YiQi. Sirven igual en Cotizaciones y en Armar presupuesto.</p>
+    <p class="etq-local-note hidden" id="etqLocalNote"></p>
+    <div class="etq-form">
+      <div class="etq-form-title" id="etqFormTitle">Nueva etiqueta</div>
+      <input class="ds-input" id="etqTitulo" type="text" maxlength="80" placeholder="Título (ej.: Envío CABA)" autocomplete="off">
+      <textarea class="ds-input obs-text" id="etqCuerpo" rows="4" maxlength="2000" placeholder="Texto de la observación (ej.: Envío sin cargo dentro de CABA. Validez del presupuesto: 7 días.)"></textarea>
+      <div class="etq-form-foot">
+        <span class="rel-form-error" id="etqError"></span>
+        <button class="btn btn-ghost" id="etqCancelEdit" type="button">Cancelar</button>
+        <button class="btn btn-primary" id="etqSaveBtn" type="button">Crear etiqueta</button>
+      </div>
+    </div>
+    <div class="etq-list" id="etqList"></div>
+  </div>
+</div>
+
 <!-- MODAL: reglas programadas en Aruki (solo lectura) -->
 <div class="modal-backdrop hidden" id="relBuiltinModal">
   <div class="modal modal-wide">
@@ -650,17 +710,18 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=5.6"></script>
-<script src="js/core.js?v=5.6"></script>
-<script src="js/facturas.js?v=5.6"></script>
-<script src="js/articulos.js?v=5.6"></script>
-<script src="js/relaciones.js?v=5.6"></script>
-<script src="js/clientes.js?v=5.6"></script>
-<script src="js/presupuesto-comun.js?v=5.6"></script>
-<script src="js/cotizaciones.js?v=5.6"></script>
-<script src="js/cot-archivos.js?v=5.6"></script>
-<script src="js/cot-ia.js?v=5.6"></script>
-<script src="js/manual.js?v=5.6"></script>
-<script src="js/main.js?v=5.6"></script>
+<script src="js/changelog.js?v=5.7"></script>
+<script src="js/core.js?v=5.7"></script>
+<script src="js/facturas.js?v=5.7"></script>
+<script src="js/articulos.js?v=5.7"></script>
+<script src="js/relaciones.js?v=5.7"></script>
+<script src="js/clientes.js?v=5.7"></script>
+<script src="js/presupuesto-comun.js?v=5.7"></script>
+<script src="js/observaciones.js?v=5.7"></script>
+<script src="js/cotizaciones.js?v=5.7"></script>
+<script src="js/cot-archivos.js?v=5.7"></script>
+<script src="js/cot-ia.js?v=5.7"></script>
+<script src="js/manual.js?v=5.7"></script>
+<script src="js/main.js?v=5.7"></script>
 </body>
 </html>

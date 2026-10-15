@@ -4,8 +4,20 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "5.6";
+const LATEST_VERSION = "5.7";
 const CHANGELOG = [
+  {
+    version: "5.7",
+    date: "2026-10-15",
+    title: "Observaciones con etiquetas e interruptores",
+    items: [
+      { type: "nuevo", text: "Cotizaciones y Armar presupuesto: caja \"Observaciones\" para elegir una etiqueta (empieza vacía con …) y botón \"Etiquetas\" para crearlas y modificarlas. Las etiquetas son las mismas en los dos módulos" },
+      { type: "nuevo", text: "Abajo de la lista de artículos, caja editable con las observaciones del pedido: se puede cambiar de etiqueta, escribir a mano, guardar los cambios en la etiqueta o guardarlo como etiqueta nueva" },
+      { type: "nuevo", text: "Las observaciones van abajo de todo en el Excel y el PDF, y en las observaciones del pedido de YiQi (reemplazan \"Creado desde Aruki\"). Requiere actualizar el conector" },
+      { type: "mejora", text: "Cotizaciones: Agregar artículo, Deshacer, Rehacer, Guardar relaciones y Revisar dudosos pasan arriba de la lista; se saca la aclaración larga; \"Revisar con IA (Gemini)\" queda junto al archivo" },
+      { type: "mejora", text: "Todas las casillas de Aruki ahora son interruptores (se tocan o se arrastran)" }
+    ]
+  },
   {
     version: "5.6",
     date: "2026-10-15",

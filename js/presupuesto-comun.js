@@ -97,7 +97,21 @@ async function presExcel(doc){
     tot[subIdx] = { t: "n", f: `SUM(${L(subIdx)}${first}:${L(subIdx)}${last})`, v: total };
     aoa.push(tot);
   }
+  // Observaciones abajo de todo (un renglón por línea)
+  let obsRow = -1;
+  if (doc.observaciones) {
+    aoa.push([]);
+    obsRow = aoa.length;
+    aoa.push(["Observaciones"]);
+    doc.observaciones.split(/\r?\n/).forEach(l => aoa.push([l]));
+  }
   const ws = XLSX.utils.aoa_to_sheet(aoa);
+  if (obsRow >= 0) {
+    // Cada línea ocupa el ancho de la tabla para que se lea entera
+    const lastCol = cols.length - (doc.disp ? 1 : 0);
+    ws["!merges"] = (ws["!merges"] || []).concat(
+      Array.from({ length: aoa.length - obsRow }, (_, i) => ({ s: { r: obsRow + i, c: 0 }, e: { r: obsRow + i, c: lastCol } })));
+  }
   ws["!cols"] = [...cols.map(c => ({ wch: c.w })), { wch: 16 }];
   const fmt = '"$" #,##0.00';
   for (let r = first; r <= last + 2; r++) {
@@ -165,6 +179,23 @@ async function presPdf(doc){
     if (endY > pdf.internal.pageSize.getHeight() - 20) { pdf.addPage(); endY = 20; }
     pdf.setFont("helvetica", "bold"); pdf.setFontSize(12); pdf.setTextColor(...dark);
     pdf.text(`Total: ${presMoney(total)}`, W - M, endY, { align: "right" });
+    endY += 10;
+  }
+  // Observaciones abajo de todo
+  if (doc.observaciones) {
+    const H = pdf.internal.pageSize.getHeight();
+    pdf.setFontSize(9.5);
+    const lines = pdf.splitTextToSize(doc.observaciones, W - 2 * M);
+    if (endY + 10 > H - 16) { pdf.addPage(); endY = 20; }
+    pdf.setFont("helvetica", "bold"); pdf.setTextColor(...dark);
+    pdf.text("Observaciones", M, endY);
+    endY += 5.5;
+    pdf.setFont("helvetica", "normal"); pdf.setTextColor(...dark);
+    lines.forEach(l => {
+      if (endY > H - 16) { pdf.addPage(); endY = 20; }
+      pdf.text(l, M, endY);
+      endY += 4.6;
+    });
   }
   const pages = pdf.internal.getNumberOfPages();
   for (let i = 1; i <= pages; i++) {

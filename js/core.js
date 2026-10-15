@@ -704,3 +704,47 @@ function createDataModule(cfg){
   return m;
 }
 
+
+/* ---------- v5.7 Interruptores: además del clic, se pueden arrastrar (derecha = encendido, izquierda = apagado) ---------- */
+(function(){
+  let drag = null;
+  const isSwitch = el => el instanceof HTMLInputElement && el.type === "checkbox";
+  document.addEventListener("pointerdown", e => {
+    if (!isSwitch(e.target) || e.target.disabled) return;
+    drag = { el: e.target, x: e.clientX, before: e.target.checked };
+  }, true);
+  document.addEventListener("pointermove", e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    if (Math.abs(dx) > 4) {
+      drag.el.classList.add("is-dragging");
+      // El botón sigue al dedo / mouse mientras se arrastra
+      const base = drag.before ? 14 : 0;
+      drag.el.style.setProperty("--knob", `${Math.max(0, Math.min(14, base + dx))}px`);
+    }
+  }, true);
+  document.addEventListener("click", e => {
+    if (!drag || e.target !== drag.el) { drag = null; return; }
+    const { el, x, before } = drag;
+    const dx = e.clientX - x;
+    el.classList.remove("is-dragging"); el.style.removeProperty("--knob");
+    drag = null;
+    if (Math.abs(dx) <= 4) return;                  // fue un clic común: cambia como siempre
+    const want = dx > 0;                            // arrastró a la derecha → encendido
+    if (want === before) { e.preventDefault(); el.checked = before; }   // ya estaba así: no cambia
+    else el.checked = want;                         // el clic ya lo cambió al valor pedido
+  }, true);
+  document.addEventListener("pointerup", e => {
+    if (!drag) return;
+    // Soltó fuera del interruptor después de arrastrar: igual se aplica
+    if (e.target !== drag.el && Math.abs(e.clientX - drag.x) > 4) {
+      const { el, before } = drag;
+      const want = e.clientX - drag.x > 0;
+      el.classList.remove("is-dragging"); el.style.removeProperty("--knob");
+      drag = null;
+      if (want !== before) { el.checked = want; el.dispatchEvent(new Event("change", { bubbles: true })); }
+      return;
+    }
+    setTimeout(() => { if (drag) { drag.el.classList.remove("is-dragging"); drag.el.style.removeProperty("--knob"); drag = null; } }, 0);
+  }, true);
+})();

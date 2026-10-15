@@ -428,9 +428,15 @@ manEl("manModo").addEventListener("change", e => {
 });
 
 /* ---------- Exportar y enviar ---------- */
+/* Observaciones (etiquetas compartidas con Cotizaciones) */
+man.obs = obsEmpty();
+const manObs = obsWidget({ sel: "manObsSel", tagsBtn: "manTagsBtn", text: "manObsText", chip: "manObsChip", bottomSel: "manObsSel2",
+  saveBtn: "manObsSave", newBtn: "manObsNew", get: () => man.obs, save: () => manSave() });
+
 function manDoc(){
   const cat = getArticulosCatalog();
   return {
+    observaciones: (man.obs.texto || "").trim(),
     cliente: manCliente.display(), lista: manPriceTitle(), disp: man.modo === "disponibilidad",
     conSolicitado: false, conExtra: man.rows.some(r => r.extra),
     rows: man.rows.map(r => {
@@ -457,7 +463,7 @@ manEl("manYiqiBtn").addEventListener("click", async () => {
   const sinCant = man.rows.filter(r => !(Number(r.cantidad) > 0));
   if (sinCant.length && man.modo === "cantidad") { manStatus(`Hay ${sinCant.length} renglón(es) con cantidad 0. Corregilos o borralos antes de enviar.`, "error"); return; }
   const pedido = {
-    clienteId: cli.id, cliente: cli.nombre, lista: manPriceTitle(),
+    clienteId: cli.id, cliente: cli.nombre, lista: manPriceTitle(), observaciones: (man.obs.texto || "").trim(),
     items: man.rows.map(r => ({ sku: r.sku, cantidad: Number(r.cantidad) || 1,
       precio: r.precio !== null && r.precio !== undefined && r.precio !== "" ? Number(r.precio) : null, texto: r.extra || "" }))
   };
@@ -478,7 +484,7 @@ function manSave(){
   try {
     localStorage.setItem(MAN_DRAFT_KEY, JSON.stringify({
       rows: man.rows, seq: man.seq, priceField: man.priceField, modo: man.modo, lastSent: man.lastSent, stock: !!man.stock,
-      cliente: manCliente.get(), clienteTexto: manCliente.text()
+      cliente: manCliente.get(), clienteTexto: manCliente.text(), obs: man.obs
     }));
   } catch {}
 }
@@ -494,12 +500,14 @@ function manRestore(){
     man.stock = !!d.stock;
     manEl("manModo").value = man.modo;
     manCliente.set(d.cliente || null, d.clienteTexto || "");
+    man.obs = { ...obsEmpty(), ...(d.obs || {}) };
   } catch {}
 }
 function manClear(){
   if (man.rows.length && !confirm("¿Borrar el presupuesto actual y empezar uno nuevo?")) return;
   man.rows = []; man.undo = []; man.redo = []; man.lastSent = "";
   manCliente.clear();
+  man.obs = obsEmpty(); manObs.render();
   try { localStorage.removeItem(MAN_DRAFT_KEY); } catch {}
   manStatus(""); manHideToast();
   manRender();
@@ -510,12 +518,13 @@ const manualModule = {
   ensureLoaded(){
     articulosModule.ensureLoaded();
     clientesStore.ensureLoaded();
+    etqEnsure(); manObs.render();
     manRefreshState();
     manRender();
   },
   reset(){
     man.rows = []; man.undo = []; man.redo = []; man.priceField = ""; man.lastSent = "";
-    manCliente.clear();
+    manCliente.clear(); man.obs = obsEmpty(); manObs.render();
     try { localStorage.removeItem(MAN_DRAFT_KEY); } catch {}
     manStatus("");
     manRender();

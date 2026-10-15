@@ -877,9 +877,15 @@ function cotLoadXlsx(){
 }
 
 /* Arma el documento (para Excel y PDF) con lo que hay en la tabla */
+/* Observaciones (etiquetas compartidas con Armar presupuesto) */
+cot.obs = obsEmpty();
+const cotObs = obsWidget({ sel: "cotObsSel", tagsBtn: "cotTagsBtn", text: "cotObsText", chip: "cotObsChip", bottomSel: "cotObsSel2",
+  saveBtn: "cotObsSave", newBtn: "cotObsNew", get: () => cot.obs, save: () => cotSave() });
+
 function cotDoc(){
   const cat = getArticulosCatalog();
   return {
+    observaciones: (cot.obs.texto || "").trim(),
     cliente: cotClientePk.display(), lista: cotPriceTitle(), disp: cot.modo === "disponibilidad",
     conSolicitado: true, conExtra: true,
     rows: cot.rows.map(r => {
@@ -921,7 +927,7 @@ async function cotSendYiqi(){
   const cli = cotClientePk.forYiqi();
   if (cli.error) { cotExpStatus(cli.error, "error"); cotEl("cotCliente").focus(); return; }
   const pedido = {
-    clienteId: cli.id, cliente: cli.nombre, lista: cotPriceTitle(),
+    clienteId: cli.id, cliente: cli.nombre, lista: cotPriceTitle(), observaciones: (cot.obs.texto || "").trim(),
     items: cot.rows.map(r => ({ sku: r.sku, cantidad: Number(r.cantidad) || 1,
       precio: r.precio !== null && r.precio !== undefined && r.precio !== "" ? Number(r.precio) : null, texto: r.extra || "" }))
   };
@@ -942,7 +948,7 @@ function cotSave(){
   try {
     localStorage.setItem(COT_DRAFT_KEY, JSON.stringify({
       rows: cot.rows, seq: cot.seq, cliente: cotClientePk.text(), clienteSel: cotClientePk.get(), lastSent: cot.lastSent || "", stock: !!cot.stock,
-      priceField: cot.priceField, texto: cotEl("cotTexto").value, modo: cot.modo
+      priceField: cot.priceField, texto: cotEl("cotTexto").value, modo: cot.modo, obs: cot.obs
     }));
   } catch {}
 }
@@ -959,6 +965,7 @@ function cotRestore(){
     cot.lastSent = d.lastSent || "";
     cot.stock = !!d.stock;
     cotEl("cotTexto").value = d.texto || "";
+    cot.obs = { ...obsEmpty(), ...(d.obs || {}) };
   } catch {}
 }
 
@@ -966,6 +973,7 @@ function cotClear(){
   if (cot.rows.length && !confirm("¿Borrar el presupuesto actual y empezar uno nuevo?")) return;
   cot.rows = []; cot.undo = []; cot.redo = []; cot.lastSent = "";
   cotClientePk.clear();
+  cot.obs = obsEmpty(); cotObs.render();
   cotEl("cotTexto").value = "";
   try { localStorage.removeItem(COT_DRAFT_KEY); } catch {}
   cotStatus("");
@@ -977,12 +985,13 @@ const cotizacionesModule = {
   ensureLoaded(){
     relacionesModule.ensureLoaded();   // carga artículos + relaciones
     clientesStore.ensureLoaded();
+    etqEnsure(); cotObs.render();
     cotRefreshState();
     cotRender();
   },
   reset(){
     cot.rows = []; cot.undo = []; cot.redo = []; cot.priceField = "";
-    cotClientePk.clear(); cot.lastSent = "";
+    cotClientePk.clear(); cot.lastSent = ""; cot.obs = obsEmpty(); cotObs.render();
     cotEl("cotTexto").value = "";
     try { localStorage.removeItem(COT_DRAFT_KEY); } catch {}
     cotStatus("");

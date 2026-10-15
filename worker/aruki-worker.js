@@ -104,6 +104,14 @@ export default {
         return json(await writeRelaciones(request, env, session), corsHeaders);
       }
 
+      if (url.pathname === "/etiquetas" && request.method === "GET") {
+        return json(await readEtiquetas(env), corsHeaders);
+      }
+
+      if (url.pathname === "/etiquetas" && request.method === "PUT") {
+        return json(await writeEtiquetas(request, env, session), corsHeaders);
+      }
+
       if (url.pathname === "/ia/elegir" && request.method === "POST") {
         return json(await iaElegir(request, env), corsHeaders);
       }
@@ -114,7 +122,7 @@ export default {
 
       throw new HttpError(
         404,
-        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas, /articulos, /clientes, /pedido, /relaciones, /ia/elegir o /ia/leer."
+        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas, /articulos, /clientes, /pedido, /relaciones, /etiquetas, /ia/elegir o /ia/leer."
       );
     } catch (error) {
       const status = error instanceof HttpError ? error.status : 500;
@@ -445,6 +453,40 @@ async function writeRelaciones(request, env, session) {
     updatedBy: session?.name || null,
   };
   await env.ARUKI_KV.put(RELACIONES_KEY, JSON.stringify(next));
+  return next;
+}
+
+/* ---------- Etiquetas de observaciones (v5.7, usa ARUKI_KV) ----------
+   { etiquetas: [{ id, titulo, cuerpo, creado, actualizado }], version } — compartidas entre Cotizaciones y Armar presupuesto */
+const ETIQUETAS_KEY = "etiquetas";
+
+async function readEtiquetas(env) {
+  requireKv(env);
+  const stored = await env.ARUKI_KV.get(ETIQUETAS_KEY, "json");
+  return {
+    etiquetas: Array.isArray(stored?.etiquetas) ? stored.etiquetas : [],
+    version: stored?.version || 0,
+  };
+}
+
+async function writeEtiquetas(request, env, session) {
+  requireKv(env);
+  let body;
+  try { body = await request.json(); } catch { throw new HttpError(400, "Los datos enviados no tienen un formato válido."); }
+  if (!Array.isArray(body?.etiquetas)) throw new HttpError(400, "Falta la lista de etiquetas.");
+  const current = await readEtiquetas(env);
+  if (Number(body.baseVersion) !== Number(current.version)) {
+    throw new HttpError(409, "Las etiquetas cambiaron desde otra computadora. Se recargaron: revisá y volvé a guardar.");
+  }
+  const etiquetas = body.etiquetas.slice(0, 200).map(e => ({
+    id: String(e?.id || crypto.randomUUID()).slice(0, 64),
+    titulo: String(e?.titulo || "").trim().slice(0, 80),
+    cuerpo: String(e?.cuerpo || "").trim().slice(0, 2000),
+    creado: Number(e?.creado) || Date.now(),
+    actualizado: Number(e?.actualizado) || Date.now(),
+  })).filter(e => e.titulo);
+  const next = { etiquetas, version: Date.now(), updatedBy: session?.name || null };
+  await env.ARUKI_KV.put(ETIQUETAS_KEY, JSON.stringify(next));
   return next;
 }
 
@@ -951,7 +993,10 @@ async function crearPedido(request, env, session) {
     EXTE_ID_EXTE: origen.id,
     CLIE_ID_CLIE: clienteId,
     LIDP_ID_LIDP: lista.id,
-    PEDI_OBSERVACIONES: `Creado desde Aruki por ${session?.name || "usuario"}`,
+    // v5.7: las Observaciones de Aruki (etiqueta o texto propio); si el Aruki es viejo y no las manda, el texto de antes
+    PEDI_OBSERVACIONES: typeof body.observaciones === "string"
+      ? body.observaciones.trim().slice(0, 2000)
+      : `Creado desde Aruki por ${session?.name || "usuario"}`,
     Productos: productos,
   };
   const response = await yiqiFetch(env, "/PEDIDO", {

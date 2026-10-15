@@ -29,12 +29,14 @@ js/cot-archivos.js  Cotizaciones: lectura de archivos (Excel/Word/PDF/txt) → t
 js/cot-ia.js        Cotizaciones: revisión con IA (Gemini vía Worker /ia/elegir) de renglones dudosos/sin coincidencia
 js/clientes.js      Clientes de YiQi (`clientesStore`, smartie 1834 vía /clientes, caché IndexedDB 4 h) + `clientePicker(inputId)`
 js/presupuesto-comun.js  Compartido: `presExcel(doc)`, `presPdf(doc)` (jsPDF 2.5.1 + autotable 3.8.2 de cdnjs), `presSendYiqi()`
+js/observaciones.js Observaciones + Etiquetas (v5.7): `etq` (GET/PUT /etiquetas, respaldo localStorage `aruki-etiquetas`
+                    si el conector da 404), ventana `#etqModal`, `obsWidget(cfg)` y `obsEmpty()` para cada módulo
 js/manual.js        Presupuesto manual (estado `man`, borrador localStorage `aruki-manual`)
 js/main.js          Navegación entre módulos (MODULES) + inicio
 worker/aruki-worker.js  Copia del conector de Cloudflare (ver abajo)
 ```
 Los scripts son clásicos (no módulos ES) y comparten el ámbito global; el orden de carga en
-`index.html` importa: changelog → core → facturas → articulos → relaciones → clientes → presupuesto-comun →
+`index.html` importa: changelog → core → facturas → articulos → relaciones → clientes → presupuesto-comun → observaciones →
 cotizaciones → cot-archivos → cot-ia → manual → main.
 
 ## Reglas de cada cambio (obligatorias)
@@ -80,6 +82,15 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   v3.1: filtros por tipo (`rel.filtro`), aviso en vivo de relación igual (`relFindDup()`: texto igual, mismas
   condiciones en cualquier orden, o mismo par de palabras en cualquier sentido). Cotizaciones: "Guardar todas como
   relaciones" (`cotSaveAllRelations()`; renglones con un solo SKU, sin relación previa; undo `rel.type = "bulk"`). Comparar textos con `relKey()` (sin tildes/mayúsculas).
+- v5.7 Etiquetas: KV `etiquetas` = `{ etiquetas:[{id,titulo,cuerpo,creado,actualizado}], version }`, GET/PUT `/etiquetas`
+  (409 si `baseVersion` no coincide). Cada presupuesto guarda `obs = { texto, etiquetaId, base }` en su borrador
+  (`cot.obs` / `man.obs`): `texto === base` → no se editó y sigue a la etiqueta si cambia. Desplegable arriba (`#cotObsSel`,
+  `#manObsSel`, vacío "…" por defecto) + botón Etiquetas; caja abajo (`#…ObsText`, `#…ObsSel2`, Guardar en la etiqueta /
+  Guardar como etiqueta nueva). Va en `doc.observaciones` (Excel y PDF abajo de todo) y en `pedido.observaciones` →
+  Worker `PEDI_OBSERVACIONES` (si el front viejo no lo manda, queda "Creado desde Aruki por …").
+- v5.7: todas las casillas son interruptores por CSS global (`html input[type="checkbox"]`, appearance none) y se pueden
+  arrastrar (core.js, al final). Cotizaciones: acciones (`.cot-actions` + `#cotStatus`) arriba de la tabla; `#cotIaAuto`
+  ("Revisar con IA (Gemini)") junto a `#cotIaLeer` en `.cot-file-checks`.
 - Evento `aruki:loaded` (`detail.endpoint`) se dispara en `document` cuando un módulo de datos termina de cargar.
 - `ALLOWED_ORIGIN` debe ser `https://dentalabarg.github.io` (no `*`). Variables opcionales: `SCHEMA_ID`, `FACTURAS_ENTITY`, `FACTURAS_SMARTIE_ID`,
   `ARTICULOS_ENTITY`, `ARTICULOS_SMARTIE_ID`.
