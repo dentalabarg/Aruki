@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=5.4">
+<link rel="stylesheet" href="css/styles.css?v=5.5">
 </head>
 <body>
 
@@ -264,7 +264,8 @@
             <div class="toolbar">
               <div class="search-wrap">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input class="search-input" id="artSearch" type="text" placeholder="Buscar en todos los artículos" title="Buscá por SKU, nombre, marca, etc.">
+                <input class="search-input has-clear" id="artSearch" type="text" placeholder="Buscar en todos los artículos" title="Buscá por SKU, nombre, marca, etc.">
+                <button type="button" class="search-clear hidden" id="artSearchClear" title="Borrar búsqueda" aria-label="Borrar búsqueda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
             </div>
           </div>
@@ -484,6 +485,7 @@
               <tbody id="manBody"></tbody>
               <tfoot><tr><td colspan="5"></td><td class="col-stock"></td><td class="num cot-total-label">Total</td><td class="num cot-total col-sub" id="manTotal">$ 0</td><td></td></tr></tfoot>
             </table>
+            <div class="rel-results cot-floating hidden" id="manSkuResults"></div>
             <div class="empty-state man-empty" id="manEmpty">Todavía no agregaste artículos. Buscalos arriba por SKU o nombre.</div>
           </div>
           <div class="pres-export">
@@ -648,17 +650,17 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=5.4"></script>
-<script src="js/core.js?v=5.4"></script>
-<script src="js/facturas.js?v=5.4"></script>
-<script src="js/articulos.js?v=5.4"></script>
-<script src="js/relaciones.js?v=5.4"></script>
-<script src="js/clientes.js?v=5.4"></script>
-<script src="js/presupuesto-comun.js?v=5.4"></script>
-<script src="js/cotizaciones.js?v=5.4"></script>
-<script src="js/cot-archivos.js?v=5.4"></script>
-<script src="js/cot-ia.js?v=5.4"></script>
-<script src="js/manual.js?v=5.4"></script>
-<script src="js/main.js?v=5.4"></script>
+<script src="js/changelog.js?v=5.5"></script>
+<script src="js/core.js?v=5.5"></script>
+<script src="js/facturas.js?v=5.5"></script>
+<script src="js/articulos.js?v=5.5"></script>
+<script src="js/relaciones.js?v=5.5"></script>
+<script src="js/clientes.js?v=5.5"></script>
+<script src="js/presupuesto-comun.js?v=5.5"></script>
+<script src="js/cotizaciones.js?v=5.5"></script>
+<script src="js/cot-archivos.js?v=5.5"></script>
+<script src="js/cot-ia.js?v=5.5"></script>
+<script src="js/manual.js?v=5.5"></script>
+<script src="js/main.js?v=5.5"></script>
 </body>
 </html>

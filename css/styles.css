@@ -688,3 +688,12 @@ select.ds-input{cursor:pointer;}
 .art-main tbody tr:hover .art-copy, .art-copy:focus-visible, .art-copy.is-done{visibility:visible;}
 .art-copy:hover{background:var(--cyan-soft); color:var(--cyan);}
 .art-copy.is-done{color:var(--green);}
+
+/* v5.5 Artículos: todo centrado en vertical, X del buscador, copiar precios */
+.art-main td{vertical-align:middle;}
+.art-main td.money .art-copy{margin:0 6px 0 0;}
+.search-input.has-clear{padding-right:34px;}
+.search-clear{position:absolute; right:7px; top:50%; transform:translateY(-50%); width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center;
+  border:none; border-radius:50%; background:none; color:var(--muted); cursor:pointer; padding:0;}
+.search-clear svg{width:14px; height:14px;}
+.search-clear:hover{background:var(--bg-soft); color:var(--text);}

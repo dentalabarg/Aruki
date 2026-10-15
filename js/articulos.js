@@ -168,8 +168,12 @@ const articulosModule = createDataModule({
         const isName = /nombre|descripci/i.test(c.title || "");
         const cls = [cell.num ? "num" : "", cell.zero ? "zero" : "", isName ? "name" : ""].filter(Boolean).join(" ");
         // Nombre: botón para copiarlo (siempre ocupa su lugar, solo se ve al pasar el mouse → la fila no cambia de alto)
-        const copy = isName && cell.text ? `<button type="button" class="art-copy" data-copy title="Copiar nombre" aria-label="Copiar nombre">${ART_COPY_ICON}</button>` : "";
-        return `<td class="${cls}">${escapeHtml(cell.text)}${copy}</td>`;
+        // Precios: también se copian (sin el "$"); el botón va a la izquierda para que los números queden alineados
+        const isMoney = artColumnKind(c) === "money" && cell.num && cell.text;
+        const copyTxt = isName ? cell.text : isMoney ? cell.text.replace(/^\$\s?/, "") : "";
+        const what = isName ? "nombre" : "precio";
+        const copy = copyTxt ? `<button type="button" class="art-copy" data-copy data-text="${escapeHtml(copyTxt)}" title="Copiar ${what}" aria-label="Copiar ${what}">${ART_COPY_ICON}</button>` : "";
+        return `<td class="${cls}${isMoney ? " money" : ""}">${isMoney ? copy : ""}${escapeHtml(cell.text)}${isMoney ? "" : copy}</td>`;
       }).join("")}</tr>`;
     }).join("");
     artRenderSel();
@@ -219,7 +223,7 @@ function getArticulosCatalog(){
 const ART_COPY_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 const ART_OK_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 async function artCopyName(btn){
-  const text = btn.parentElement.firstChild?.textContent?.trim() || "";
+  const text = (btn.dataset.text || "").trim();
   if (!text) return;
   try { await navigator.clipboard.writeText(text); }
   catch {
@@ -231,8 +235,23 @@ async function artCopyName(btn){
   }
   btn.innerHTML = ART_OK_ICON; btn.classList.add("is-done"); btn.title = "¡Copiado!";
   clearTimeout(btn._t);
-  btn._t = setTimeout(() => { btn.innerHTML = ART_COPY_ICON; btn.classList.remove("is-done"); btn.title = "Copiar nombre"; }, 1400);
+  const old = btn.getAttribute("aria-label");
+  btn._t = setTimeout(() => { btn.innerHTML = ART_COPY_ICON; btn.classList.remove("is-done"); btn.title = old; }, 1400);
 }
+
+/* ---------- X para borrar la búsqueda ---------- */
+(function(){
+  const input = document.getElementById("artSearch");
+  const clear = document.getElementById("artSearchClear");
+  const sync = () => clear.classList.toggle("hidden", !input.value);
+  input.addEventListener("input", sync);
+  clear.addEventListener("click", () => {
+    input.value = "";
+    input.dispatchEvent(new Event("input"));   // el módulo vuelve a mostrar todo
+    input.focus();
+  });
+  document.addEventListener("aruki:loaded", sync);
+})();
 
 /* ---------- Selección de artículos → Armar presupuesto ---------- */
 const artSel = new Map();   // SKU → cantidad a mandar a Armar presupuesto

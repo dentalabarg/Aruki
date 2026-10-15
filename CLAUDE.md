@@ -141,7 +141,10 @@ v3.3 (`js/articulos.js`): `artRowExcluded(row)` oculta en Artículos (cfg.filter
 o **todos** los precios en 0/vacíos; `bySku` sigue teniendo todos (para mostrar nombres de relaciones viejas).
 Columna Identificador oculta (`ART_HIDDEN_TITLE`). v5.4: botón `.art-copy` (`data-copy`, `artCopyName()`) al final del nombre: siempre
 ocupa lugar con `visibility:hidden` y se ve con `tr:hover` (no cambia el alto); el clic no selecciona la fila. Buscador
-`#view-articulos .search-wrap` min 340 px. Anchos de columna a mano en localStorage `aruki-art-colw` ({field: px}).
+`#view-articulos .search-wrap` min 340 px. v5.5: precios (`td.money`) también con `.art-copy` (botón a la izquierda; copia sin "$",
+`data-text`); `.art-main td{vertical-align:middle}`; X `#artSearchClear` (vacía y dispara `input`). Armar presupuesto:
+SKU (`data-field="sku"`) y nombre (`.name-view` → `data-field="nombre"`) editables como en Cotizaciones, lista flotante
+`#manSkuResults`, `manSetSku()` con Deshacer (borra el precio a mano). Anchos de columna a mano en localStorage `aruki-art-colw` ({field: px}).
 v3.5: los `.runtime-banner` solo se ven con `data-state="error"` (CSS). Los botones de actualizar están en la barra
 superior (`.sync-btn`: `#syncCliBtn` → `clientesStore.refresh()`, `#artRefreshBtn` y `#refreshBtn` = `ids.refresh` de
 Artículos y Facturas); `syncBtnProgress(btn, progress|null, error, done)` los rellena (`--p`, `data-pct`); tocarlos mientras cargan detiene (v3.6). Artículos: selección por SKU

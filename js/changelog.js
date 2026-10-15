@@ -4,8 +4,19 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "5.4";
+const LATEST_VERSION = "5.5";
 const CHANGELOG = [
+  {
+    version: "5.5",
+    date: "2026-10-15",
+    title: "Editar artículos en Armar presupuesto y mejoras en Artículos",
+    items: [
+      { type: "nuevo", text: "Armar presupuesto: se puede cambiar el artículo de cada renglón escribiendo otro SKU o buscando por nombre, igual que en Cotizaciones (con Deshacer)" },
+      { type: "nuevo", text: "Artículos: los precios también tienen el botón para copiar" },
+      { type: "nuevo", text: "Artículos: X en el buscador para borrar la búsqueda" },
+      { type: "mejora", text: "Artículos: los datos de cada fila quedan centrados en vertical cuando el nombre ocupa dos renglones" }
+    ]
+  },
   {
     version: "5.4",
     date: "2026-10-15",

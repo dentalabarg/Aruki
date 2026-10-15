@@ -127,8 +127,11 @@ function manRender(){
     if (sub !== null) total += sub;
     return `
       <tr data-id="${r.id}">
-        <td class="man-sku">${escapeHtml(r.sku)}</td>
-        <td class="cot-name">${item ? escapeHtml(item.nombre) : `<span class="missing">No está en Artículos</span>`}</td>
+        <td><input class="cell-input sku ${item ? "" : "is-missing"}" data-field="sku" value="${escapeHtml(r.sku)}" placeholder="SKU" autocomplete="off"></td>
+        <td class="cot-name">
+          <div class="name-view" tabindex="0" title="Tocá para buscar otro artículo">${item ? escapeHtml(item.nombre) : `<span class="missing">No está en Artículos</span>`}</div>
+          <input class="cell-input name hidden" data-field="nombre" value="${escapeHtml(item ? item.nombre : "")}" placeholder="Buscá por nombre o SKU" autocomplete="off">
+        </td>
         <td><input class="cell-input extra" data-field="extra" value="${escapeHtml(r.extra || "")}" placeholder="—" maxlength="300"></td>
         <td class="cot-marca">${item && item.marca ? escapeHtml(item.marca) : "—"}</td>
         <td class="num">${disp
@@ -290,12 +293,111 @@ manBody.addEventListener("change", e => {
   }
 });
 manBody.addEventListener("keydown", e => {
+  if (e.target.matches(MAN_PICK)) return;                 // SKU / nombre: lo maneja el buscador de abajo
   if (e.key === "Enter" && e.target.matches(".cell-input")) { e.preventDefault(); e.target.blur(); }
 });
+
+/* ---------- Cambiar el artículo de un renglón (SKU o nombre), igual que en Cotizaciones ---------- */
+const MAN_PICK = '[data-field="sku"],[data-field="nombre"]';
+let manPickInput = null, manPickActive = 0;
+function manSetSku(row, value){
+  const cat = getArticulosCatalog();
+  let sku = String(value || "").trim();
+  if (sku && !cat.bySku.has(sku)) { const ci = cat.list.find(a => a.sku.toLowerCase() === sku.toLowerCase()); if (ci) sku = ci.sku; }
+  if (!sku || sku === row.sku) return false;
+  manPushUndo(`cambiar ${row.sku} por ${sku}`);
+  const prev = row.sku;
+  row.sku = sku;
+  row.precio = null;                                      // el precio a mano era del artículo anterior
+  manRender(); manSave();
+  const item = cat.bySku.get(sku);
+  manToast(`${prev} → ${sku}${item ? ` · ${item.nombre}` : " (no está en Artículos)"}`);
+  return true;
+}
+function manPickClose(input, row){
+  manEl("manSkuResults").classList.add("hidden");
+  if (input.dataset.field === "sku") { input.value = row ? row.sku : input.value; return; }
+  const item = row ? getArticulosCatalog().bySku.get(row.sku) : null;
+  input.value = item ? item.nombre : "";
+  input.classList.add("hidden");
+  input.parentElement.querySelector(".name-view")?.classList.remove("hidden");
+}
+function manPickCommit(input, sku){
+  manEl("manSkuResults").classList.add("hidden");
+  const row = manRowById(input.closest("tr")?.dataset.id);
+  if (!row) return;
+  if (!manSetSku(row, sku)) manPickClose(input, row);
+}
+function manPickShow(input){
+  const box = manEl("manSkuResults");
+  const q = input.value.trim();
+  const res = q ? relSearchArticulos(q, 12) : [];
+  if (!res.length) { box.classList.add("hidden"); return; }
+  manPickActive = Math.min(manPickActive, res.length - 1);
+  box.innerHTML = res.map((a, i) => cotResultHtml(a, i === manPickActive)).join("");
+  const rect = input.getBoundingClientRect();
+  const below = window.innerHeight - rect.bottom > 260;
+  box.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 470))}px`;
+  box.style.top = below ? `${rect.bottom + 4}px` : "auto";
+  box.style.bottom = below ? "auto" : `${window.innerHeight - rect.top + 4}px`;
+  box.classList.remove("hidden");
+  box.querySelectorAll("[data-sku]").forEach(el => el.addEventListener("mousedown", ev => { ev.preventDefault(); manPickCommit(input, el.dataset.sku); }));
+}
+function manOpenName(view){
+  const input = view.parentElement.querySelector('[data-field="nombre"]');
+  view.classList.add("hidden");
+  input.classList.remove("hidden");
+  input.focus();
+}
+manBody.addEventListener("input", e => {
+  if (e.target.matches(MAN_PICK)) { manPickActive = 0; manPickShow(e.target); }
+});
+manBody.addEventListener("focusin", e => {
+  if (e.target.matches(MAN_PICK)) { manPickInput = e.target; manPickActive = 0; e.target.select(); }
+  else if (e.target.matches(".name-view")) manOpenName(e.target);
+});
+manBody.addEventListener("focusout", e => {
+  if (!e.target.matches(MAN_PICK)) return;
+  const input = e.target;
+  setTimeout(() => {
+    if (!document.body.contains(input) || document.activeElement === input) return;
+    const row = manRowById(input.closest("tr")?.dataset.id);
+    // En el SKU, lo escrito se toma como código; en el nombre solo cuenta lo elegido de la lista
+    if (input.dataset.field === "sku" && row && input.value.trim() && input.value.trim() !== row.sku) manPickCommit(input, input.value);
+    else manPickClose(input, row);
+  }, 150);
+});
+manBody.addEventListener("keydown", e => {
+  const input = e.target;
+  if (!input.matches(MAN_PICK)) return;
+  const box = manEl("manSkuResults");
+  const items = box.classList.contains("hidden") ? [] : box.querySelectorAll("[data-sku]");
+  if ((e.key === "ArrowDown" || e.key === "ArrowUp") && items.length) {
+    e.preventDefault();
+    manPickActive = (manPickActive + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+    manPickShow(input);
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    const picked = items[manPickActive]?.dataset.sku;
+    if (picked) manPickCommit(input, picked);
+    else if (input.dataset.field === "sku") manPickCommit(input, input.value);
+    else if (input.value.trim()) { manPickActive = 0; manPickShow(input); }
+  } else if (e.key === "Escape") {
+    manPickClose(input, manRowById(input.closest("tr")?.dataset.id));
+    input.blur();
+  }
+});
+window.addEventListener("scroll", e => {
+  const box = manEl("manSkuResults");
+  if (e.target === box || box.classList.contains("hidden")) return;
+  if (!manPickInput || document.activeElement !== manPickInput) box.classList.add("hidden");
+  else manPickShow(manPickInput);
+}, true);
 manBody.addEventListener("click", e => {
   const tr = e.target.closest("tr");
   const row = tr && manRowById(tr.dataset.id);
   if (!row) return;
+  if (e.target.closest(".name-view")) { manOpenName(e.target.closest(".name-view")); return; }
   if (e.target.closest("[data-delete]")) {
     manPushUndo(`eliminar ${row.sku}`);
     man.rows = man.rows.filter(r => r !== row);
