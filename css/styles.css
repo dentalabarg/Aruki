@@ -758,3 +758,61 @@ html #view-articulos input[type="checkbox"]{
   accent-color:var(--cyan); cursor:pointer; transition:none;
 }
 html #view-articulos input[type="checkbox"]::before{content:none; display:none;}
+
+/* ---------- v5.9 Recuadro de opciones: completo (también arriba), más grueso y con dos amarillos alternados ----------
+   Se dibuja con sombras internas de cada celda (los bordes de tabla a veces no se ven arriba) */
+.cot-table tr.box td:first-child{border-left:0;}
+.cot-table tr.box td:last-child{border-right:0;}
+.cot-table tr.box-first td{border-top:0;}
+.cot-table tr.box-last td{border-bottom:1px solid var(--line);}
+.cot-table tr.box td{
+  box-shadow:var(--sl, 0 0 0 transparent), var(--sr, 0 0 0 transparent), var(--st, 0 0 0 transparent), var(--sb, 0 0 0 transparent);
+}
+.cot-table tr.box td:first-child{--sl:inset 3px 0 0 var(--box);}
+.cot-table tr.box td:last-child{--sr:inset -3px 0 0 var(--box);}
+.cot-table tr.box-first td{--st:inset 0 3px 0 var(--box);}
+.cot-table tr.box-last td{--sb:inset 0 -3px 0 var(--box);}
+.cot-table tr.is-option.box-alt td,.cot-table tr.is-option.box-alt:hover td{background:color-mix(in srgb, var(--amber) 17%, transparent);}
+.cot-table tr.is-none.box-alt td,.cot-table tr.is-none.box-alt:hover td{background:color-mix(in srgb, var(--red) 16%, transparent);}
+
+/* ---------- v5.9 Artículos: casillas con el estilo de Aruki ---------- */
+html #view-articulos input[type="checkbox"]{
+  -webkit-appearance:none; appearance:none; position:relative; width:18px; height:18px; border-radius:5px;
+  background:var(--bg-elev-2); box-shadow:inset 0 0 0 1.5px var(--line-strong), 0 1px 2px rgba(0,0,0,.06);
+  cursor:pointer; transition:background var(--transition-fast), box-shadow var(--transition-fast);
+}
+html #view-articulos input[type="checkbox"]:hover{box-shadow:inset 0 0 0 1.5px var(--cyan), 0 1px 2px rgba(0,0,0,.06);}
+html #view-articulos input[type="checkbox"]::before{
+  content:""; display:block; position:absolute; left:6.5px; top:3px; width:4px; height:8.5px;
+  background:none; border-radius:0; box-shadow:none;              /* no hereda la perilla del interruptor */
+  border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg) scale(0); transition:transform var(--transition-fast);
+}
+html #view-articulos input[type="checkbox"]:checked{background:var(--cyan); box-shadow:inset 0 0 0 1.5px var(--cyan);}
+html #view-articulos input[type="checkbox"]:checked::before{transform:rotate(45deg) scale(1);}
+html #view-articulos input[type="checkbox"]:indeterminate{background:var(--cyan); box-shadow:inset 0 0 0 1.5px var(--cyan);}
+html #view-articulos input[type="checkbox"]:indeterminate::before{left:4.5px; top:8px; width:9px; height:0; border-width:0 0 2px 0; border-radius:1px; transform:none;}
+html #view-articulos input[type="checkbox"]:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+
+/* ---------- v5.9 Listas: sin barra horizontal (nombres o CUIT muy largos se cortan en renglones) ---------- */
+.rel-results{overflow-x:hidden;}
+.rel-result > span:first-child,.rel-result > span:nth-child(2):not(.marca){min-width:0; overflow-wrap:anywhere;}
+.rel-result .marca{flex-shrink:0;}
+
+/* ---------- v5.9 Listas desplegables (Lista de precios, Cantidad, Observaciones…) con el diseño de la de clientes ----------
+   Chrome/Edge recientes permiten darle diseño a la lista abierta; en otros navegadores queda la común. */
+@supports (appearance: base-select) {
+  select.ds-input, select.ds-input::picker(select){ appearance:base-select; }
+  select.ds-input{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  select.ds-input::picker-icon{ color:var(--muted); transition:transform var(--transition-fast); }
+  select.ds-input:open::picker-icon{ transform:rotate(180deg); }
+  select.ds-input::picker(select){
+    border:none; margin-top:4px; padding:4px; border-radius:var(--radius-sm); background:var(--bg-elev-2);
+    box-shadow:var(--shadow-lg); max-height:320px; overflow:auto;
+  }
+  select.ds-input option{
+    padding:8px 10px; border-radius:var(--radius-xs); font:400 14px var(--sans); color:var(--text); cursor:pointer; outline:none;
+  }
+  select.ds-input option:hover,select.ds-input option:focus-visible{ background:var(--cyan-soft); }
+  select.ds-input option:checked{ background:var(--cyan-soft-2); color:var(--cyan); font-weight:600; }
+  select.ds-input option::checkmark{ display:none; }
+}

@@ -492,6 +492,7 @@ function cotRender(){
     if (e === "sin") return "is-none";
     return (e === "manual" || e === "ia") && conOpciones.has(r.grupo) ? "is-option" : "";
   });
+  let boxRun = 0;
   body.innerHTML = cot.rows.map((r, idx) => {
     const item = r.sku ? cat.bySku.get(r.sku) : null;
     const missing = r.sku && !item && cat.list.length > 0;
@@ -508,7 +509,9 @@ function cotRender(){
     const prev = cot.rows[idx - 1], next = cot.rows[idx + 1];
     const boxFirst = kind && !(prev && prev.grupo === r.grupo && kinds[idx - 1] === kind);
     const boxLast = kind && !(next && next.grupo === r.grupo && kinds[idx + 1] === kind);
-    const trCls = [kind, kind ? "box" : "", boxFirst ? "box-first" : "", boxLast ? "box-last" : ""].filter(Boolean).join(" ");
+    // Dentro de un recuadro, las filas se alternan entre dos amarillos (o rojos) apenas distintos
+    if (boxFirst) boxRun = 0; else if (kind) boxRun++;
+    const trCls = [kind, kind ? "box" : "", boxFirst ? "box-first" : "", boxLast ? "box-last" : "", kind && boxRun % 2 ? "box-alt" : ""].filter(Boolean).join(" ");
     const [badgeCls, badgeTxt] = COT_BADGES[estado] || COT_BADGES.manual;
     const label = isOption && estado === "dudosa" ? `Opción ${siblings.indexOf(r.id) + 1} de ${siblings.length}` : badgeTxt;
     const nameHtml = item ? escapeHtml(item.nombre)

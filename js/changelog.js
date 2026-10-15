@@ -4,8 +4,20 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "5.8";
+const LATEST_VERSION = "5.9";
 const CHANGELOG = [
+  {
+    version: "5.9",
+    date: "2026-10-15",
+    title: "Recuadros de opciones, listas y casillas",
+    items: [
+      { type: "correccion", text: "Cotizaciones: el recuadro de las opciones ahora se ve completo (también arriba), es más grueso y las filas alternan entre dos amarillos" },
+      { type: "correccion", text: "La lista de clientes ya no muestra barra para moverse a los costados: los nombres largos pasan al renglón de abajo" },
+      { type: "mejora", text: "Las listas desplegables (Lista de precios, Cantidad, Observaciones…) se ven con el mismo diseño que la de clientes" },
+      { type: "mejora", text: "Artículos: casillas con el estilo de Aruki" },
+      { type: "mejora", text: "El ícono de la pestaña pasa al azul de Dentalab y el botón de Relaciones dice solo \"Por condiciones\"" }
+    ]
+  },
   {
     version: "5.8",
     date: "2026-10-15",

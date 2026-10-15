@@ -91,6 +91,10 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
 - v5.8: logo `img/logo-dentalab.png` (1200×345, sin modificar el diseño) en el PDF (`presLoadLogo()`, alto 13 mm); PDF y Excel
   sin "Lista de precios" ni "Condición IVA" ni "Insumos odontológicos". Azul de la marca **#1B60AB** (27,96,171): `--cyan`
   del tema claro y color del PDF (el tema oscuro sigue con #00ccff). En Artículos las casillas son comunes (no interruptores).
+- v5.9: recuadro de opciones con sombras internas por celda (`--sl/--sr/--st/--sb`, 3 px; los bordes de tabla no se veían
+  arriba) y filas alternadas `box-alt` (dos amarillos). Listas `.rel-results` sin barra horizontal (`overflow-wrap:anywhere`).
+  `select.ds-input` con `appearance: base-select` (Chrome/Edge) para que la lista abierta tenga el diseño de la de clientes.
+  Casillas de Artículos propias (cuadrado redondeado, tilde blanca, azul). Favicon en #1b60ab.
 - v5.7: todas las casillas son interruptores por CSS global (`html input[type="checkbox"]`, appearance none) y se pueden
   arrastrar (core.js, al final). Cotizaciones: acciones (`.cot-actions` + `#cotStatus`) arriba de la tabla; `#cotIaAuto`
   ("Revisar con IA (Gemini)") junto a `#cotIaLeer` en `.cot-file-checks`.
