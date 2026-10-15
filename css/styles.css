@@ -678,4 +678,4 @@ select.ds-input{cursor:pointer;}
 .rb-sec ul b{color:var(--text); font-weight:600;}
 .rb-words{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
 .rb-words span{font:500 12px var(--mono); padding:2px 8px; border-radius:var(--radius-pill); background:var(--bg-soft); color:var(--text);}
-#relReemplazoWrap{grid-row:span 2; align-self:start;}
+#relReemplazoWrap{align-self:start;}

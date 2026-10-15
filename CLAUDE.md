@@ -70,8 +70,10 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   **palabra equivalente** (v2.9) tiene `reemplazo` y `skus: []`; **regla para la IA** (v4.6) tiene `ia: true`, `skus: []` y la
   instrucción en `texto` (`relTipo()` → ia | reglas | palabra | texto; `relEsIa()`). v5.0: palabra equivalente = grupo: `reemplazo`
   admite varias palabras separadas por coma (`relPalabras()`); `cotUserAliases()` lleva todas a la primera de `reemplazo`;
-  `relFindDup` palabra = comparten alguna palabra; v5.1: en el formulario cada equivalente es un renglón (`rel.formEquivs`, `#relEquivs`,
-  "+ Nuevo equivalente", `relEquivsTexto()` los une con coma; se sacan comas internas); Worker guarda `reemplazo` hasta 400 caracteres. Botón "Reglas de Aruki"
+  `relFindDup` palabra = comparten alguna palabra; v5.2: formulario = izquierda "La palabra o palabras…" (`#relPalabrasWrap`, un renglón por
+  palabra en `rel.formEquivs`/`#relEquivs`, "+ Nuevo equivalente") → se guardan en `texto` separadas por coma; derecha
+  "Es lo mismo que…" (`#relReemplazo`, uno solo) → `reemplazo`. `relEquivLados(r)` / `relEquivCanon(r)` / `relGrupo(r)`
+  (compatibles con las de v5.0 que tenían varias en `reemplazo`). Tabla: palabras en la 1.ª columna, equivalente en Artículo(s); Worker guarda `reemplazo` hasta 400 caracteres. Botón "Reglas de Aruki"
   (`#relBuiltinBtn`, `relBuiltinHtml()`): ventana solo lectura armada con COT_UNIT_ONLY, COT_ALIAS, COT_STOP,
   COT_GENERO_KEEP, COT_MAX_OPTIONS y `COT_IA_REGLAS_FIJAS` (cot-ia.js) — si se agrega una regla programada, sumarla ahí. Las equivalencias se aplican
   en `cotTokens()` (pedido y catálogo) además de `COT_ALIAS`.

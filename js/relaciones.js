@@ -35,6 +35,14 @@ function relEsPalabra(r){ return !relEsIa(r) && !relEsReglas(r) && !!String(r?.r
 function relPalabras(text){
   return String(text || "").split(/\s*[,;\n]\s*/).map(w => w.trim()).filter(Boolean);
 }
+/* Palabra equivalente (v5.2): `texto` = palabras del cliente (separadas por coma), `reemplazo` = cómo figura en
+   los artículos (la primera; versiones viejas podían tener varias). Todas son equivalentes entre sí. */
+function relEquivCanon(r){ return relPalabras(r?.reemplazo)[0] || ""; }
+function relEquivLados(r){
+  const canon = relEquivCanon(r);
+  return [...relPalabras(r?.texto), ...relPalabras(r?.reemplazo).slice(1)].filter(w => relKey(w) !== relKey(canon));
+}
+function relGrupo(r){ return [...relPalabras(r?.texto), ...relPalabras(r?.reemplazo)]; }
 function relTipo(r){ return relEsIa(r) ? "ia" : relEsReglas(r) ? "reglas" : relEsPalabra(r) ? "palabra" : "texto"; }
 
 function relReglasTexto(reglas){
@@ -75,16 +83,16 @@ function relFindDup(tipo, data, exceptId){
     if (tipo === "reglas") return relReglasKey(r.reglas) === relReglasKey(data.reglas || []);
     if (tipo === "palabra") {
       // Grupos de palabras: es "igual" si comparten alguna palabra
-      const mine = new Set([data.texto, ...relPalabras(data.reemplazo)].map(relKey).filter(Boolean));
-      return [r.texto, ...relPalabras(r.reemplazo)].map(relKey).some(k => mine.has(k));
+      const mine = new Set(relGrupo(data).map(relKey).filter(Boolean));
+      return relGrupo(r).map(relKey).some(k => mine.has(k));
     }
     return relKey(r.texto) === relKey(data.texto);
   }) || null;
 }
 function relFormData(){
   return {
-    texto: (rel.formTipo === "ia" ? relEl("relIa") : relEl("relTexto")).value.trim(),
-    reemplazo: relEquivsTexto(),
+    texto: rel.formTipo === "palabra" ? relEquivsTexto() : (rel.formTipo === "ia" ? relEl("relIa") : relEl("relTexto")).value.trim(),
+    reemplazo: relEl("relReemplazo").value.trim(),
     reglas: rel.formReglas.map(g => ({ op: g.op, valor: String(g.valor || "").trim() })).filter(g => g.valor)
   };
 }
@@ -95,7 +103,7 @@ function relCheckDup(){
   const dup = empty ? null : relFindDup(rel.formTipo, data, rel.editingId);
   warn.classList.toggle("hidden", !dup);
   if (!dup) { warn.textContent = ""; return null; }
-  const destino = relEsIa(dup) ? "(regla para la IA)" : relEsPalabra(dup) ? `⇄ ${dup.reemplazo}` : `→ ${dup.skus.join(", ")}`;
+  const destino = relEsIa(dup) ? "(regla para la IA)" : relEsPalabra(dup) ? `= ${relEquivCanon(dup)}` : `→ ${dup.skus.join(", ")}`;
   warn.textContent = `Ya existe una relación igual: "${dup.texto}" ${destino}`;
   return dup;
 }
@@ -295,7 +303,8 @@ function relRenderChips(){
 function relSetTipo(tipo){
   rel.formTipo = tipo;
   document.querySelectorAll("[data-rel-tipo]").forEach(b => b.classList.toggle("active", b.dataset.relTipo === tipo));
-  relEl("relTextoWrap").classList.toggle("hidden", tipo === "reglas" || tipo === "ia");
+  relEl("relTextoWrap").classList.toggle("hidden", tipo === "reglas" || tipo === "ia" || tipo === "palabra");
+  relEl("relPalabrasWrap").classList.toggle("hidden", tipo !== "palabra");
   relEl("relIaWrap").classList.toggle("hidden", tipo !== "ia");
   relEl("relReemplazoWrap").classList.toggle("hidden", tipo !== "palabra");
   relEl("relSkuWrap").classList.toggle("hidden", tipo === "palabra" || tipo === "ia");
@@ -326,7 +335,7 @@ function relRenderReglas(){
 function relRenderEquivs(){
   relEl("relEquivs").innerHTML = rel.formEquivs.map((w, i) => `
     <div class="rel-equiv" data-i="${i}">
-      <input class="ds-input" data-equiv type="text" maxlength="100" value="${escapeHtml(w)}" placeholder="${i ? "Otra palabra equivalente" : "Ej.: auto"}" autocomplete="off">
+      <input class="ds-input" data-equiv type="text" maxlength="100" value="${escapeHtml(w)}" placeholder="${i ? "Otra palabra equivalente" : "Ej.: autocurable"}" autocomplete="off">
       <button class="btn-icon danger" type="button" data-equiv-del title="Quitar" aria-label="Quitar equivalente" ${rel.formEquivs.length < 2 ? "disabled" : ""}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -346,10 +355,11 @@ function relOpenForm(item){
   rel.editingId = item ? item.id : null;
   rel.formSkus = item ? [...item.skus] : [];
   rel.formReglas = item && relEsReglas(item) ? item.reglas.map(g => ({ ...g })) : [];
-  rel.formEquivs = item && relEsPalabra(item) ? relPalabras(item.reemplazo) : [];
+  rel.formEquivs = item && relEsPalabra(item) ? relEquivLados(item) : [];
   relSetTipo(item ? relTipo(item) : "texto");
   relEl("relFormTitle").textContent = item ? "Editar relación" : "Nueva relación";
-  relEl("relTexto").value = item && !relEsReglas(item) && !relEsIa(item) ? item.texto : "";
+  relEl("relTexto").value = item && !relEsReglas(item) && !relEsIa(item) && !relEsPalabra(item) ? item.texto : "";
+  relEl("relReemplazo").value = item && relEsPalabra(item) ? relEquivCanon(item) : "";
   relEl("relIa").value = item && relEsIa(item) ? item.texto : "";
   relEl("relNota").value = item ? (item.nota || "") : "";
   relEl("relSkuSearch").value = "";
@@ -360,7 +370,8 @@ function relOpenForm(item){
   relRenderResults();
   articulosModule.ensureLoaded();
   relCheckDup();
-  relEl(rel.formTipo === "ia" ? "relIa" : "relTexto").focus();
+  if (rel.formTipo === "palabra") relEl("relEquivs").querySelector("[data-equiv]")?.focus();
+  else relEl(rel.formTipo === "ia" ? "relIa" : "relTexto").focus();
   relEl("relForm").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
@@ -386,20 +397,23 @@ async function relSubmitForm(){
     if (!reglas.length) { error.textContent = "Escribí al menos una condición."; return; }
     if (!reglas.some(g => REL_OPS[g.op]?.pos)) { error.textContent = "Agregá al menos una condición \"contiene\", \"comienza con\" o \"termina con\" (solo con \"no…\" se aplicaría a todo)."; return; }
     texto = relReglasTexto(reglas);
+  } else if (esPalabra) {
+    reemplazo = relEl("relReemplazo").value.replace(/[,;]/g, " ").replace(/\s+/g, " ").trim();
+    if (!reemplazo) { error.textContent = "Escribí en \"Es lo mismo que…\" cómo figura en los artículos."; return; }
+    const palabras = [];
+    relPalabras(relEquivsTexto()).forEach(w => { if (relKey(w) !== relKey(reemplazo) && !palabras.some(x => relKey(x) === relKey(w))) palabras.push(w); });
+    if (!palabras.length) { error.textContent = relEquivsTexto() ? "La palabra y su equivalente son iguales." : "Escribí al menos una palabra tal como la pide el cliente."; return; }
+    texto = palabras.join(", ");
   } else {
     texto = relEl("relTexto").value.trim();
-    if (!texto) { error.textContent = esPalabra ? "Escribí la palabra tal como la pide el cliente." : "Escribí cómo lo pide el cliente."; return; }
+    if (!texto) { error.textContent = "Escribí cómo lo pide el cliente."; return; }
   }
   if (esPalabra) {
-    reemplazo = relEquivsTexto();
-    const palabras = [];
-    relPalabras(reemplazo).forEach(w => { if (relKey(w) && relKey(w) !== relKey(texto) && !palabras.some(x => relKey(x) === relKey(w))) palabras.push(w); });
-    if (!palabras.length) { error.textContent = relKey(reemplazo) === relKey(texto) ? "La palabra y su equivalente son iguales." : "Escribí al menos una palabra equivalente."; return; }
-    reemplazo = palabras.join(", ");
+    // (validado arriba)
   } else if (!esIa && !rel.formSkus.length) { error.textContent = "Elegí al menos un artículo."; return; }
   const key = relKey(texto);
   const dup = relFindDup(rel.formTipo, { texto, reglas, reemplazo }, rel.editingId);
-  if (dup) { error.textContent = esIa ? "Ya existe esa misma regla para la IA." : porReglas ? "Ya existe una relación con esas mismas condiciones. Editá esa." : esPalabra ? `Ya existe una equivalencia para "${dup.texto}". Editá esa.` : `Ya existe una relación para "${dup.texto}". Editá esa en lugar de crear otra.`; return; }
+  if (dup) { error.textContent = esIa ? "Ya existe esa misma regla para la IA." : porReglas ? "Ya existe una relación con esas mismas condiciones. Editá esa." : esPalabra ? `Ya existe una equivalencia con alguna de esas palabras ("${dup.texto}" = ${relEquivCanon(dup)}). Editá esa.` : `Ya existe una relación para "${dup.texto}". Editá esa en lugar de crear otra.`; return; }
 
   const now = Date.now();
   const fields = esIa ? { texto, ia: true, reglas: undefined, reemplazo: undefined }
@@ -506,11 +520,12 @@ function relRender(){
         <td class="name">${relEsReglas(r)
           ? `<div class="rel-cond">${r.reglas.map((g, i) => `${i ? '<span class="rel-cond-y">y</span>' : ""}<span class="rel-cond-item"><span class="badge ${REL_OPS[g.op]?.pos ? "badge-cyan" : "badge-red"}">${escapeHtml(REL_OPS[g.op]?.label || g.op)}</span>${escapeHtml(g.valor)}</span>`).join("")}</div>`
           : relEsIa(r) ? `<span class="rel-ia-text">${escapeHtml(r.texto)}</span>`
+          : relEsPalabra(r) ? `<div class="chips">${relEquivLados(r).map(w => `<span class="chip chip-alias"><span class="sku">⇄</span>${escapeHtml(w)}</span>`).join("")}</div>`
           : `<strong>${escapeHtml(r.texto)}</strong>`}</td>
         <td><div class="chips">${relEsIa(r)
           ? `<span class="badge badge-ia" title="Se le da a Gemini cada vez que revisa renglones en Cotizaciones">Regla para la IA</span>`
           : relEsPalabra(r)
-          ? relPalabras(r.reemplazo).map(w => `<span class="chip chip-alias" title="En la búsqueda y para la IA, todas estas palabras se toman como lo mismo"><span class="sku">⇄</span>${escapeHtml(w)}</span>`).join("")
+          ? `<span class="chip chip-alias" title="En la búsqueda y para la IA, todas las palabras de la izquierda y esta se toman como lo mismo"><span class="sku">= es lo mismo que</span>${escapeHtml(relEquivCanon(r))}</span>`
           : r.skus.map(s => relChipHtml(s, false)).join("")}</div></td>
         <td class="muted-cell">${escapeHtml(r.nota || "")}</td>
         <td class="muted-cell num">${r.actualizado ? new Date(r.actualizado).toLocaleDateString("es-AR") : "—"}</td>
@@ -553,7 +568,15 @@ const relacionesModule = {
 
 /* ---------- Eventos ---------- */
 relEl("relNewBtn").addEventListener("click", () => relOpenForm(null));
-document.querySelectorAll("[data-rel-tipo]").forEach(b => b.addEventListener("click", () => relSetTipo(b.dataset.relTipo)));
+document.querySelectorAll("[data-rel-tipo]").forEach(b => b.addEventListener("click", () => {
+  relSetTipo(b.dataset.relTipo);
+  // El cursor va al primer casillero de ese tipo
+  const t = b.dataset.relTipo;
+  const first = t === "palabra" ? relEl("relEquivs").querySelector("[data-equiv]")
+    : t === "reglas" ? relEl("relReglas").querySelector("[data-regla-valor]")
+    : relEl(t === "ia" ? "relIa" : "relTexto");
+  first?.focus();
+}));
 relEl("relAddRegla").addEventListener("click", () => {
   rel.formReglas.push({ op: "contiene", valor: "" });
   relRenderReglas();

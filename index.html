@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=5.1">
+<link rel="stylesheet" href="css/styles.css?v=5.2">
 </head>
 <body>
 
@@ -554,13 +554,17 @@
                 <span class="source-note">Se tienen que cumplir todas. No importan mayúsculas ni tildes.</span>
               </div>
             </div>
-            <div class="field hidden" id="relReemplazoWrap">
-              <label>…es lo mismo que</label>
+            <div class="field hidden" id="relPalabrasWrap">
+              <label>La palabra o palabras…</label>
               <div class="rel-reglas" id="relEquivs"></div>
               <div class="rel-reglas-foot">
                 <button class="btn btn-ghost" id="relAddEquiv" type="button">+ Nuevo equivalente</button>
                 <span class="source-note">Todas las palabras de esta relación se toman como lo mismo entre sí.</span>
               </div>
+            </div>
+            <div class="field hidden" id="relReemplazoWrap">
+              <label for="relReemplazo">Es lo mismo que…</label>
+              <input class="ds-input" id="relReemplazo" type="text" maxlength="100" placeholder="Ej.: auto" autocomplete="off">
             </div>
             <div class="field">
               <label for="relNota">Nota (opcional)</label>
@@ -644,17 +648,17 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=5.1"></script>
-<script src="js/core.js?v=5.1"></script>
-<script src="js/facturas.js?v=5.1"></script>
-<script src="js/articulos.js?v=5.1"></script>
-<script src="js/relaciones.js?v=5.1"></script>
-<script src="js/clientes.js?v=5.1"></script>
-<script src="js/presupuesto-comun.js?v=5.1"></script>
-<script src="js/cotizaciones.js?v=5.1"></script>
-<script src="js/cot-archivos.js?v=5.1"></script>
-<script src="js/cot-ia.js?v=5.1"></script>
-<script src="js/manual.js?v=5.1"></script>
-<script src="js/main.js?v=5.1"></script>
+<script src="js/changelog.js?v=5.2"></script>
+<script src="js/core.js?v=5.2"></script>
+<script src="js/facturas.js?v=5.2"></script>
+<script src="js/articulos.js?v=5.2"></script>
+<script src="js/relaciones.js?v=5.2"></script>
+<script src="js/clientes.js?v=5.2"></script>
+<script src="js/presupuesto-comun.js?v=5.2"></script>
+<script src="js/cotizaciones.js?v=5.2"></script>
+<script src="js/cot-archivos.js?v=5.2"></script>
+<script src="js/cot-ia.js?v=5.2"></script>
+<script src="js/manual.js?v=5.2"></script>
+<script src="js/main.js?v=5.2"></script>
 </body>
 </html>

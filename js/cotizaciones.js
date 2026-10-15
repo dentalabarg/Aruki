@@ -242,7 +242,7 @@ function cotUserAliases(){
   for (const r of rel.items) {
     if (!relEsPalabra(r)) continue;
     // Grupo de palabras equivalentes ("mix" = "surtido, kit, combo"): todas pasan a la primera del grupo
-    const words = [...relPalabras(r.reemplazo), r.texto];
+    const words = [relEquivCanon(r), ...relEquivLados(r)];   // todas → la de "Es lo mismo que…"
     const to = cotBaseTokens(words[0]);
     if (!to.length) continue;
     for (const w of words.slice(1)) {

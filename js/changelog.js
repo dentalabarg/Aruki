@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "5.1";
+const LATEST_VERSION = "5.2";
 const CHANGELOG = [
+  {
+    version: "5.2",
+    date: "2026-10-15",
+    title: "Palabra equivalente: palabras a la izquierda, equivalente a la derecha",
+    items: [
+      { type: "mejora", text: "En el formulario, \"La palabra o palabras…\" va a la izquierda con \"+ Nuevo equivalente\" abajo, y \"Es lo mismo que…\" es un solo casillero a la derecha" },
+      { type: "mejora", text: "En la lista, las palabras se ven en la columna \"Cuando el cliente escribe\" y el equivalente en \"Artículo(s)\". Todas siguen siendo equivalentes entre sí" }
+    ]
+  },
   {
     version: "5.1",
     date: "2026-10-15",

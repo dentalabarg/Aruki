@@ -30,7 +30,7 @@ function cotIaReglas(){
   for (const r of rel.items) {
     if (relEsIa(r)) ia.push(r.texto);
     else if (relEsPalabra(r)) {
-      const words = [r.texto, ...relPalabras(r.reemplazo)].map(w => `"${w}"`);
+      const words = [...relEquivLados(r), relEquivCanon(r)].map(w => `"${w}"`);
       eq.push(words.length === 2 ? `${words[0]} es lo mismo que ${words[1]}.` : `${words.slice(0, -1).join(", ")} y ${words[words.length - 1]} significan lo mismo.`);
     }
   }
