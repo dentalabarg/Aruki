@@ -26,6 +26,8 @@ function cotIaReglas(){
     if (relEsIa(r)) ia.push(r.texto);
     else if (relEsPalabra(r)) eq.push(`"${r.texto}" es lo mismo que "${r.reemplazo}".`);
   }
+  // Siempre: las abreviaturas de unidad no son parte del nombre del producto
+  eq.push('"Uns", "Und", "Und.", "Unid", "Uni", "U." significan "unidades": indican la cantidad o la presentación (ej.: "x 100 und" = caja de 100 unidades), no son parte del nombre del producto.');
   return [...ia, ...eq].slice(0, COT_IA_REGLAS_MAX);
 }
 

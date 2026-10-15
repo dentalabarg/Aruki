@@ -12,7 +12,7 @@
    ============================================================ */
 const COT_DRAFT_KEY = "aruki-cotizacion";
 const COT_DEFAULT_LIST = /lista 2|general/i;
-const COT_UNIT_WORDS = "u|un|und|unid|unidad|unidades|uds|cajas?|cjs?|packs?|pzas?|piezas?|frascos?|potes?|sobres?|bolsas?|blisters?";
+const COT_UNIT_WORDS = "u|un|uns|uni|unis|und|unds|unid|unids|unidad|unidades|ud|uds|cajas?|cjs?|packs?|pzas?|piezas?|frascos?|potes?|sobres?|bolsas?|blisters?";
 const COT_SIZE_UNITS = /^(?:gr|grs|g|gramos?|ml|cc|mm|cm|kg|kgs|mts?|lts?|l)\b/i;
 
 const cot = {
@@ -109,6 +109,8 @@ function cotPrice(sku){
 /* ============================================================
    1. LEER LA LISTA PEGADA
    ============================================================ */
+/* Solo las abreviaturas de "unidad" (Uns, Und., Unid., U.…): los clientes las usan para la cantidad o la presentación */
+const COT_UNIT_ONLY = "unidades|unidad|unids|unid|unis|uni|unds|und|uns|uds|ud|un|u";
 const COT_HEADER_WORDS = /^(it|it\.|item|ítem|n|nº|n°|nro|cant|cant\.|cantidad|descripcion|descripción|detalle|articulo|artículo|producto|productos|presentacion|presentación|unidad|unidades|codigo|código|marca|precio|observaciones?)$/i;
 
 function cotNum(value){
@@ -159,6 +161,11 @@ function cotParseLine(raw){
     texto = m[1]; cantidad = cotQtyNum(m[2]);
   } else if ((m = line.match(new RegExp(`^(\\d+(?:[.,]\\d+)?)\\s*(?:(?:${U})\\.?\\s*(?:de\\s+)?|x\\s+|×\\s*)?[-–:.)]?\\s+(.+)$`, "i"))) && !COT_SIZE_UNITS.test(m[2])) {
     cantidad = cotQtyNum(m[1]); texto = m[2];
+  } else if ((m = line.match(new RegExp(`^(.+?)\\s*\\b(${COT_UNIT_ONLY})\\.?(\\)?)\\s*[-–:=]?\\s*(\\d+(?:[.,]\\d+)?)$`, "i")))) {
+    // "Guantes Uns 10", "Guantes - Und: 10" → cantidad 10 (la abreviatura se saca)
+    // "Eyectores x100 und. 5", "Gasas x 100 und 2" → "x100 und" es la presentación y 5 / 2 la cantidad
+    cantidad = cotQtyNum(m[4]);
+    texto = /\d\s*$/.test(m[1]) ? `${m[1]} ${m[2]}${m[3] || ""}` : m[1];
   } else if ((m = line.match(new RegExp(`^(.+?)\\s*(?:[-–:=]|\\(|\\bx\\b|×)\\s*(\\d+(?:[.,]\\d+)?)\\s*(${U})?\\.?\\)?$`, "i")))) {
     const n = cotQtyNum(m[2]);
     const byX = /^[x×]/i.test(line.slice(m[1].length).trim());
@@ -179,7 +186,8 @@ function cotParseText(text){
 /* ============================================================
    2. BUSCAR CADA RENGLÓN
    ============================================================ */
-const COT_STOP = new Set("de del la el los las para con en y por a al o e un una sin c x n nro no marca tipo color".split(" "));
+const COT_STOP = new Set(("de del la el los las para con en y por a al o e un una sin c x n nro no marca tipo color " +
+  "u uns uni unis und unds unid unids unidad unidade unidades ud uds").split(" "));   // "Uns", "Und.", "Unid." = unidades (presentación)
 
 function cotNorm(text){
   return foldText(text)
@@ -190,7 +198,7 @@ function cotNorm(text){
     .replace(/(\d+(?:\.\d+)?)\s*mm\b/g, " $1mm ")
     .replace(/(\d+(?:\.\d+)?)\s*(?:mts?|metros?)\b/g, " $1m ")
     .replace(/(\d+(?:\.\d+)?)\s*(?:lts?|litros?|l)\b/g, " $1l ")
-    .replace(/(\d+)\s*(?:unidades|unidad|unid|und|uds|un|u)\b/g, " $1 ")
+    .replace(/(\d+)\s*(?:unidades|unidad|unids|unid|unis|uni|unds|und|uns|uds|ud|un|u)\b\.?/g, " $1 ")
     .replace(/\bx\s*(\d)/g, " $1");
 }
 

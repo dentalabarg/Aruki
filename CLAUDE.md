@@ -187,6 +187,9 @@ computadoras), con botón de respaldo (descargar/importar).
    - `cotParseLine()` lee cada renglón: columnas con tab o " | " (Excel/Word) o texto libre; cantidad al
      principio ("10 guantes"), al final con "-", ":", "(n)", "cant", unidad ("2 cajas") o "x n" solo si n ≤ 20
      (más grande se toma como presentación: "algodón x 500"). Sin cantidad → 1. Saltea encabezados.
+     v4.8: abreviatura de unidad antes del número final (`COT_UNIT_ONLY`: uns, und, unid, uni, u…): "Guantes Uns 10" → 10
+     (se saca la abreviatura); si antes hay un número ("x100 und. 5") es presentación + cantidad. `cotIaReglas()` agrega
+     siempre la aclaración de unidades para Gemini.
    - `cotSearch()`: índice de palabras del catálogo (excluye discontinuado / mercadolibre / "rep "), peso tipo IDF,
      palabras con números ×1,5, prefijos 0,75, plurales simples, penaliza medidas distintas (4g vs 2g),
      excluye artículos con precio 0 en la lista elegida.

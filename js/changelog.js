@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "4.7";
+const LATEST_VERSION = "4.8";
 const CHANGELOG = [
+  {
+    version: "4.8",
+    date: "2026-10-15",
+    title: "Cotizaciones entiende mejor \"Uns\", \"Und\" y \"Uni\"",
+    items: [
+      { type: "mejora", text: "Cuando la cantidad va después de la abreviatura (\"Guantes Uns 10\", \"Guantes - Und: 10\") ahora se toma bien la cantidad, y la abreviatura no ensucia la búsqueda" },
+      { type: "mejora", text: "Presentación + cantidad: en \"Eyectores x100 und. 5\" o \"Gasas x 100 und 2\", \"x100 und\" se toma como presentación y el último número como cantidad (antes quedaba cantidad 1)" },
+      { type: "mejora", text: "Se suma \"Uni\" como abreviatura de unidad, y la IA recibe siempre la aclaración de que Uns/Und/Unid/U. significan unidades" }
+    ]
+  },
   {
     version: "4.7",
     date: "2026-10-14",
