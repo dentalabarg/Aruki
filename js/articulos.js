@@ -167,7 +167,9 @@ const articulosModule = createDataModule({
         const cell = artFormatCell(r[c.field], c);
         const isName = /nombre|descripci/i.test(c.title || "");
         const cls = [cell.num ? "num" : "", cell.zero ? "zero" : "", isName ? "name" : ""].filter(Boolean).join(" ");
-        return `<td class="${cls}">${escapeHtml(cell.text)}</td>`;
+        // Nombre: botón para copiarlo (siempre ocupa su lugar, solo se ve al pasar el mouse → la fila no cambia de alto)
+        const copy = isName && cell.text ? `<button type="button" class="art-copy" data-copy title="Copiar nombre" aria-label="Copiar nombre">${ART_COPY_ICON}</button>` : "";
+        return `<td class="${cls}">${escapeHtml(cell.text)}${copy}</td>`;
       }).join("")}</tr>`;
     }).join("");
     artRenderSel();
@@ -213,6 +215,25 @@ function getArticulosCatalog(){
 }
 
 
+/* ---------- Copiar el nombre del artículo ---------- */
+const ART_COPY_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+const ART_OK_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+async function artCopyName(btn){
+  const text = btn.parentElement.firstChild?.textContent?.trim() || "";
+  if (!text) return;
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    const ta = Object.assign(document.createElement("textarea"), { value: text });
+    ta.style.cssText = "position:fixed; opacity:0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch {}
+    ta.remove();
+  }
+  btn.innerHTML = ART_OK_ICON; btn.classList.add("is-done"); btn.title = "¡Copiado!";
+  clearTimeout(btn._t);
+  btn._t = setTimeout(() => { btn.innerHTML = ART_COPY_ICON; btn.classList.remove("is-done"); btn.title = "Copiar nombre"; }, 1400);
+}
+
 /* ---------- Selección de artículos → Armar presupuesto ---------- */
 const artSel = new Map();   // SKU → cantidad a mandar a Armar presupuesto
 let artPageSkus = [];
@@ -246,6 +267,8 @@ function artToggle(sku, on, qty){
 }
 function artTotalUnits(){ let n = 0; artSel.forEach(q => { n += q; }); return n; }
 document.getElementById("artBody").addEventListener("click", e => {
+  const copyBtn = e.target.closest("[data-copy]");
+  if (copyBtn) { artCopyName(copyBtn); return; }              // copiar no cambia la selección
   const tr = e.target.closest("tr[data-sku]");
   if (!tr || !tr.dataset.sku) return;
   if (e.target.matches(".art-qty")) return;                 // tocar la cantidad no cambia la selección

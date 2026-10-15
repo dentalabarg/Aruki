@@ -679,3 +679,12 @@ select.ds-input{cursor:pointer;}
 .rb-words{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
 .rb-words span{font:500 12px var(--mono); padding:2px 8px; border-radius:var(--radius-pill); background:var(--bg-soft); color:var(--text);}
 #relReemplazoWrap{align-self:start;}
+
+/* v5.4 Artículos: buscador más ancho y botón para copiar el nombre */
+#view-articulos .search-wrap{min-width:340px;}
+.art-copy{display:inline-flex; align-items:center; justify-content:center; width:20px; height:18px; margin-left:6px; padding:0;
+  vertical-align:-3px; border:none; border-radius:5px; background:none; color:var(--muted); cursor:pointer; visibility:hidden;}
+.art-copy svg{width:14px; height:14px;}
+.art-main tbody tr:hover .art-copy, .art-copy:focus-visible, .art-copy.is-done{visibility:visible;}
+.art-copy:hover{background:var(--cyan-soft); color:var(--cyan);}
+.art-copy.is-done{color:var(--green);}

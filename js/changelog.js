@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "5.3";
+const LATEST_VERSION = "5.4";
 const CHANGELOG = [
+  {
+    version: "5.4",
+    date: "2026-10-15",
+    title: "Copiar el nombre de un artículo",
+    items: [
+      { type: "nuevo", text: "Artículos: al pasar el mouse por una fila aparece un botón al final del nombre para copiarlo (sin cambiar el alto de la fila)" },
+      { type: "correccion", text: "Artículos: el buscador es más ancho y su texto se ve completo" }
+    ]
+  },
   {
     version: "5.3",
     date: "2026-10-15",

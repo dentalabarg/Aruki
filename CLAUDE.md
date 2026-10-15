@@ -139,7 +139,9 @@ Al cerrar sesión se borra el caché.
 v3.3 (`js/articulos.js`): `artRowExcluded(row)` oculta en Artículos (cfg.filter) y saca de `getArticulosCatalog().list`
 (Cotizaciones/Relaciones) los que tienen en SKU/nombre `ART_EXCLUDE` (discontinuado, mercado libre, para fraccionar, rep wm)
 o **todos** los precios en 0/vacíos; `bySku` sigue teniendo todos (para mostrar nombres de relaciones viejas).
-Columna Identificador oculta (`ART_HIDDEN_TITLE`). Anchos de columna a mano en localStorage `aruki-art-colw` ({field: px}).
+Columna Identificador oculta (`ART_HIDDEN_TITLE`). v5.4: botón `.art-copy` (`data-copy`, `artCopyName()`) al final del nombre: siempre
+ocupa lugar con `visibility:hidden` y se ve con `tr:hover` (no cambia el alto); el clic no selecciona la fila. Buscador
+`#view-articulos .search-wrap` min 340 px. Anchos de columna a mano en localStorage `aruki-art-colw` ({field: px}).
 v3.5: los `.runtime-banner` solo se ven con `data-state="error"` (CSS). Los botones de actualizar están en la barra
 superior (`.sync-btn`: `#syncCliBtn` → `clientesStore.refresh()`, `#artRefreshBtn` y `#refreshBtn` = `ids.refresh` de
 Artículos y Facturas); `syncBtnProgress(btn, progress|null, error, done)` los rellena (`--p`, `data-pct`); tocarlos mientras cargan detiene (v3.6). Artículos: selección por SKU
