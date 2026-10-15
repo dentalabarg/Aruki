@@ -71,9 +71,7 @@ async function presExcel(doc){
     ["Presupuesto Dentalab"],
     ["Cliente", doc.cliente.nombre],
     ...(doc.cliente.cuit ? [["CUIT/Documento", doc.cliente.cuit]] : []),
-    ...(doc.cliente.iva ? [["Condición IVA", doc.cliente.iva]] : []),
     ["Fecha", new Date().toLocaleDateString("es-AR")],
-    ["Lista de precios", doc.lista],
     [],
     [...cols.map(c => c.t), ...(doc.disp ? [] : ["Subtotal"])]
   ];
@@ -124,17 +122,33 @@ async function presExcel(doc){
 }
 
 /* ---------- PDF ---------- */
+/* Logo de Dentalab (img/logo-dentalab.png, mismo diseño, solo achicado): se carga una vez como imagen para el PDF */
+const PRES_LOGO = { src: "img/logo-dentalab.png", ratio: 1200 / 345 };
+let presLogoPromise = null;
+function presLoadLogo(){
+  if (!presLogoPromise) {
+    presLogoPromise = fetch(PRES_LOGO.src, { cache: "force-cache" })
+      .then(r => { if (!r.ok) throw new Error("logo"); return r.blob(); })
+      .then(b => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(b); }))
+      .catch(() => { presLogoPromise = null; return null; });
+  }
+  return presLogoPromise;
+}
 async function presPdf(doc){
   const JsPDF = await presLoadPdf();
+  const logo = await presLoadLogo();
   const pdf = new JsPDF({ unit: "mm", format: "a4" });
   const W = pdf.internal.pageSize.getWidth();
   const M = 14;
-  const cyan = [8, 145, 178], gray = [100, 110, 120], dark = [25, 30, 35];
+  const cyan = [27, 96, 171], gray = [100, 110, 120], dark = [25, 30, 35];   // azul del logo
 
-  pdf.setFont("helvetica", "bold"); pdf.setFontSize(20); pdf.setTextColor(...dark);
-  pdf.text("Dentalab", M, 20);
-  pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(...gray);
-  pdf.text("Insumos odontológicos", M, 25.5);
+  if (logo) {
+    const h = 13, w = h * PRES_LOGO.ratio;           // misma proporción del logo original
+    pdf.addImage(logo, "PNG", M, 11.5, w, h, "dentalab-logo", "FAST");
+  } else {
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(20); pdf.setTextColor(...cyan);
+    pdf.text("dentalab", M, 22);
+  }
   pdf.setFont("helvetica", "bold"); pdf.setFontSize(15); pdf.setTextColor(...cyan);
   pdf.text("PRESUPUESTO", W - M, 20, { align: "right" });
   pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(...gray);
@@ -144,8 +158,6 @@ async function presPdf(doc){
   let y = 38;
   const info = [["Cliente", doc.cliente.nombre]];
   if (doc.cliente.cuit) info.push(["CUIT/Documento", doc.cliente.cuit]);
-  if (doc.cliente.iva) info.push(["Condición IVA", doc.cliente.iva]);
-  info.push(["Lista de precios", doc.lista]);
   pdf.setFontSize(10);
   info.forEach(([k, v]) => {
     pdf.setFont("helvetica", "bold"); pdf.setTextColor(...dark); pdf.text(`${k}:`, M, y);

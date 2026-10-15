@@ -88,6 +88,9 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   `#manObsSel`, vacío "…" por defecto) + botón Etiquetas; caja abajo (`#…ObsText`, `#…ObsSel2`, Guardar en la etiqueta /
   Guardar como etiqueta nueva). Va en `doc.observaciones` (Excel y PDF abajo de todo) y en `pedido.observaciones` →
   Worker `PEDI_OBSERVACIONES` (si el front viejo no lo manda, queda "Creado desde Aruki por …").
+- v5.8: logo `img/logo-dentalab.png` (1200×345, sin modificar el diseño) en el PDF (`presLoadLogo()`, alto 13 mm); PDF y Excel
+  sin "Lista de precios" ni "Condición IVA" ni "Insumos odontológicos". Azul de la marca **#1B60AB** (27,96,171): `--cyan`
+  del tema claro y color del PDF (el tema oscuro sigue con #00ccff). En Artículos las casillas son comunes (no interruptores).
 - v5.7: todas las casillas son interruptores por CSS global (`html input[type="checkbox"]`, appearance none) y se pueden
   arrastrar (core.js, al final). Cotizaciones: acciones (`.cot-actions` + `#cotStatus`) arriba de la tabla; `#cotIaAuto`
   ("Revisar con IA (Gemini)") junto a `#cotIaLeer` en `.cot-file-checks`.

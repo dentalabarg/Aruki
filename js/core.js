@@ -708,7 +708,8 @@ function createDataModule(cfg){
 /* ---------- v5.7 Interruptores: además del clic, se pueden arrastrar (derecha = encendido, izquierda = apagado) ---------- */
 (function(){
   let drag = null;
-  const isSwitch = el => el instanceof HTMLInputElement && el.type === "checkbox";
+  // En Artículos son casillas comunes (v5.8): no se arrastran
+  const isSwitch = el => el instanceof HTMLInputElement && el.type === "checkbox" && !el.closest("#view-articulos");
   document.addEventListener("pointerdown", e => {
     if (!isSwitch(e.target) || e.target.disabled) return;
     drag = { el: e.target, x: e.clientX, before: e.target.checked };

@@ -4,8 +4,19 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "5.7";
+const LATEST_VERSION = "5.8";
 const CHANGELOG = [
+  {
+    version: "5.8",
+    date: "2026-10-15",
+    title: "Logo de Dentalab y azul de la marca",
+    items: [
+      { type: "mejora", text: "PDF: el logo de Dentalab reemplaza al texto \"Dentalab\"; se sacan \"Insumos odontológicos\", la lista de precios y la condición de IVA" },
+      { type: "mejora", text: "Excel: se sacan la lista de precios y la condición de IVA" },
+      { type: "mejora", text: "El celeste oscuro de Aruki (tema claro) y del PDF pasa a ser el azul del logo" },
+      { type: "correccion", text: "Artículos vuelve a usar casillas comunes en lugar de interruptores" }
+    ]
+  },
   {
     version: "5.7",
     date: "2026-10-15",

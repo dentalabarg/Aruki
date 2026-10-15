@@ -27,8 +27,8 @@ html[data-theme="light"]{
   --bg:#eeece7; --bg-elev:#f6f4ef; --bg-elev-2:#ffffff; --bg-soft:#ece9e2;
   --line:rgba(0,0,0,.08); --line-strong:rgba(0,0,0,.13);
   --text:#17191c; --muted:#5e5a57; --muted-2:#636875;
-  --cyan:#009fc7; --cyan-soft:rgba(0,159,199,.1); --cyan-soft-2:rgba(0,159,199,.16);
-  --text-cyan-muted:rgba(0,140,175,.85);
+  --cyan:#1b60ab; --cyan-soft:rgba(27,96,171,.1); --cyan-soft-2:rgba(27,96,171,.16);   /* v5.8: azul del logo Dentalab */
+  --text-cyan-muted:rgba(27,96,171,.85);
   --green:#0c9b6d; --green-soft:rgba(12,155,109,.10);
   --amber:#c78000; --amber-soft:rgba(199,128,0,.10);
   --red:#d4485e; --red-soft:rgba(212,72,94,.10);
@@ -57,8 +57,8 @@ body{
 }
 html[data-theme="light"] body{
   background:
-    radial-gradient(circle at 72% 8%, rgba(0,159,199,.06), transparent 28%),
-    radial-gradient(circle at 12% 60%, rgba(0,159,199,.04), transparent 22%),
+    radial-gradient(circle at 72% 8%, rgba(27,96,171,.06), transparent 28%),
+    radial-gradient(circle at 12% 60%, rgba(27,96,171,.04), transparent 22%),
     var(--bg);
 }
 h1,h2,h3{font-family:var(--display); margin:0; color:var(--text);}
@@ -751,3 +751,10 @@ html input[type="checkbox"]:focus-visible{outline:2px solid var(--cyan); outline
 html input[type="checkbox"]:disabled{opacity:.45; cursor:default;}
 html input[type="checkbox"].is-dragging::before{transition:none;}
 html input[type="checkbox"].is-dragging::before{transform:translateX(var(--knob, 0px));}
+
+/* v5.8 Artículos: casillas comunes (no interruptores) */
+html #view-articulos input[type="checkbox"]{
+  -webkit-appearance:checkbox; appearance:auto; width:16px; height:16px; border-radius:3px; background:none;
+  accent-color:var(--cyan); cursor:pointer; transition:none;
+}
+html #view-articulos input[type="checkbox"]::before{content:none; display:none;}
