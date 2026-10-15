@@ -213,7 +213,11 @@ const moneyFormatter = new Intl.NumberFormat("es-AR", {
 });
 const numberFormatter = new Intl.NumberFormat("es-AR");
 const decimalFormatter = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 });
-const priceFormatter = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/* Precios: si son enteros, sin decimales ($ 34.700); si no, con dos ($ 34.700,50) */
+const priceIsWhole = n => Math.abs(n - Math.round(n)) < 0.005;
+const priceFmt2 = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const priceFmt0 = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const priceFormatter = { format: n => (priceIsWhole(Number(n)) ? priceFmt0 : priceFmt2).format(n) };
 
 function escapeHtml(value){
   return String(value ?? "")

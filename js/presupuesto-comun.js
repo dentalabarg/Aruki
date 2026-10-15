@@ -101,7 +101,7 @@ async function presExcel(doc){
   ws["!cols"] = [...cols.map(c => ({ wch: c.w })), { wch: 16 }];
   const fmt = '"$" #,##0.00';
   for (let r = first; r <= last + 2; r++) {
-    [L(priceIdx), L(subIdx)].forEach(c => { const cell = ws[`${c}${r}`]; if (cell && typeof cell.v === "number") cell.z = fmt; });
+    [L(priceIdx), L(subIdx)].forEach(c => { const cell = ws[`${c}${r}`]; if (cell && typeof cell.v === "number") cell.z = priceIsWhole(cell.v) ? '"$" #,##0' : fmt; });
   }
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Presupuesto");

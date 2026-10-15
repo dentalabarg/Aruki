@@ -482,9 +482,15 @@ function cotRender(){
   const groups = cotGroupInfo();
   const body = cotEl("cotBody");
   let total = 0;
+  // Grupos que todavía tienen opciones sin elegir: un renglón cambiado a mano dentro de ese grupo sigue
+  // en el recuadro y con el ✓ "Quedarme con esta opción" (borra las demás opciones)
+  const conOpciones = new Set();
+  cot.rows.forEach(r => { if (cotShownEstado(r, groups) === "dudosa") conOpciones.add(r.grupo); });
   const kinds = cot.rows.map(r => {
     const e = cotShownEstado(r, groups);
-    return e === "dudosa" ? "is-option" : e === "sin" ? "is-none" : "";
+    if (e === "dudosa") return "is-option";
+    if (e === "sin") return "is-none";
+    return (e === "manual" || e === "ia") && conOpciones.has(r.grupo) ? "is-option" : "";
   });
   body.innerHTML = cot.rows.map((r, idx) => {
     const item = r.sku ? cat.bySku.get(r.sku) : null;
@@ -504,7 +510,7 @@ function cotRender(){
     const boxLast = kind && !(next && next.grupo === r.grupo && kinds[idx + 1] === kind);
     const trCls = [kind, kind ? "box" : "", boxFirst ? "box-first" : "", boxLast ? "box-last" : ""].filter(Boolean).join(" ");
     const [badgeCls, badgeTxt] = COT_BADGES[estado] || COT_BADGES.manual;
-    const label = isOption ? `Opción ${siblings.indexOf(r.id) + 1} de ${siblings.length}` : badgeTxt;
+    const label = isOption && estado === "dudosa" ? `Opción ${siblings.indexOf(r.id) + 1} de ${siblings.length}` : badgeTxt;
     const nameHtml = item ? escapeHtml(item.nombre)
       : (missing ? "<span class=\"missing\">No está en Artículos</span>" : "<span class=\"source-note\">Buscá por nombre o SKU</span>");
     return `
@@ -648,7 +654,8 @@ function cotHideToast(){
 
 /* Precio para escribir en el campo: 1234.5 → "1.234,50" */
 function cotPriceInput(n){
-  return new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  const d = priceIsWhole(Number(n)) ? 0 : 2;     // entero → sin decimales
+  return new Intl.NumberFormat("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }).format(n);
 }
 /* Lo que escribe el usuario → número ("1.234,50", "1234.5", "$ 1.234") */
 function cotParsePrice(text){

@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "5.5";
+const LATEST_VERSION = "5.6";
 const CHANGELOG = [
+  {
+    version: "5.6",
+    date: "2026-10-15",
+    title: "Precios sin decimales de más y opciones editadas a mano",
+    items: [
+      { type: "mejora", text: "Los precios enteros se muestran sin decimales ($ 34.700) en Cotizaciones, Armar presupuesto, Artículos, PDF y Excel. Si tienen centavos, se siguen viendo ($ 34.700,50)" },
+      { type: "mejora", text: "Artículos: los precios se copian con el \"$\"" },
+      { type: "mejora", text: "Cotizaciones: si cambiás a mano una de las opciones, sigue dentro del recuadro de opciones y con el ✓ \"Quedarme con esta opción y borrar las otras\"" }
+    ]
+  },
   {
     version: "5.5",
     date: "2026-10-15",

@@ -252,6 +252,10 @@ computadoras), con botón de respaldo (descargar/importar).
      (autocurable/termocurable las carga él como Relaciones); no volver a agregar equivalencias fijas sin que lo pida.
      Para sumar otra, agregar una entrada (palabra completa en singular → como figura en el artículo).
    - Tipografía: los datos (tablas, listas, chips, resultados) van 1px más grandes que la interfaz fija.
+   - v5.6: `priceFormatter` (core.js) es `{format}`: entero → sin decimales, si no 2 (`priceIsWhole()`); igual `cotPriceInput`
+     y el formato de Excel. En `cotRender()` un renglón "manual"/"ia" de un grupo que todavía tiene opciones "dudosa"
+     (`conOpciones`) queda en el recuadro con el ✓ `data-pick` (etiqueta "Manual"; "Opción n de N" solo para las dudosas).
+     Grupos de relación con varios SKU no se tocan. Artículos copia precios con "$".
 3. ✅ Lectura de Excel, Word y PDF con texto (v2.0, `js/cot-archivos.js`). Librerías desde cdnjs, cargadas al usarse:
    SheetJS 0.18.5, mammoth 1.13.0 (docx → HTML: tablas fila por fila, párrafos), pdf.js 3.11.174 (worker vía blob;
    renglones por coordenada Y, columnas con TAB si hay hueco grande). `cotRowsToLines()` detecta la fila de títulos

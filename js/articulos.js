@@ -170,7 +170,7 @@ const articulosModule = createDataModule({
         // Nombre: botón para copiarlo (siempre ocupa su lugar, solo se ve al pasar el mouse → la fila no cambia de alto)
         // Precios: también se copian (sin el "$"); el botón va a la izquierda para que los números queden alineados
         const isMoney = artColumnKind(c) === "money" && cell.num && cell.text;
-        const copyTxt = isName ? cell.text : isMoney ? cell.text.replace(/^\$\s?/, "") : "";
+        const copyTxt = isName || isMoney ? cell.text : "";   // los precios se copian con el "$"
         const what = isName ? "nombre" : "precio";
         const copy = copyTxt ? `<button type="button" class="art-copy" data-copy data-text="${escapeHtml(copyTxt)}" title="Copiar ${what}" aria-label="Copiar ${what}">${ART_COPY_ICON}</button>` : "";
         return `<td class="${cls}${isMoney ? " money" : ""}">${isMoney ? copy : ""}${escapeHtml(cell.text)}${isMoney ? "" : copy}</td>`;
