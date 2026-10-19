@@ -105,6 +105,9 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
 ## API de YiQi (lo que ya está confirmado)
 - Token: `POST https://api.yiqi.com.ar/token` (form: grant_type=password, username, password).
 - schemaId: `GET https://api.yiqi.com.ar/api/accountapi/GetLoginInformation` → `{ userId, userName, schemaName, host, schemaId }`.
+  **Desde 2026-10-19 hay dos esquemas en YiQi con el mismo usuario** y el login cae por defecto en el último creado (incorrecto).
+  Aruki usa el **esquema 328**: variable `SCHEMA_ID=328` cargada en el Worker de Cloudflare (`getSchemaId()` la usa primero).
+  Si alguna vez dan "Smartie … not found", revisar esa variable.
 - Smartie: `GET https://api.yiqi.com.ar/api/public/{ENTIDAD}/smartie?smartieId=&schemaId=&page=` (página base 1,
   ~50 filas) → `{ data: [...], total, columns: [{ title, field, dataType, OrdenColumna, … }] }`.
 - Facturas: entidad `FACTURA`, smartie "Z. Facturas Github" (ID **2355**, en la variable `FACTURAS_SMARTIE_ID`;
