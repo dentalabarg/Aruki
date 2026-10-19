@@ -1112,7 +1112,7 @@ async function iaElegir(request, env) {
   const renglones = (Array.isArray(body?.renglones) ? body.renglones : []).slice(0, 40).map(r => ({
     id: String(r?.id || "").slice(0, 40),
     solicitado: String(r?.solicitado || "").slice(0, 400),
-    candidatos: (Array.isArray(r?.candidatos) ? r.candidatos : []).slice(0, 15).map(c => ({
+    candidatos: (Array.isArray(r?.candidatos) ? r.candidatos : []).slice(0, 25).map(c => ({   // v6.1: hasta 25 (Aruki manda 20)
       sku: String(c?.sku || "").slice(0, 60),
       nombre: String(c?.nombre || "").slice(0, 200),
       marca: String(c?.marca || "").slice(0, 60),
@@ -1160,11 +1160,13 @@ async function iaElegir(request, env) {
   });
 
   // Solo se aceptan SKU que estaban entre los candidatos de ese renglón
-  const byId = new Map(renglones.map(r => [r.id, new Set(r.candidatos.map(c => c.sku))]));
+  // (v6.1: se toleran diferencias de mayúsculas o espacios, ej. "12807-roj" = "12807-ROJ")
+  const skuKey = s => String(s || "").toUpperCase().replace(/\s+/g, "");
+  const byId = new Map(renglones.map(r => [r.id, new Map(r.candidatos.map(c => [skuKey(c.sku), c.sku]))]));
   const resultados = (Array.isArray(result?.resultados) ? result.resultados : [])
     .map(r => ({ id: String(r?.id || ""), sku: String(r?.sku || "").trim(), motivo: String(r?.motivo || "").slice(0, 200) }))
     .filter(r => byId.has(r.id))
-    .map(r => (byId.get(r.id).has(r.sku) ? r : { ...r, sku: "" }));
+    .map(r => { const sku = byId.get(r.id).get(skuKey(r.sku)); return sku ? { ...r, sku } : { ...r, sku: "" }; });
   return { resultados, modelo: model, ms: Date.now() - inicio, guia: true, reglas: reglas.length, ejemplos: ejemplos.length };
 }
 

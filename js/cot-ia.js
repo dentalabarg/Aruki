@@ -10,7 +10,7 @@
 const COT_IA_KEY = "aruki-cot-ia";
 const COT_IA_LOTE = 20;          // renglones por consulta
 const COT_IA_PARALELO = 3;       // consultas a la vez
-const COT_IA_CANDIDATOS = 12;
+const COT_IA_CANDIDATOS = 20;   // v6.1: hasta 20 artículos por renglón para que Gemini elija
 const COT_IA_EJ_POR_RENGLON = 3;  // relaciones parecidas que se mandan como ejemplo por renglón
 const COT_IA_EJ_MAX = 30;          // máximo de ejemplos por consulta
 const COT_IA_REGLAS_MAX = 60;
@@ -142,7 +142,7 @@ async function cotIaRevisar(){
     const skus = [];
     rows.forEach(r => { if (r.sku && cat.bySku.has(r.sku)) skus.push(r.sku); });
     cotSearch(first.solicitado, COT_IA_CANDIDATOS).forEach(x => skus.push(x.a.sku));
-    const unique = [...new Set(skus)].slice(0, 15);
+    const unique = [...new Set(skus)].slice(0, COT_IA_CANDIDATOS);
     if (!unique.length) { rows.forEach(r => { r.iaRevisado = true; }); continue; }   // nada parecido para comparar
     pedidos.push({
       id: String(g),

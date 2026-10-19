@@ -267,6 +267,8 @@ computadoras), con botón de respaldo (descargar/importar).
      equivalencias como frase; `cotIaReglas()`, máx. 60) y `ejemplos` (`cotIaEjemplos()`: hasta 3 relaciones texto/condiciones
      parecidas por renglón por palabras en común con `cotTokens`, máx. 30 por tanda: `{escribio, articulos:[{sku,nombre}], nota}`).
      El Worker los suma al JSON del usuario y al prompt, responde `guia: true` (si falta, el aviso dice que hay que actualizar el conector).
+     v6.1: `COT_IA_CANDIDATOS` = 20 (opciones actuales + búsqueda, máx. 20 por renglón); el Worker acepta hasta 25 y compara
+     el SKU elegido sin mayúsculas/espacios (`skuKey`) contra los candidatos.
      v4.7: las `reglas` van en el `systemInstruction` (IA_PROMPT + "Reglas de Dentalab"); los `ejemplos` en el JSON del usuario, antes de `renglones`.
      v2.4: el Worker prueba `GEMINI_MODEL` y después `GEMINI_FALLBACK_MODELS` (default gemini-flash-latest,
      gemini-flash-lite-latest): 3 intentos por modelo (esperas 2 s/5 s) ante 429/500/503, salta al siguiente si 404;

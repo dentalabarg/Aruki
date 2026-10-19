@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "6.0";
+const LATEST_VERSION = "6.1";
 const CHANGELOG = [
+  {
+    version: "6.1",
+    date: "2026-10-19",
+    title: "Más candidatos para la IA",
+    items: [
+      { type: "mejora", text: "Revisar con IA: Gemini recibe hasta 20 artículos por renglón para elegir (antes 15). Requiere actualizar el conector" },
+      { type: "mejora", text: "Si Gemini escribe el SKU con otras mayúsculas o con espacios, igual se acepta la elección" }
+    ]
+  },
   {
     version: "6.0",
     date: "2026-10-15",
