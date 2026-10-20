@@ -37,7 +37,7 @@ function cotLoadScript(url, globalName){
 /* ---------- Tablas → renglones ---------- */
 const COT_COL = {
   desc: /descrip|denominaci|detalle|producto|art[ií]culo|insumo|material|nombre|concepto/i,
-  qty: /^\s*(cant|cantidad|ctd|qty|unidades solicitadas|pedido)\b/i,
+  qty: /^\s*(cant|cantidad|ctd|qty|unidades|pedido)\b/i,
   pres: /presentaci|^u\.?\s?m\.?$|^u\/m$|unidad de medida|^unidad$/i,
   marca: /marca/i,
   item: /^(r|rengl[oó]n|[ií]tem|it\.?|n[°º]|nro\.?|orden)$/i
@@ -62,6 +62,7 @@ function cotRowsToLines(rows){
       cols = { desc, qty: find(COT_COL.qty), pres: find(COT_COL.pres), marca: find(COT_COL.marca) };
     }
   }
+  cotRowsToLines.header = h >= 0;                        // ¿encontró la fila de títulos? (lo usa el lector de HTML)
   if (h < 0) return rows.map(r => r.filter(Boolean).join("\t"));
 
   const headerDesc = rows[h][cols.desc];
@@ -79,6 +80,26 @@ function cotRowsToLines(rows){
     else out.push(texto);
   }
   return out;
+}
+
+/* Texto de un elemento con espacio entre párrafos/renglones (textContent los pega: "GENERICA:CARTICAINA") */
+const COT_BLOCK_TAGS = /^(P|DIV|LI|UL|OL|TR|TD|TH|TABLE|TBODY|THEAD|H[1-6]|BLOCKQUOTE|PRE|SECTION|ARTICLE|HEADER|FOOTER|DT|DD)$/;
+function cotNodeText(node){
+  let out = "";
+  const walk = n => {
+    for (const c of n.childNodes) {
+      if (c.nodeType === 3) out += c.nodeValue;
+      else if (c.nodeType === 1) {
+        if (c.tagName === "BR") { out += " "; continue; }
+        const block = COT_BLOCK_TAGS.test(c.tagName);
+        if (block) out += " ";
+        walk(c);
+        if (block) out += " ";
+      }
+    }
+  };
+  walk(node);
+  return cotCell(out);
 }
 
 /* ---------- Lectores por tipo ---------- */
@@ -102,10 +123,10 @@ async function cotReadWord(file){
   const walk = node => {
     for (const el of node.children) {
       if (el.tagName === "TABLE") {
-        const rows = [...el.querySelectorAll("tr")].map(tr => [...tr.children].map(td => td.textContent));
+        const rows = [...el.querySelectorAll("tr")].map(tr => [...tr.children].map(cotNodeText));
         lines.push(...cotRowsToLines(rows));
       } else if (/^(P|LI|H[1-6])$/.test(el.tagName)) {
-        const t = cotCell(el.textContent);
+        const t = cotNodeText(el);
         if (t) lines.push(t);
       } else {
         walk(el);
@@ -114,6 +135,50 @@ async function cotReadWord(file){
   };
   walk(doc.body.firstElementChild);
   return lines;
+}
+
+/* HTML (por ej. un mail de Gmail guardado como página): las tablas con títulos
+   (Descripción / Cantidad…) se leen como en Excel; si no hay, el texto renglón por renglón. */
+async function cotHtmlDecode(file){
+  const buf = await file.arrayBuffer();
+  const head = new TextDecoder("latin1").decode(buf.slice(0, 4096));
+  const m = head.match(/<meta[^>]+charset\s*=\s*["']?\s*([\w-]+)/i);
+  try { return new TextDecoder(m ? m[1] : "utf-8").decode(buf); }
+  catch { return new TextDecoder("utf-8").decode(buf); }
+}
+function cotHtmlTextLines(root){
+  const lines = [];
+  let cur = "";
+  const flush = () => { const t = cur.split("\t").map(cotCell).filter(Boolean).join("\t"); if (t) lines.push(t); cur = ""; };
+  const walk = n => {
+    for (const c of n.childNodes) {
+      if (c.nodeType === 3) cur += c.nodeValue;
+      else if (c.nodeType === 1) {
+        if (c.tagName === "BR") { flush(); continue; }
+        if (c.tagName === "TD" || c.tagName === "TH") { cur += "\t"; walk(c); cur += "\t"; continue; }
+        const block = COT_BLOCK_TAGS.test(c.tagName);
+        if (block) flush();
+        walk(c);
+        if (block) flush();
+      }
+    }
+  };
+  walk(root);
+  flush();
+  return lines;
+}
+async function cotReadHtml(file){
+  const doc = new DOMParser().parseFromString(await cotHtmlDecode(file), "text/html");  // DOMParser no ejecuta scripts
+  doc.querySelectorAll("script, style, noscript, template, head").forEach(el => el.remove());
+  const lines = [];
+  for (const table of doc.querySelectorAll("table")) {
+    // Solo las filas propias de esta tabla (los mails tienen tablas dentro de tablas)
+    const rows = [...table.querySelectorAll("tr")].filter(tr => tr.closest("table") === table)
+      .map(tr => [...tr.children].filter(td => /^T[DH]$/.test(td.tagName)).map(cotNodeText));
+    const got = cotRowsToLines(rows);
+    if (cotRowsToLines.header) lines.push(...got);
+  }
+  return lines.length ? lines : cotHtmlTextLines(doc.body || doc.documentElement);
 }
 
 let cotPdfReady = null;
@@ -481,7 +546,7 @@ async function cotReadFile(file){
   }
   // Las fotos siempre van por IA (no hay otra forma de leerlas); los PDF, según la casilla
   if (isImg || (isPdf && cotEl("cotIaLeer").checked)) {
-    cotFileHint(`La IA está leyendo ${name}… (puede tardar unos segundos)`);
+    cotFileHint(`${cotFileProg}La IA está leyendo ${name}… (puede tardar unos segundos)`);
     try {
       const lines = await cotReadWithIA(file, isPdf);
       if (!lines.length) throw new Error("la IA no encontró una lista de artículos en el archivo");
@@ -508,11 +573,12 @@ async function cotReadFile(file){
       throw e;
     }
   }
+  if (/\.html?$/i.test(name) || file.type === "text/html") return cotReadHtml(file);
   if (/^image\//.test(file.type)) {
     throw new Error("Ese formato de imagen no se puede leer. Usá JPG o PNG.");
   }
   if (/\.txt$/i.test(name) || /^text\//.test(file.type)) return (await file.text()).split(/\r?\n/);
-  throw new Error("Ese tipo de archivo no se puede leer. Usá Excel, Word, PDF o texto.");
+  throw new Error("Ese tipo de archivo no se puede leer. Usá Excel, Word, PDF, fotos, HTML o texto.");
 }
 
 /* ---------- Pantalla ---------- */
@@ -522,33 +588,61 @@ function cotFileHint(text, kind){
   el.style.color = kind === "error" ? "var(--red)" : kind === "ok" ? "var(--green)" : "";
 }
 
-async function cotHandleFile(file){
-  if (!file) return;
+/* Uno o varios archivos: se leen de a uno y todos los renglones van juntos al cuadro (un solo presupuesto) */
+let cotFileProg = "";
+async function cotHandleFiles(files){
+  files = [...(files || [])].filter(Boolean);
+  if (!files.length) return;
   const drop = cotEl("cotDrop");
+  const box = cotEl("cotTexto");
+  if (box.value.trim() && !confirm(files.length > 1
+    ? `Ya hay texto en el cuadro. ¿Reemplazarlo por lo que dicen los ${files.length} archivos?`
+    : "Ya hay texto en el cuadro. ¿Reemplazarlo por lo que dice el archivo?")) return;
   drop.classList.add("is-busy");
-  cotFileHint(`Leyendo ${file.name}…`);
-  cotReadFile.aviso = ""; cotReadFile.via = ""; cotReadFile.motivo = "";
+  const all = [], leidos = [], fallas = [], avisos = [], conIa = [];
   try {
-    const lines = (await cotReadFile(file)).map(l => String(l).trim()).filter(Boolean);
-    if (!lines.length) throw new Error("No se encontró ninguna lista de artículos en el archivo.");
-    const box = cotEl("cotTexto");
-    if (box.value.trim() && !confirm("Ya hay texto en el cuadro. ¿Reemplazarlo por lo que dice el archivo?")) return;
-    box.value = lines.join("\n");
-    cotSave();
-    const via = cotReadFile.via === "IA" ? " con IA" : "";
-    if (cotReadFile.aviso) cotFileHint(`${file.name} · ${lines.length} renglones. ${cotReadFile.aviso}`, "error");
-    else cotFileHint(`Leído${via}: ${file.name} · ${lines.length} renglones. Si algo salió mal, corregí el texto y tocá Armar presupuesto.`, "ok");
-    if (!cotEl("cotProcessBtn").disabled) {
-      const hint = cotEl("cotInputHint").textContent, color = cotEl("cotInputHint").style.color;
-      cotProcess();
-      cotEl("cotInputHint").textContent = hint; cotEl("cotInputHint").style.color = color;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      cotFileProg = files.length > 1 ? `(${i + 1} de ${files.length}) ` : "";
+      cotFileHint(`${cotFileProg}Leyendo ${file.name}…`);
+      cotReadFile.aviso = ""; cotReadFile.via = ""; cotReadFile.motivo = "";
+      try {
+        const lines = (await cotReadFile(file)).map(l => String(l).trim()).filter(Boolean);
+        if (!lines.length) throw new Error("no se encontró ninguna lista de artículos.");
+        all.push(...lines);
+        leidos.push(`${file.name} (${lines.length})`);
+        if (cotReadFile.via === "IA") conIa.push(file.name);
+        if (cotReadFile.aviso) avisos.push(`${file.name}: ${cotReadFile.aviso}`);
+      } catch (error) {
+        if (error instanceof SessionExpired) throw error;
+        fallas.push(`${file.name}: ${String(error?.message || error)}`);
+      }
     }
-    else cotFileHint(`Leído: ${file.name} · ${lines.length} renglones. Cuando terminen de cargar los artículos, tocá Armar presupuesto.`, "ok");
   } catch (error) {
     if (error instanceof SessionExpired) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); return; }
-    cotFileHint(String(error?.message || error), "error");
+    throw error;
   } finally {
+    cotFileProg = "";
     drop.classList.remove("is-busy");
+  }
+  if (!all.length) {
+    cotFileHint(files.length > 1 ? `No se pudo leer ningún archivo. ${fallas.join(" · ")}` : fallas[0].replace(/^[^:]+: /, ""), "error");
+    return;
+  }
+  box.value = all.join("\n");
+  cotSave();
+  const via = conIa.length ? (files.length > 1 ? ` (con IA: ${conIa.join(", ")})` : " con IA") : "";
+  const cuantos = leidos.length === files.length ? `${files.length}` : `${leidos.length} de ${files.length}`;
+  const quien = files.length > 1 ? `${cuantos} archivos · ${all.length} renglones en total` : `${files[0].name} · ${all.length} renglones`;
+  const problemas = [...fallas.map(f => `No se pudo leer ${f}`), ...avisos];
+  let hint, kind;
+  if (problemas.length) { hint = `Leído${via}: ${quien}. ${problemas.join(" · ")}`; kind = "error"; }
+  else { hint = `Leído${via}: ${quien}. Si algo salió mal, corregí el texto y tocá Armar presupuesto.`; kind = "ok"; }
+  if (!cotEl("cotProcessBtn").disabled) {
+    cotProcess();
+    cotFileHint(hint, kind);
+  } else {
+    cotFileHint(`${hint} Cuando terminen de cargar los artículos, tocá Armar presupuesto.`, kind);
   }
 }
 
@@ -559,9 +653,9 @@ cotEl("cotFileBtn").addEventListener("click", () => cotEl("cotFile").click());
   box.addEventListener("change", () => { try { localStorage.setItem(COT_IA_LEER_KEY, box.checked ? "1" : "0"); } catch {} });
 })();
 cotEl("cotFile").addEventListener("change", function(){
-  const f = this.files[0];
+  const files = [...this.files];
   this.value = "";
-  cotHandleFile(f);
+  cotHandleFiles(files);
 });
 /* Arrastrar y soltar sobre el panel 1 (zona del archivo o cuadro de texto) */
 (function(){
@@ -576,6 +670,6 @@ cotEl("cotFile").addEventListener("change", function(){
     if (!hasFiles(e)) return;
     e.preventDefault();
     depth = 0; drop.classList.remove("is-over");
-    cotHandleFile(e.dataTransfer.files[0]);
+    cotHandleFiles(e.dataTransfer.files);
   });
 })();

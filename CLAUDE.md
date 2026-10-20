@@ -298,6 +298,11 @@ computadoras), con botón de respaldo (descargar/importar).
    En el Worker, `geminiJSON()` es el helper común (modelo principal + reserva) de /ia/elegir y /ia/leer.
    v2.8: las fotos van siempre por IA; la casilla `#cotIaLeer` solo decide para los PDF.
    Excel y Word siguen sin IA.
+   v6.2: `#cotFile` con `multiple` y soltar varios: `cotHandleFiles(files)` los lee de a uno (`cotFileProg` = "(n de N) " en
+   el aviso), junta todos los renglones en `#cotTexto` (un solo presupuesto) y sigue aunque alguno falle (lo dice en el aviso).
+   HTML (.html/.htm, ej. mail de Gmail guardado): `cotReadHtml()` (DOMParser, charset del `<meta>`) toma las tablas cuyas filas
+   propias tienen títulos (`cotRowsToLines.header`; mails = tablas dentro de tablas); si no hay, `cotHtmlTextLines()`.
+   `cotNodeText()` pone espacio entre párrafos de una celda (también en Word). Título "Unidades" = cantidad (`COT_COL.qty`).
 
 ### Aprendizajes del sistema "Licitaciones" (Google Sheets + Apps Script, del mismo usuario)
 - Gemini: `POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=…`

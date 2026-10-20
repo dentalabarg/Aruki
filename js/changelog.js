@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "6.1";
+const LATEST_VERSION = "6.2";
 const CHANGELOG = [
+  {
+    version: "6.2",
+    date: "2026-10-20",
+    title: "Varios archivos a la vez y mails en HTML",
+    items: [
+      { type: "nuevo", text: "Cotizaciones: se pueden subir o arrastrar varios archivos juntos (PDF, fotos, Excel, Word, HTML o texto). Aruki los lee de a uno y junta todos los renglones en un solo presupuesto." },
+      { type: "nuevo", text: "Cotizaciones: lee archivos .html, como un mail de Gmail guardado como página. Toma la tabla de artículos (Descripción, Cantidad…) y, si no hay tabla, el texto renglón por renglón." },
+      { type: "mejora", text: "Una columna llamada \"Unidades\" se toma como cantidad, y los textos de varios renglones dentro de una celda (Word y HTML) ya no quedan pegados." }
+    ]
+  },
   {
     version: "6.1",
     date: "2026-10-19",
