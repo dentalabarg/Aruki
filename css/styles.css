@@ -816,3 +816,7 @@ html #view-articulos input[type="checkbox"]:focus-visible{outline:2px solid var(
   select.ds-input option:checked{ background:var(--cyan-soft-2); color:var(--cyan); font-weight:600; }
   select.ds-input option::checkmark{ display:none; }
 }
+
+/* v6.4: en los buscadores de artículos la marca ocupa poco (lo importante es SKU y nombre); el nombre completo queda en el title */
+.rel-result .marca.art-marca{flex:0 0 auto; max-width:76px; overflow:hidden; text-overflow:ellipsis; font-size:11px; padding-left:4px;}
+.rel-result > span.sku:first-child{min-width:96px;}   /* SKU alineados (la regla de v5.9 le sacaba el ancho mínimo) */

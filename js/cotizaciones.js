@@ -708,7 +708,7 @@ function cotSetSku(row, value){
 /* ---------- Autocompletado del SKU / nombre (lista flotante) ---------- */
 function cotResultHtml(a, active){
   return `<div class="rel-result ${active ? "is-active" : ""}" data-sku="${escapeHtml(a.sku)}">
-    <span class="sku">${escapeHtml(a.sku)}</span><span>${escapeHtml(a.nombre)}</span>${a.marca ? `<span class="marca">${escapeHtml(a.marca)}</span>` : ""}
+    <span class="sku">${escapeHtml(a.sku)}</span><span>${escapeHtml(a.nombre)}</span>${a.marca ? `<span class="marca art-marca" title="${escapeHtml(a.marca)}">${escapeHtml(a.marca)}</span>` : ""}
   </div>`;
 }
 function cotShowSkuResults(input){
