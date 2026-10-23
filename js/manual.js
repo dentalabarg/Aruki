@@ -231,12 +231,12 @@ function manRenderAddResults(){
   const box = manEl("manAddResults");
   const q = manAdd.value.trim();
   if (!q) { box.classList.add("hidden"); return; }
-  const res = relSearchArticulos(q, 12);
+  const res = relSearchArticulos(q);
   if (!res.length) {
     box.innerHTML = `<div class="rel-result-empty">${getArticulosCatalog().list.length ? "No hay artículos con ese texto." : "Los artículos todavía se están cargando…"}</div>`;
   } else {
     man.addActive = Math.min(man.addActive, res.length - 1);
-    box.innerHTML = res.map((a, i) => cotResultHtml(a, i === man.addActive)).join("");
+    box.innerHTML = res.map((a, i) => cotResultHtml(a, i === man.addActive)).join("") + artMoreNote(res);
     box.querySelectorAll("[data-sku]").forEach(el => el.addEventListener("mousedown", e => {
       e.preventDefault(); manAddSku(el.dataset.sku); manAdd.value = ""; box.classList.add("hidden"); manAdd.focus();
     }));
@@ -332,10 +332,10 @@ function manPickCommit(input, sku){
 function manPickShow(input){
   const box = manEl("manSkuResults");
   const q = input.value.trim();
-  const res = q ? relSearchArticulos(q, 12) : [];
+  const res = q ? relSearchArticulos(q) : [];
   if (!res.length) { box.classList.add("hidden"); return; }
   manPickActive = Math.min(manPickActive, res.length - 1);
-  box.innerHTML = res.map((a, i) => cotResultHtml(a, i === manPickActive)).join("");
+  box.innerHTML = res.map((a, i) => cotResultHtml(a, i === manPickActive)).join("") + artMoreNote(res);
   box.classList.remove("hidden");
   cotFloatPlace(box, input);
   box.querySelectorAll("[data-sku]").forEach(el => el.addEventListener("mousedown", ev => { ev.preventDefault(); manPickCommit(input, el.dataset.sku); }));

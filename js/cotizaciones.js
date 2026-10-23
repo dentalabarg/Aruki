@@ -715,10 +715,10 @@ function cotShowSkuResults(input){
   const box = cotEl("cotSkuResults");
   const query = input.value.trim();
   if (!query) { box.classList.add("hidden"); return; }
-  const results = relSearchArticulos(query, 12);
+  const results = relSearchArticulos(query);
   if (!results.length) { box.classList.add("hidden"); return; }
   cot.skuActive = Math.min(cot.skuActive, results.length - 1);
-  box.innerHTML = results.map((a, i) => cotResultHtml(a, i === cot.skuActive)).join("");
+  box.innerHTML = results.map((a, i) => cotResultHtml(a, i === cot.skuActive)).join("") + artMoreNote(results);
   box.classList.remove("hidden");
   cotPositionBox(input);
   box.querySelectorAll("[data-sku]").forEach(el => {
@@ -773,9 +773,9 @@ function cotRenderAddResults(){
   const box = cotEl("cotAddResults");
   const query = cotEl("cotAddSearch").value.trim();
   if (!query) { box.classList.add("hidden"); box.innerHTML = ""; return; }
-  const results = relSearchArticulos(query, 12);
+  const results = relSearchArticulos(query);
   box.innerHTML = results.length
-    ? results.map((a, i) => cotResultHtml(a, i === cot.addActive)).join("")
+    ? results.map((a, i) => cotResultHtml(a, i === cot.addActive)).join("") + artMoreNote(results)
     : `<div class="rel-result-empty">No se encontraron artículos con esa búsqueda.</div>`;
   const r = cotEl("cotAddSearch").getBoundingClientRect();
   box.classList.toggle("open-up", window.innerHeight - r.bottom < 300 && r.top > window.innerHeight - r.bottom);

@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "6.6";
+const LATEST_VERSION = "6.7";
 const CHANGELOG = [
+  {
+    version: "6.7",
+    date: "2026-10-23",
+    title: "Más resultados en los buscadores",
+    items: [
+      { type: "mejora", text: "Los buscadores de artículos (Cotizaciones, Relaciones y Armar presupuesto) muestran hasta 30 resultados en vez de 12. Si hay más, al final avisa cuántos son en total para que escribas algo más preciso." }
+    ]
+  },
   {
     version: "6.6",
     date: "2026-10-23",

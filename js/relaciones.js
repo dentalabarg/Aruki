@@ -228,7 +228,14 @@ function relCatalogInfo(){
   return { cat, hint: "" };
 }
 
-function relSearchArticulos(query, limit = 12){
+/* v6.7: hasta 30 resultados; el array trae .total (todas las coincidencias) para avisar si quedaron afuera */
+const ART_SEARCH_MAX = 30;
+function artMoreNote(results){
+  return results && results.total > results.length
+    ? `<div class="rel-result-empty">Se muestran ${results.length} de ${numberFormatter.format(results.total)} artículos. Escribí más para achicar la búsqueda.</div>`
+    : "";
+}
+function relSearchArticulos(query, limit = ART_SEARCH_MAX){
   const { cat } = relCatalogInfo();
   const q = foldText(query).trim();
   if (!q) return [];
@@ -242,7 +249,9 @@ function relSearchArticulos(query, limit = 12){
     out.push({ a, score });
   }
   out.sort((x, y) => x.score - y.score || skuCompare(x.a.sku, y.a.sku));   // exacto → empieza con → resto, cada grupo por SKU
-  return out.slice(0, limit).map(x => x.a);
+  const res = out.slice(0, limit).map(x => x.a);
+  res.total = out.length;
+  return res;
 }
 
 function relRenderResults(){
@@ -258,7 +267,7 @@ function relRenderResults(){
     box.innerHTML = results.map((a, i) => `
       <div class="rel-result ${i === rel.activeResult ? "is-active" : ""}" data-sku="${escapeHtml(a.sku)}">
         <span class="sku">${escapeHtml(a.sku)}</span><span>${escapeHtml(a.nombre)}</span>
-      </div>`).join("");
+      </div>`).join("") + artMoreNote(results);
     box.querySelectorAll("[data-sku]").forEach(el => {
       el.addEventListener("mousedown", e => { e.preventDefault(); relAddSku(el.dataset.sku); });
     });
