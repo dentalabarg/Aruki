@@ -162,7 +162,7 @@ Al cerrar sesión se borra el caché.
 v3.3 (`js/articulos.js`): `artRowExcluded(row)` oculta en Artículos (cfg.filter) y saca de `getArticulosCatalog().list`
 (Cotizaciones/Relaciones) los que tienen en SKU/nombre `ART_EXCLUDE` (discontinuado, mercado libre, para fraccionar, rep wm)
 o **todos** los precios en 0/vacíos; `bySku` sigue teniendo todos (para mostrar nombres de relaciones viejas).
-Columna Identificador oculta (`ART_HIDDEN_TITLE`). v5.4: botón `.art-copy` (`data-copy`, `artCopyName()`) al final del nombre: siempre
+Columna Identificador oculta (`ART_HIDDEN_TITLE`). v6.3: orden por SKU con `skuCompare()` (core.js: partes por "-", `Intl.Collator` numérico, números antes que letras) en la tabla de Artículos (`cfg.sortRows` de `createDataModule`, se reordena solo si cambian las filas), en `getArticulosCatalog().list` y en `relSearchArticulos()` (buscadores de Cotizaciones, Relaciones y Armar presupuesto: exacto → empieza con → resto, cada grupo por SKU). v5.4: botón `.art-copy` (`data-copy`, `artCopyName()`) al final del nombre: siempre
 ocupa lugar con `visibility:hidden` y se ve con `tr:hover` (no cambia el alto); el clic no selecciona la fila. Buscador
 `#view-articulos .search-wrap` min 340 px. v5.5: precios (`td.money`) también con `.art-copy` (botón a la izquierda; copia sin "$",
 `data-text`); `.art-main td{vertical-align:middle}`; X `#artSearchClear` (vacía y dispara `input`). Armar presupuesto:

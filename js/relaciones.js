@@ -241,7 +241,7 @@ function relSearchArticulos(query, limit = 12){
     const score = skuF === q ? 0 : skuF.startsWith(q) ? 1 : 2;
     out.push({ a, score });
   }
-  out.sort((x, y) => x.score - y.score || x.a.nombre.localeCompare(y.a.nombre));
+  out.sort((x, y) => x.score - y.score || skuCompare(x.a.sku, y.a.sku));   // exacto → empieza con → resto, cada grupo por SKU
   return out.slice(0, limit).map(x => x.a);
 }
 

@@ -238,6 +238,18 @@ function fmtDateTime(value){
   });
 }
 /* Para buscar sin importar mayúsculas ni tildes */
+/* Orden de SKU (v6.3): por partes separadas por "-"; cada parte en orden "natural"
+   (números de menor a mayor y antes que las letras): 50-30, 50-946, 50-a1, 50-a3, 55-n3, 60-99, 60-b8 */
+const SKU_COLLATOR = new Intl.Collator("es", { numeric: true, sensitivity: "base" });
+function skuCompare(a, b){
+  const pa = String(a ?? "").trim().split("-"), pb = String(b ?? "").trim().split("-");
+  for (let i = 0; i < Math.min(pa.length, pb.length); i++) {
+    const c = SKU_COLLATOR.compare(pa[i].trim(), pb[i].trim());
+    if (c) return c;
+  }
+  return pa.length - pb.length || SKU_COLLATOR.compare(String(a ?? ""), String(b ?? ""));
+}
+
 function foldText(value){
   return String(value ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
@@ -464,7 +476,14 @@ function createDataModule(cfg){
 
   m.filtered = function(){
     const terms = foldText(m.search).split(/\s+/).filter(Boolean);
-    return m.rows.filter(row => {
+    let base = m.rows;
+    if (cfg.sortRows) {          // orden fijo (Artículos: por SKU); se rehace solo si cambiaron las filas
+      if (m.sortedFor !== m.rows || m.sortedLen !== m.rows.length) {
+        m.sorted = cfg.sortRows(m.rows, m); m.sortedFor = m.rows; m.sortedLen = m.rows.length;
+      }
+      base = m.sorted;
+    }
+    return base.filter(row => {
       if (cfg.filter && !cfg.filter(row)) return false;
       if (!terms.length) return true;
       if (row.__s === undefined) row.__s = foldText(cfg.searchText(row, m));

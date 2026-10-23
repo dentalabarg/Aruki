@@ -140,6 +140,10 @@ const articulosModule = createDataModule({
     note: "artNote", pageButtons: "artPageButtons", first: "artFirstBtn", last: "artLastBtn"
   },
   filter(row){ return !artRowExcluded(row); },
+  sortRows(rows, m){
+    const skuCol = artResolveColumns(m.columns, rows).find(c => /sku|c[oó]digo/i.test(c.title || ""));
+    return skuCol ? [...rows].sort((a, b) => skuCompare(a[skuCol.field], b[skuCol.field])) : rows;
+  },
   searchText(row, m){
     const cols = artVisibleColumns(m.columns, m.rows);
     return cols.map(c => row[c.field]).join(" ");
@@ -212,6 +216,7 @@ function getArticulosCatalog(){
       if (!artRowExcluded(row)) list.push(item);
       bySku.set(sku, item);
     }
+    list.sort((a, b) => skuCompare(a.sku, b.sku));
   }
   const value = { list, bySku, priceCols, stockCols };
   artCatalogCache = { rows, length: rows.length, value };

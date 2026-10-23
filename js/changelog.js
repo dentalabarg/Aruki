@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "6.2";
+const LATEST_VERSION = "6.3";
 const CHANGELOG = [
+  {
+    version: "6.3",
+    date: "2026-10-23",
+    title: "Artículos ordenados por SKU",
+    items: [
+      { type: "mejora", text: "Los buscadores de artículos (Cotizaciones, Relaciones y Armar presupuesto) y la lista de Artículos ordenan por SKU: primero lo que está antes del guion y después lo que sigue, con los números de menor a mayor y antes que las letras (50-30, 50-946, 50-a1, 55-n3, 60-99, 60-b8)." }
+    ]
+  },
   {
     version: "6.2",
     date: "2026-10-20",
