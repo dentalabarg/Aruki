@@ -746,6 +746,11 @@ function cotFloatPlace(box, input){
 
 /* La marca usa los mismos renglones que el nombre del artículo, nunca más (si no entra, termina en "…") */
 function cotFitMarcas(box){
+  // v6.6: la columna del SKU mide lo que el SKU más largo de la lista (antes 96 px fijos, sobraba lugar)
+  const skus = [...box.querySelectorAll(".rel-result > .sku")];
+  skus.forEach(s => { s.style.minWidth = "0"; });
+  const w = Math.ceil(Math.max(0, ...skus.map(s => s.getBoundingClientRect().width)));
+  skus.forEach(s => { s.style.minWidth = `${w}px`; });
   box.querySelectorAll(".art-marca").forEach(m => {
     const name = m.previousElementSibling;
     if (!name) return;

@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "6.5";
+const LATEST_VERSION = "6.6";
 const CHANGELOG = [
+  {
+    version: "6.6",
+    date: "2026-10-23",
+    title: "Más lugar para el nombre en los buscadores",
+    items: [
+      { type: "mejora", text: "En los buscadores de artículos la columna del SKU mide lo justo para el SKU más largo de la lista, y el nombre aprovecha el resto del ancho." }
+    ]
+  },
   {
     version: "6.5",
     date: "2026-10-23",

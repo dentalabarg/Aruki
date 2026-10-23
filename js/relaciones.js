@@ -262,6 +262,7 @@ function relRenderResults(){
     box.querySelectorAll("[data-sku]").forEach(el => {
       el.addEventListener("mousedown", e => { e.preventDefault(); relAddSku(el.dataset.sku); });
     });
+    requestAnimationFrame(() => { if (typeof cotFitMarcas === "function") cotFitMarcas(box); });
   }
   box.classList.remove("hidden");
 }
