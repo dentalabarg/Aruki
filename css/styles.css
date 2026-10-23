@@ -818,5 +818,9 @@ html #view-articulos input[type="checkbox"]:focus-visible{outline:2px solid var(
 }
 
 /* v6.4: en los buscadores de artículos la marca ocupa poco (lo importante es SKU y nombre); el nombre completo queda en el title */
-.rel-result .marca.art-marca{flex:0 0 auto; max-width:76px; overflow:hidden; text-overflow:ellipsis; font-size:11px; padding-left:4px;}
+.rel-result.art-res > span{line-height:19px;}
+/* v6.5: la marca baja de renglón dentro de su columna angosta, pero solo hasta los renglones que ocupa el nombre
+   (cotFitMarcas() pone el -webkit-line-clamp; por defecto 1) */
+.rel-result .marca.art-marca{flex:0 0 auto; max-width:84px; padding-left:4px; font-size:11px; text-align:right; white-space:normal; overflow-wrap:break-word;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:1; overflow:hidden;}
 .rel-result > span.sku:first-child{min-width:96px;}   /* SKU alineados (la regla de v5.9 le sacaba el ancho mínimo) */

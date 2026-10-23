@@ -242,6 +242,7 @@ function manRenderAddResults(){
     }));
   }
   box.classList.remove("hidden");
+  cotFitMarcas(box);
 }
 manAdd.addEventListener("input", () => { man.addActive = 0; manRenderAddResults(); });
 manAdd.addEventListener("focus", manRenderAddResults);
@@ -335,12 +336,8 @@ function manPickShow(input){
   if (!res.length) { box.classList.add("hidden"); return; }
   manPickActive = Math.min(manPickActive, res.length - 1);
   box.innerHTML = res.map((a, i) => cotResultHtml(a, i === manPickActive)).join("");
-  const rect = input.getBoundingClientRect();
-  const below = window.innerHeight - rect.bottom > 260;
-  box.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 470))}px`;
-  box.style.top = below ? `${rect.bottom + 4}px` : "auto";
-  box.style.bottom = below ? "auto" : `${window.innerHeight - rect.top + 4}px`;
   box.classList.remove("hidden");
+  cotFloatPlace(box, input);
   box.querySelectorAll("[data-sku]").forEach(el => el.addEventListener("mousedown", ev => { ev.preventDefault(); manPickCommit(input, el.dataset.sku); }));
 }
 function manOpenName(view){

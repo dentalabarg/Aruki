@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "6.4";
+const LATEST_VERSION = "6.5";
 const CHANGELOG = [
+  {
+    version: "6.5",
+    date: "2026-10-23",
+    title: "Buscadores de artículos más prolijos",
+    items: [
+      { type: "mejora", text: "La marca usa los renglones que ya ocupa el nombre del artículo (sin agregar renglones de más); solo se corta con \"…\" si aun así no entra." },
+      { type: "mejora", text: "La lista de resultados al cambiar un artículo en la tabla es tan ancha como el cuadro donde buscás, si ese cuadro es más ancho que la lista." }
+    ]
+  },
   {
     version: "6.4",
     date: "2026-10-23",

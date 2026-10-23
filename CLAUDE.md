@@ -92,7 +92,7 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   sin "Lista de precios" ni "Condición IVA" ni "Insumos odontológicos". Azul de la marca **#1B60AB** (27,96,171): `--cyan`
   del tema claro y color del PDF (el tema oscuro sigue con #00ccff). En Artículos las casillas son comunes (no interruptores).
 - v5.9: recuadro de opciones con sombras internas por celda (`--sl/--sr/--st/--sb`, 3 px; los bordes de tabla no se veían
-  arriba) y filas alternadas `box-alt` (dos amarillos). Listas `.rel-results` sin barra horizontal (`overflow-wrap:anywhere`). v6.4: en `cotResultHtml()` (buscadores de artículos de Cotizaciones y Armar presupuesto) la marca es `.marca.art-marca` (máx. 76 px, …, 11 px, nombre completo en `title`).
+  arriba) y filas alternadas `box-alt` (dos amarillos). Listas `.rel-results` sin barra horizontal (`overflow-wrap:anywhere`). v6.4: en `cotResultHtml()` (buscadores de artículos de Cotizaciones y Armar presupuesto) la marca es `.marca.art-marca` (máx. 84 px, 11 px, nombre completo en `title`); v6.5: baja de renglón hasta los que ocupa el nombre (`cotFitMarcas(box)` pone `-webkit-line-clamp`, renglones de 19 px en `.rel-result.art-res`) y las listas flotantes `#cotSkuResults`/`#manSkuResults` se ubican con `cotFloatPlace(box, input)` (ancho = máx(460 px, ancho del cuadro), sin pasarse de la pantalla; llamar con la lista visible).
   `select.ds-input` con `appearance: base-select` (Chrome/Edge) para que la lista abierta tenga el diseño de la de clientes.
   Casillas de Artículos propias (cuadrado redondeado, tilde blanca, azul). Favicon en #1b60ab.
 - v5.7: todas las casillas son interruptores por CSS global (`html input[type="checkbox"]`, appearance none) y se pueden

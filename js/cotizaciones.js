@@ -707,7 +707,7 @@ function cotSetSku(row, value){
 
 /* ---------- Autocompletado del SKU / nombre (lista flotante) ---------- */
 function cotResultHtml(a, active){
-  return `<div class="rel-result ${active ? "is-active" : ""}" data-sku="${escapeHtml(a.sku)}">
+  return `<div class="rel-result art-res ${active ? "is-active" : ""}" data-sku="${escapeHtml(a.sku)}">
     <span class="sku">${escapeHtml(a.sku)}</span><span>${escapeHtml(a.nombre)}</span>${a.marca ? `<span class="marca art-marca" title="${escapeHtml(a.marca)}">${escapeHtml(a.marca)}</span>` : ""}
   </div>`;
 }
@@ -719,20 +719,39 @@ function cotShowSkuResults(input){
   if (!results.length) { box.classList.add("hidden"); return; }
   cot.skuActive = Math.min(cot.skuActive, results.length - 1);
   box.innerHTML = results.map((a, i) => cotResultHtml(a, i === cot.skuActive)).join("");
-  cotPositionBox(input);
   box.classList.remove("hidden");
+  cotPositionBox(input);
   box.querySelectorAll("[data-sku]").forEach(el => {
     el.addEventListener("mousedown", e => { e.preventDefault(); cotCommitSku(input, el.dataset.sku); });
   });
 }
 
 function cotPositionBox(input){
-  const box = cotEl("cotSkuResults");
+  cotFloatPlace(cotEl("cotSkuResults"), input);
+}
+
+/* Lista flotante de resultados (v6.5): como mínimo 460 px; si el cuadro donde se busca es más ancho, igual de ancha
+   que él (sin pasarse de la pantalla). Se llama con la lista ya visible. */
+function cotFloatPlace(box, input){
   const rect = input.getBoundingClientRect();
+  const width = Math.min(Math.max(460, rect.width), window.innerWidth - 16);
   const below = window.innerHeight - rect.bottom > 260;
-  box.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 470))}px`;
+  box.style.width = `${width}px`;
+  box.style.maxWidth = "none";
+  box.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))}px`;
   box.style.top = below ? `${rect.bottom + 4}px` : "auto";
   box.style.bottom = below ? "auto" : `${window.innerHeight - rect.top + 4}px`;
+  cotFitMarcas(box);
+}
+
+/* La marca usa los mismos renglones que el nombre del artículo, nunca más (si no entra, termina en "…") */
+function cotFitMarcas(box){
+  box.querySelectorAll(".art-marca").forEach(m => {
+    const name = m.previousElementSibling;
+    if (!name) return;
+    const lh = parseFloat(getComputedStyle(name).lineHeight) || 19;
+    m.style.webkitLineClamp = String(Math.max(1, Math.round(name.getBoundingClientRect().height / lh)));
+  });
 }
 
 function cotCommitSku(input, sku){
@@ -756,6 +775,7 @@ function cotRenderAddResults(){
   const r = cotEl("cotAddSearch").getBoundingClientRect();
   box.classList.toggle("open-up", window.innerHeight - r.bottom < 300 && r.top > window.innerHeight - r.bottom);
   box.classList.remove("hidden");
+  cotFitMarcas(box);
   box.querySelectorAll("[data-sku]").forEach(el => {
     el.addEventListener("mousedown", e => { e.preventDefault(); cotAddRow(el.dataset.sku); });
   });
