@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "7.3";
+const LATEST_VERSION = "7.4";
 const CHANGELOG = [
+  {
+    version: "7.4",
+    date: "2026-11-20",
+    title: "Modo oscuro gris neutro",
+    items: [
+      { type: "mejora", text: "El modo oscuro pasa a un gris neutro (sin el tinte anaranjado) y un poco más claro." }
+    ]
+  },
   {
     version: "7.3",
     date: "2026-11-20",

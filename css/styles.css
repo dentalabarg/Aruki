@@ -2,10 +2,10 @@
    1. TOKENS
    ============================================================ */
 :root{
-  /* v7.2: tema oscuro "gris cálido" (estilo Claude), tonos planos */
-  --bg:#1f1e1d; --bg-elev:#2a2928; --bg-elev-2:#343331; --bg-soft:#3b3a37;
-  --line:#45433f; --line-strong:#55524d;
-  --text:#f2f0eb; --muted:#aaa69d; --muted-2:#938f86;
+  /* v7.4: tema oscuro gris neutro (sin tinte), más claro que el anterior; tonos planos */
+  --bg:#2c2c2c; --bg-elev:#373737; --bg-elev-2:#414141; --bg-soft:#494949;
+  --line:#525252; --line-strong:#626262;
+  --text:#f4f4f4; --muted:#b0b0b0; --muted-2:#9a9a9a;
   --cyan:#6aa9ec; --cyan-soft:rgba(106,169,236,.14); --cyan-soft-2:rgba(106,169,236,.22);
   --text-cyan-muted:rgba(106,169,236,.85);
   --green:#15d49c; --green-soft:rgba(21,212,156,.10);
