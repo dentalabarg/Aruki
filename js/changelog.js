@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "6.8";
+const LATEST_VERSION = "6.9";
 const CHANGELOG = [
+  {
+    version: "6.9",
+    date: "2026-11-20",
+    title: "Formulario de relaciones más claro",
+    items: [
+      { type: "mejora", text: "Los botones \"+ Agregar condición\" y \"+ Nuevo equivalente\" tienen color propio y se distinguen del recuadro." },
+      { type: "mejora", text: "En Palabras equivalentes la Nota va a la derecha, como en los otros tipos, y \"Es lo mismo que…\" queda abajo." }
+    ]
+  },
   {
     version: "6.8",
     date: "2026-11-20",

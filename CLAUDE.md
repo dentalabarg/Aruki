@@ -74,7 +74,7 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   admite varias palabras separadas por coma (`relPalabras()`); `cotUserAliases()` lleva todas a la primera de `reemplazo`;
   `relFindDup` palabra = comparten alguna palabra; v5.2: formulario = izquierda "La palabra o palabras…" (`#relPalabrasWrap`, un renglón por
   palabra en `rel.formEquivs`/`#relEquivs`, "+ Nuevo equivalente") → se guardan en `texto` separadas por coma; derecha
-  "Es lo mismo que…" (`#relReemplazo`, uno solo) → `reemplazo`. `relEquivLados(r)` / `relEquivCanon(r)` / `relGrupo(r)`
+  "Es lo mismo que…" (`#relReemplazo`, uno solo) → `reemplazo`. v6.9: en el formulario `#relReemplazoWrap{order:1}` (Nota a la derecha, "Es lo mismo que…" abajo) y los botones `.rel-reglas-foot .btn-ghost` en cyan suave con contorno cyan (al pasar el mouse, cyan lleno). `relEquivLados(r)` / `relEquivCanon(r)` / `relGrupo(r)`
   (compatibles con las de v5.0 que tenían varias en `reemplazo`). Tabla: palabras en la 1.ª columna, equivalente en Artículo(s); Worker guarda `reemplazo` hasta 400 caracteres. Botón "Reglas de Aruki"
   (`#relBuiltinBtn`, `relBuiltinHtml()`): ventana solo lectura armada con COT_UNIT_ONLY, COT_ALIAS, COT_STOP,
   COT_GENERO_KEEP, COT_MAX_OPTIONS y `COT_IA_REGLAS_FIJAS` (cot-ia.js) — si se agrega una regla programada, sumarla ahí. Las equivalencias se aplican
