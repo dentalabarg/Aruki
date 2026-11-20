@@ -158,12 +158,17 @@ html[data-theme="light"] .topbar{background:rgba(238,236,231,.88);}
 }
 .t-pill:hover{color:var(--cyan);}
 .topbar-r{display:flex; align-items:center; gap:10px;}
-.theme-toggle{display:inline-flex; align-items:center; gap:2px; padding:2px; border-radius:var(--radius-pill); background:var(--bg-elev-2);}
+/* v6.8: tema = un botón redondo con el ícono del tema actual; al tocarlo se estira y muestra luna y sol */
+.theme-toggle{display:inline-flex; align-items:center; gap:0; padding:3px; border-radius:var(--radius-pill); background:var(--bg-elev-2); box-shadow:var(--shadow-sm); transition:gap .2s ease;}
+.theme-toggle.open{gap:3px;}
 .theme-opt{
-  padding:6px 11px; font:500 12px var(--sans); color:var(--muted);
-  background:transparent; border:none; border-radius:var(--radius-pill); cursor:pointer;
+  width:30px; height:30px; padding:0; display:grid; place-items:center; flex-shrink:0; overflow:hidden; color:var(--muted);
+  background:transparent; border:none; border-radius:50%; cursor:pointer; transition:width .2s ease, opacity .2s ease, background .15s, color .15s;
 }
-.theme-opt.active{background:var(--cyan-soft); color:var(--cyan); font-weight:600;}
+.theme-opt svg{flex-shrink:0;}
+.theme-opt:hover{color:var(--cyan);}
+.theme-opt.active{background:var(--cyan-soft); color:var(--cyan);}
+.theme-toggle:not(.open) .theme-opt:not(.active){width:0; opacity:0; pointer-events:none;}
 .account-chip{display:flex; align-items:center; gap:8px; padding:4px 10px 4px 4px; border-radius:var(--radius-pill); background:var(--bg-elev-2); box-shadow:var(--shadow-sm);}
 .avatar{
   width:28px; height:28px; border-radius:50%; display:grid; place-items:center;
@@ -364,7 +369,6 @@ html[data-theme="light"] .aruki-logo{filter:none;}
   .table{min-width:1250px; table-layout:fixed;}
 }
 @media (max-width:700px){
-  .theme-toggle .theme-opt{padding:6px 8px;}
   .brand-name{display:none;}
   .pagination{align-items:stretch;}
   .pagination-actions{width:100%; justify-content:center; flex-wrap:wrap;}

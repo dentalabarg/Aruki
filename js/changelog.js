@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "6.7";
+const LATEST_VERSION = "6.8";
 const CHANGELOG = [
+  {
+    version: "6.8",
+    date: "2026-11-20",
+    title: "Barra de arriba más simple",
+    items: [
+      { type: "mejora", text: "Los botones para traer datos de YiQi dicen solo Clientes, Artículos y Facturas, con el ícono de actualizar." },
+      { type: "mejora", text: "El tema ahora es un solo botón redondo con el ícono del tema actual: al tocarlo se abre y elegís luna (oscuro) o sol (claro)." }
+    ]
+  },
   {
     version: "6.7",
     date: "2026-10-23",

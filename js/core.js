@@ -7,14 +7,23 @@ function resolveTheme(){
 }
 function applyTheme(t){
   document.documentElement.dataset.theme = t;
-  const s = localStorage.getItem('aruki-theme') || 'system';
-  document.querySelectorAll('.theme-opt').forEach(b => b.classList.toggle('active', b.dataset.themeOpt === s));
+  // v6.8: un solo botón redondo (luna/sol); marca el tema que se ve (si estaba en "sistema", el que resolvió)
+  document.querySelectorAll('.theme-opt').forEach(b => b.classList.toggle('active', b.dataset.themeOpt === t));
 }
 function setTheme(v){
   localStorage.setItem('aruki-theme', v);
   applyTheme(v === 'system' ? resolveTheme() : v);
 }
-document.querySelectorAll('.theme-opt').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.themeOpt)));
+// Cerrado muestra solo el tema actual; al tocarlo se abre y muestra los dos; al elegir uno se cierra
+document.querySelectorAll('.theme-opt').forEach(b => b.addEventListener('click', e => {
+  const box = b.closest('.theme-toggle');
+  e.stopPropagation();
+  if (!box.classList.contains('open')) { box.classList.add('open'); return; }
+  setTheme(b.dataset.themeOpt);
+  box.classList.remove('open');
+}));
+document.addEventListener('click', () => document.querySelectorAll('.theme-toggle.open').forEach(x => x.classList.remove('open')));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.theme-toggle.open').forEach(x => x.classList.remove('open')); });
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
   if ((localStorage.getItem('aruki-theme') || 'system') === 'system') applyTheme(resolveTheme());
 });

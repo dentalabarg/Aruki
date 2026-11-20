@@ -56,7 +56,7 @@ cotizaciones → cot-archivos → cot-ia → manual → main.
 Sistema de diseño YiQi (https://github.com/diguardia/yiqi-imagen, `yiqi-design.md`):
 tokens CSS en `:root` y `html[data-theme="light"]`, filosofía *borderless* (sombras, no bordes,
 salvo inputs), fuentes Plus Jakarta Sans / Inter / IBM Plex Mono, íconos SVG inline,
-toggle de tema Oscuro / Sistema / Claro. Reutilizar las clases existentes (`.panel`, `.card`,
+toggle de tema: desde v6.8 un solo botón redondo `#themeToggle` (ícono luna/sol del tema que se ve; al tocarlo se abre `.open` y muestra los dos; sin opción Sistema en pantalla, aunque `aruki-theme=system` guardado sigue funcionando). Botones de la barra: solo ícono + "Clientes" / "Artículos" / "Facturas" (el title explica). Reutilizar las clases existentes (`.panel`, `.card`,
 `.btn`, `.badge-*`, `.runtime-banner`, `.pagination`, `.art-table`…).
 
 ## Conector (Cloudflare Worker)
