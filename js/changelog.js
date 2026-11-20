@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "7.0";
+const LATEST_VERSION = "7.1";
 const CHANGELOG = [
+  {
+    version: "7.1",
+    date: "2026-11-20",
+    title: "Cuadros de Nueva relación alineados",
+    items: [
+      { type: "mejora", text: "En Nueva relación, los cuadros de abajo (\"…el artículo es\" y \"Es lo mismo que…\") tienen el mismo ancho que el cuadro de arriba, en todos los tipos." }
+    ]
+  },
   {
     version: "7.0",
     date: "2026-11-20",

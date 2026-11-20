@@ -312,6 +312,7 @@ function relRenderChips(){
 /* ---------- Formulario alta / edición ---------- */
 function relSetTipo(tipo){
   rel.formTipo = tipo;
+  relEl("relForm").dataset.tipo = tipo;   // v7.1: el CSS iguala el ancho de los cuadros de abajo con los de arriba
   document.querySelectorAll("[data-rel-tipo]").forEach(b => b.classList.toggle("active", b.dataset.relTipo === tipo));
   relEl("relTextoWrap").classList.toggle("hidden", tipo === "reglas" || tipo === "ia" || tipo === "palabra");
   relEl("relPalabrasWrap").classList.toggle("hidden", tipo !== "palabra");

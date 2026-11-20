@@ -834,3 +834,12 @@ html #view-articulos input[type="checkbox"]:focus-visible{outline:2px solid var(
 @media (hover:hover){ .rel-reglas-foot .btn-ghost:hover{background:var(--cyan); color:#fff;} }
 /* v6.9: en Palabras equivalentes la Nota va a la derecha (como en los otros tipos) y "Es lo mismo que…" abajo */
 #relReemplazoWrap{order:1;}
+/* v7.1: los cuadros de abajo ("…el artículo es" y "Es lo mismo que…") terminan donde terminan los de arriba:
+   columna izquierda del formulario (2fr de 2fr+1fr, separación 14 px) y, si arriba hay renglones con ✕, 40 px menos */
+#relSkuWrap{width:calc((100% - 14px) * 2 / 3);}
+#relForm[data-tipo="reglas"] #relSkuWrap{width:calc((100% - 14px) * 2 / 3 - 40px);}
+#relReemplazoWrap .ds-input{width:calc(100% - 40px);}
+@media (max-width:700px){
+  #relSkuWrap{width:100%;}
+  #relForm[data-tipo="reglas"] #relSkuWrap{width:calc(100% - 40px);}
+}
