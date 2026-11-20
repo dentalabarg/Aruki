@@ -28,8 +28,13 @@
   - GEMINI_FALLBACK_MODELS (opcional, de reserva si el principal está saturado;
     por defecto gemini-flash-latest,gemini-flash-lite-latest)
 
+  Datos guardados en el servidor (v7.3):
+  - CACHE_KEY (secret, opcional): clave larga que usa la tarea automática de GitHub (cada 3 h) para bajar
+    Clientes, Artículos y Facturas a través de este conector y dejarlos guardados en ARUKI_KV (claves cache:*).
+    La misma clave va en GitHub → Settings → Secrets and variables → Actions → ARUKI_CACHE_KEY.
+
   Binding KV (Settings → Bindings):
-  - ARUKI_KV  → guarda las Relaciones y los intentos fallidos de login
+  - ARUKI_KV  → guarda las Relaciones, Etiquetas, datos guardados (cache:*) y los intentos fallidos de login
   ------------------------------------------------------------
 */
 
@@ -112,6 +117,18 @@ export default {
         return json(await writeEtiquetas(request, env, session), corsHeaders);
       }
 
+      // v7.3: datos guardados en el servidor (los sube la tarea automática de GitHub o el botón Actualizar)
+      if (url.pathname === "/cache" && request.method === "GET") {
+        return json(await cacheMeta(env), corsHeaders);
+      }
+      const cacheMatch = url.pathname.match(/^\/cache\/([a-z]+)$/);
+      if (cacheMatch && request.method === "GET") {
+        return await cacheRead(env, cacheMatch[1], corsHeaders);
+      }
+      if (cacheMatch && request.method === "PUT") {
+        return json(await cacheWrite(request, env, session, cacheMatch[1], url), corsHeaders);
+      }
+
       if (url.pathname === "/ia/elegir" && request.method === "POST") {
         return json(await iaElegir(request, env), corsHeaders);
       }
@@ -122,7 +139,7 @@ export default {
 
       throw new HttpError(
         404,
-        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas, /articulos, /clientes, /pedido, /relaciones, /etiquetas, /ia/elegir o /ia/leer."
+        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas, /articulos, /clientes, /pedido, /relaciones, /etiquetas, /cache, /ia/elegir o /ia/leer."
       );
     } catch (error) {
       const status = error instanceof HttpError ? error.status : 500;
@@ -149,7 +166,8 @@ function buildCorsHeaders(request, env) {
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Aruki-Key",
+    "Access-Control-Expose-Headers": "X-Cache-Fecha",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
     "Cache-Control": "no-store",
@@ -227,6 +245,12 @@ function requireAuthConfiguration(env) {
 
 async function requireSession(request, env) {
   requireAuthConfiguration(env);
+
+  // Tarea automática (GitHub Actions): entra con la clave CACHE_KEY en vez de una sesión
+  const robotKey = request.headers.get("X-Aruki-Key") || "";
+  if (robotKey && env.CACHE_KEY && String(env.CACHE_KEY).length >= 20 && timingSafeEqual(robotKey, String(env.CACHE_KEY))) {
+    return { name: "Tarea automática", robot: true };
+  }
 
   const authorization = request.headers.get("Authorization") || "";
   const match = authorization.match(/^Bearer\s+(.+)$/i);
@@ -459,6 +483,54 @@ async function writeRelaciones(request, env, session) {
 /* ---------- Etiquetas de observaciones (v5.7, usa ARUKI_KV) ----------
    { etiquetas: [{ id, titulo, cuerpo, creado, actualizado }], version } — compartidas entre Cotizaciones y Armar presupuesto */
 const ETIQUETAS_KEY = "etiquetas";
+
+/* ---------- Datos guardados en el servidor (v7.3) ----------
+   Se guardan comprimidos (gzip) tal cual llegan; el conector no los abre (así gasta muy poco). */
+const CACHE_NAMES = ["clientes", "articulos", "facturas"];
+const CACHE_MAX_BYTES = 24 * 1024 * 1024;   // KV acepta hasta 25 MB por clave
+
+async function cacheMeta(env) {
+  requireKv(env);
+  const { keys } = await env.ARUKI_KV.list({ prefix: "cache:" });
+  const datos = {};
+  for (const k of keys) datos[k.name.slice(6)] = k.metadata || {};
+  return { datos };
+}
+
+async function cacheRead(env, name, corsHeaders) {
+  requireKv(env);
+  if (!CACHE_NAMES.includes(name)) throw new HttpError(404, "Ese dato no existe.");
+  const { value, metadata } = await env.ARUKI_KV.getWithMetadata(`cache:${name}`, { type: "arrayBuffer" });
+  if (!value) throw new HttpError(404, "Todavía no hay datos guardados.");
+  return new Response(value, {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/octet-stream", "X-Cache-Fecha": String(metadata?.fecha || "") },
+  });
+}
+
+async function cacheWrite(request, env, session, name, url) {
+  requireKv(env);
+  if (!CACHE_NAMES.includes(name)) throw new HttpError(404, "Ese dato no existe.");
+  const body = await request.arrayBuffer();
+  const bytes = new Uint8Array(body);
+  if (bytes.length < 20 || bytes[0] !== 0x1f || bytes[1] !== 0x8b) throw new HttpError(400, "Los datos tienen que llegar comprimidos (gzip).");
+  if (bytes.length > CACHE_MAX_BYTES) throw new HttpError(413, "Los datos son demasiado grandes para guardarlos.");
+  const key = `cache:${name}`;
+  const { keys } = await env.ARUKI_KV.list({ prefix: key });
+  const prev = keys.find(k => k.name === key)?.metadata || {};
+  const now = Date.now();
+  const fecha = Math.min(now, Number(url.searchParams.get("fecha")) || now);
+  if (prev.fecha && fecha < prev.fecha) return { ok: true, guardado: false, motivo: "Ya había datos más nuevos." };
+  const metadata = {
+    fecha,
+    registros: Math.max(0, Number(url.searchParams.get("registros")) || 0),
+    bytes: bytes.length,
+    por: String(session.name || "").slice(0, 60),
+    robot: session.robot ? now : (prev.robot || 0),   // última vez que lo subió la tarea automática
+  };
+  await env.ARUKI_KV.put(key, body, { metadata });
+  return { ok: true, guardado: true, ...metadata };
+}
 
 async function readEtiquetas(env) {
   requireKv(env);

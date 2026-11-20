@@ -835,3 +835,6 @@ html #view-articulos input[type="checkbox"]:focus-visible{outline:2px solid var(
   #relSkuWrap{width:100%;}
   #relForm[data-tipo="reglas"] #relSkuWrap{width:calc(100% - 40px);}
 }
+/* v7.3: aviso cuando la tarea automática de GitHub dejó de actualizar los datos guardados */
+.stale-banner{background:var(--amber-soft); color:var(--text); border-radius:var(--radius-sm); padding:12px 16px; margin-bottom:18px; font-size:13px; line-height:1.5; box-shadow:var(--shadow-sm);}
+.stale-banner strong{color:var(--amber);}

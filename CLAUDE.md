@@ -159,6 +159,20 @@ v3.2: `cfg.cache = { key, maxAgeHours }` (hoy solo Artículos, 4 h) guarda filas
 pasaron las horas, o con Actualizar, `refreshInBackground()` descarga todo sin tocar `m.rows` (flag `m.refreshing`,
 `m.loading` queda false) y reemplaza solo si terminó completo. Un `setInterval` de 1 min revisa la antigüedad.
 Al cerrar sesión se borra el caché.
+v7.3 **datos guardados en el servidor**: `cfg.serverCache` ("articulos", "facturas"; Facturas ahora también tiene `cfg.cache` 4 h) y
+`clientesStore.syncFromServer()`. Helpers en core.js: `srvMeta()` (GET /cache, recordado 1 min), `srvGet(name)` (GET /cache/<name>,
+gzip → `DecompressionStream`), `srvPut(name, {rows, columns, total, modo, motivo, fecha})` (gzip con `CompressionStream`, PUT; si
+falla no pasa nada). Al abrir: datos locales → `m.syncFromServer()` (trae si `fecha` del servidor > `m.savedAt`) → solo si no hay nada
+más nuevo y pasaron las horas, baja de YiQi. Cada 10 min revisa el servidor. Todo lo bajado de YiQi a mano se sube (PUT).
+`m.savedAt` = fecha de los datos (la del servidor si vinieron de ahí). `staleCheck()` muestra `#staleBanner` si la última subida de la
+tarea automática (`metadata.robot`) tiene más de `SRV_STALE_HOURS` = 6 h. Conector viejo sin /cache → todo sigue como antes.
+Worker: `GET /cache` → `{ datos: { <name>: {fecha, registros, bytes, por, robot} } }` (KV list, prefijo `cache:`), `GET /cache/<name>`
+→ gzip tal cual (octet-stream), `PUT /cache/<name>?registros=&fecha=` (cuerpo gzip, máx. 24 MB, no pisa datos más nuevos). Acepta
+`X-Aruki-Key` = secreto `CACHE_KEY` (≥ 20 caracteres) como sesión "Tarea automática". Tarea de GitHub Actions
+`.github/workflows/actualizar-datos.yml` (cron `17 */3 * * *` UTC + Run workflow a mano) corre `.github/scripts/actualizar-datos.mjs`
+(secreto `ARUKI_CACHE_KEY`, igual a `CACHE_KEY`): baja las 3 rutas como la página y sube cada una; **nunca imprimir datos en el log**
+(repo público). Último paso: si el último commit tiene ≥ 40 días, escribe `.github/keepalive.txt` y hace commit (GitHub pausa los
+cron tras 60 días sin actividad).
 v3.3 (`js/articulos.js`): `artRowExcluded(row)` oculta en Artículos (cfg.filter) y saca de `getArticulosCatalog().list`
 (Cotizaciones/Relaciones) los que tienen en SKU/nombre `ART_EXCLUDE` (discontinuado, mercado libre, para fraccionar, rep wm)
 o **todos** los precios en 0/vacíos; `bySku` sigue teniendo todos (para mostrar nombres de relaciones viejas).

@@ -11,17 +11,52 @@ const clientesStore = {
   list: [], loaded: false, loading: false, savedAt: 0, error: "", listeners: new Set(),
 
   async ensureLoaded(){
-    if (this.loaded || this.loading || !getAuthToken()) return;
+    if (this.loaded || this.loading || this.syncing || !getAuthToken()) return;
     this.loading = true;
     const saved = await cacheGet("clientes");
     if (saved && Array.isArray(saved.list) && saved.list.length) {
       this.list = saved.list.filter(c => !cliOculto(c)); this.savedAt = saved.savedAt || 0; this.loaded = true;
-      this.loading = false; this.notify();
-      if (Date.now() - this.savedAt >= CLI_MAX_AGE) this.refresh();
+      this.modo = saved.modo || ""; this.motivo = saved.motivo || "";
+      this.loading = false; this.notify(); this.updateTitle();
+      // v7.3: primero lo guardado en el servidor; solo si no hay nada más nuevo y ya pasaron las horas, YiQi
+      if (!(await this.syncFromServer()) && Date.now() - this.savedAt >= CLI_MAX_AGE) this.refresh();
       return;
     }
     this.loading = false;
+    if (await this.syncFromServer()) return;
     await this.refresh();
+  },
+
+  /* v7.3: trae los clientes guardados en el servidor si son más nuevos que los de esta computadora */
+  async syncFromServer(force = false){
+    if (this.syncing || this.loading) return false;
+    const meta = await srvMeta(force);
+    const info = meta && meta.clientes;
+    if (!info || !(Number(info.fecha) > this.savedAt)) return false;
+    this.syncing = true;
+    try {
+      const data = await srvGet("clientes");
+      if (this.loading || !data || !Array.isArray(data.rows) || !data.rows.length) return false;
+      const fecha = Number(data.fecha) || Number(info.fecha);
+      if (fecha <= this.savedAt) return false;
+      this.list = cliParse(data.rows, data.columns);
+      this.modo = data.modo || ""; this.motivo = data.motivo || "";
+      this.savedAt = fecha; this.loaded = true; this.error = "";
+      cacheSet("clientes", { list: this.list, savedAt: this.savedAt, modo: this.modo, motivo: this.motivo });
+      this.notify(); this.updateTitle();
+      return true;
+    } catch (error) {
+      if (error instanceof SessionExpired) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); }
+      return false;
+    } finally {
+      this.syncing = false;
+    }
+  },
+
+  updateTitle(){
+    const btn = document.getElementById("syncCliBtn");
+    if (!btn || !this.savedAt) return;
+    btn.title = `Traer los clientes actualizados desde YiQi · ${numberFormatter.format(this.list.length)} clientes · Última actualización: ${new Date(this.savedAt).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })} (${fmtAgo(Date.now() - this.savedAt)})${modoTexto(this.modo, this.motivo)}`;
   },
 
   async refresh(){
@@ -39,7 +74,10 @@ const clientesStore = {
       this.list = cliParse(result.rows, result.columns);
       this.modo = result.modo; this.motivo = result.motivo;
       this.savedAt = Date.now(); this.loaded = true;
-      if (!result.failed.length) cacheSet("clientes", { list: this.list, savedAt: this.savedAt });
+      if (!result.failed.length) {
+        cacheSet("clientes", { list: this.list, savedAt: this.savedAt, modo: this.modo, motivo: this.motivo });
+        srvPut("clientes", { rows: result.rows, columns: result.columns, total: result.total, modo: result.modo || "", motivo: result.motivo || "", fecha: this.savedAt });
+      }
     } catch (error) {
       if (error instanceof SessionExpired) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); }
       if (ctrl.signal.aborted) stopped = true;
@@ -49,7 +87,8 @@ const clientesStore = {
       syncBtnProgress(btn, null, !!this.error, !stopped);
       btn.title = stopped ? "Actualización de clientes detenida. Tocá para volver a intentar."
         : this.error ? `No se pudieron actualizar los clientes: ${this.error}`
-        : `Traer los clientes actualizados desde YiQi · ${numberFormatter.format(this.list.length)} clientes · Última actualización: ${new Date(this.savedAt).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })}${modoTexto(this.modo, this.motivo)}`;
+        : btn.title;
+      if (!stopped && !this.error) this.updateTitle();
       if (this.error && this.manual) alert(`No se pudieron actualizar los clientes.\n\n${this.error}`);
       this.manual = false;
     }
@@ -223,6 +262,15 @@ function clientePicker(inputId, onChange){
   api.set(null, "");
   return api;
 }
+
+/* v7.3: cada 10 minutos se fija si el servidor tiene clientes nuevos; si pasaron las horas y no, baja de YiQi */
+setInterval(async () => {
+  const s = clientesStore;
+  if (!s.loaded || s.loading || s.syncing || !getAuthToken()) return;
+  const got = await s.syncFromServer();
+  if (!got && !s.loading && Date.now() - s.savedAt >= CLI_MAX_AGE) s.refresh();
+  else s.updateTitle();
+}, 10 * 60000);
 
 document.getElementById("syncCliBtn").addEventListener("click", () => {
   if (!getAuthToken()) return;

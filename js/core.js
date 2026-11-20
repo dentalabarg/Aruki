@@ -91,6 +91,7 @@ function enterApp(name){
   document.getElementById("userAvatar").textContent =
     name.split(" ").map(p => p[0]).join("").slice(0,2).toUpperCase();
   showModule("cotizaciones");
+  setTimeout(staleCheck, 4000);
 }
 
 document.getElementById("loginForm").addEventListener("submit", async function(e){
@@ -383,6 +384,60 @@ const cacheGet = key => cacheRun("readonly", st => st.get(key));
 const cacheSet = (key, value) => cacheRun("readwrite", st => st.put(value, key));
 const cacheClearAll = () => cacheRun("readwrite", st => st.clear());
 
+/* ============================================================
+   DATOS GUARDADOS EN EL SERVIDOR (v7.3, Cloudflare KV vía el conector)
+   ------------------------------------------------------------
+   Una tarea automática de GitHub baja Clientes, Artículos y Facturas cada 3 horas y los deja
+   en el conector (comprimidos). Al entrar, Aruki trae esa copia en vez de bajar todo de YiQi.
+   El botón de actualizar baja de YiQi como siempre y además sube el resultado para todos.
+   Si el conector es viejo (sin /cache), todo sigue funcionando como antes.
+   ============================================================ */
+const SRV_STALE_HOURS = 6;
+let srvMetaMemo = { at: 0, promise: null };
+async function srvFetch(path, opts = {}){
+  const token = getAuthToken();
+  if (!token) throw new SessionExpired("Sesión vencida.");
+  const r = await fetch(`${WORKER_BASE}${path}`, {
+    ...opts, cache: "no-store", headers: { ...(opts.headers || {}), Authorization: `Bearer ${token}` }
+  });
+  if (r.status === 401) throw new SessionExpired("Sesión vencida.");
+  return r;
+}
+/* { clientes:{fecha, registros, robot…}, articulos:{…}, facturas:{…} } o null (se recuerda 1 min) */
+function srvMeta(force = false){
+  if (!force && srvMetaMemo.promise && Date.now() - srvMetaMemo.at < 60000) return srvMetaMemo.promise;
+  srvMetaMemo = { at: Date.now(), promise: srvFetch("/cache").then(r => r.ok ? r.json() : null).then(j => (j && j.datos) || null).catch(() => null) };
+  return srvMetaMemo.promise;
+}
+async function srvGet(name){
+  const r = await srvFetch(`/cache/${name}`);
+  if (!r.ok) return null;
+  return await new Response(r.body.pipeThrough(new DecompressionStream("gzip"))).json();
+}
+/* Sube lo que se acaba de bajar de YiQi (si falla, no pasa nada: queda en esta computadora) */
+async function srvPut(name, payload){
+  try {
+    const gz = await new Response(new Blob([JSON.stringify(payload)]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer();
+    const r = await srvFetch(`/cache/${name}?registros=${payload.rows.length}&fecha=${payload.fecha}`,
+      { method: "PUT", headers: { "Content-Type": "application/octet-stream" }, body: gz });
+    srvMetaMemo.at = 0;
+    if (r.ok) staleCheck();
+  } catch {}
+}
+/* Aviso si la tarea automática dejó de actualizar (por ej. GitHub la pausó) */
+async function staleCheck(){
+  const banner = document.getElementById("staleBanner");
+  if (!banner || !getAuthToken()) return;
+  const meta = await srvMeta();
+  const robot = meta ? Math.max(0, ...Object.values(meta).map(d => Number(d.robot) || 0)) : 0;
+  const late = robot && Date.now() - robot > SRV_STALE_HOURS * 3600000;
+  banner.classList.toggle("hidden", !late);
+  if (late) banner.innerHTML = `<strong>Los datos no se actualizan solos desde ${fmtAgo(Date.now() - robot)}.</strong>
+    Puede que GitHub haya pausado la tarea automática: entrá a github.com → repositorio <b>Aruki</b> → pestaña <b>Actions</b> →
+    «Actualizar datos de Aruki» → botón <b>Enable workflow</b>. Mientras tanto podés actualizar con los botones de arriba.`;
+}
+setInterval(staleCheck, 10 * 60000);
+
 function fmtAgo(ms){
   const min = Math.max(0, Math.round(ms / 60000));
   if (min < 1) return "recién";
@@ -454,6 +509,7 @@ function createDataModule(cfg){
     refreshing: false, restoring: false, savedAt: 0
   };
   const cacheMaxAge = cfg.cache ? cfg.cache.maxAgeHours * 3600000 : 0;
+  const srvName = cfg.serverCache || "";   // v7.3: nombre de los datos guardados en el servidor
 
   m.setState = function(state, title, text, progress){
     const banner = $("banner");
@@ -478,8 +534,8 @@ function createDataModule(cfg){
     if (!cfg.cache || !m.savedAt) return;
     const when = new Date(m.savedAt).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
     m.setState("connected", `${numberFormatter.format(m.rows.length)} registros listos`,
-      `Actualizados el ${when} (${fmtAgo(Date.now() - m.savedAt)}). Se actualizan solos cada ${cfg.cache.maxAgeHours} horas; con Actualizar lo hacés ahora.`);
-    $("kicker").textContent = "Guardado en esta computadora";
+      `Actualizados el ${when} (${fmtAgo(Date.now() - m.savedAt)}). Se actualizan solos cada ${srvName ? 3 : cfg.cache.maxAgeHours} horas; con el botón de arriba lo hacés ahora.`);
+    $("kicker").textContent = "Datos guardados";
     $("refresh").title = `${cfg.syncTitle || "Traer los datos actualizados desde YiQi"} · ${numberFormatter.format(m.rows.length)} registros · Última actualización: ${when} (${fmtAgo(Date.now() - m.savedAt)})${modoTexto(m.modo, m.motivo)}`;
   };
 
@@ -620,10 +676,45 @@ function createDataModule(cfg){
   };
 
   const savedAgo = () => m.savedAt ? `los datos guardados (${fmtAgo(Date.now() - m.savedAt)})` : "los datos ya cargados";
-  m.saveCache = function(){
-    m.savedAt = Date.now();
+  /* fromServer: los datos vinieron del servidor (no se vuelven a subir) */
+  m.saveCache = function(fromServer = false){
+    if (!fromServer) m.savedAt = Date.now();
     const rows = m.rows.map(r => { const { __s, ...rest } = r; return rest; });
-    cacheSet(cfg.cache.key, { rows, columns: m.columns, total: m.total, savedAt: m.savedAt });
+    cacheSet(cfg.cache.key, { rows, columns: m.columns, total: m.total, savedAt: m.savedAt, modo: m.modo, motivo: m.motivo });
+    if (!fromServer && srvName) srvPut(srvName, { rows, columns: m.columns, total: m.total, modo: m.modo || "", motivo: m.motivo || "", fecha: m.savedAt });
+  };
+
+  /* v7.3: si el servidor tiene datos más nuevos que los de esta computadora, los trae (true si los trajo) */
+  m.syncFromServer = async function(force = false){
+    if (!srvName || m.syncing || m.loading || m.refreshing) return false;
+    const meta = await srvMeta(force);
+    const info = meta && meta[srvName];
+    if (!info || !(Number(info.fecha) > m.savedAt)) return false;
+    m.syncing = true;
+    const id = m.loadId;
+    if (!m.rows.length) m.setState("loading", "Trayendo los datos guardados", "Un momento…", 0.5);
+    try {
+      const data = await srvGet(srvName);
+      if (id !== m.loadId || m.loading || m.refreshing) return false;
+      if (!data || !Array.isArray(data.rows) || !data.rows.length) return false;
+      const fecha = Number(data.fecha) || Number(info.fecha);
+      if (fecha <= m.savedAt) return false;
+      const first = !m.rows.length;
+      m.rows = data.rows; m.columns = data.columns || m.columns; m.total = data.total || data.rows.length;
+      m.modo = data.modo || ""; m.motivo = data.motivo || "";
+      m.savedAt = fecha; m.loaded = true; m.failed = [];
+      if (first) m.viewPage = 1;
+      m.saveCache(true);
+      m.showSavedState();
+      m.render();
+      document.dispatchEvent(new CustomEvent("aruki:loaded", { detail: { endpoint: cfg.endpoint } }));
+      return true;
+    } catch (error) {
+      if (error instanceof SessionExpired) { clearSession(); showLogin("La sesión venció. Volvé a ingresar."); }
+      return false;
+    } finally {
+      m.syncing = false;
+    }
   };
 
   /* Descarga todo de nuevo sin borrar lo que se está usando; reemplaza al terminar bien */
@@ -670,7 +761,7 @@ function createDataModule(cfg){
   m.stop = function(){ if (m.abort) m.abort.abort(); };
 
   m.ensureLoaded = async function(){
-    if (m.loaded || m.loading || m.refreshing || m.restoring || !getAuthToken()) return;
+    if (m.loaded || m.loading || m.refreshing || m.restoring || m.syncing || !getAuthToken()) return;
     if (cfg.cache) {
       m.restoring = true;
       const loadId = m.loadId;
@@ -682,24 +773,36 @@ function createDataModule(cfg){
         m.columns = saved.columns || [];
         m.total = saved.total || saved.rows.length;
         m.savedAt = saved.savedAt || 0;
+        m.modo = saved.modo || ""; m.motivo = saved.motivo || "";
         m.loaded = true;
         m.viewPage = 1;
         m.showSavedState();
         m.render();
         document.dispatchEvent(new CustomEvent("aruki:loaded", { detail: { endpoint: cfg.endpoint } }));
-        if (Date.now() - m.savedAt >= cacheMaxAge) m.load();
+        // Primero se fija si el servidor tiene algo más nuevo; solo si no y ya pasaron las horas, baja de YiQi
+        const got = await m.syncFromServer();
+        if (!got && !m.loading && !m.refreshing && Date.now() - m.savedAt >= cacheMaxAge) m.load();
         return;
       }
+      // Nada en esta computadora: se prueba con lo guardado en el servidor antes de bajar todo de YiQi
+      if (await m.syncFromServer()) return;
+      if (m.loaded || m.loading || m.refreshing) return;
     }
     m.load();
   };
 
-  /* Cada minuto: refresca el "hace X min" y actualiza solo cuando pasaron las horas indicadas */
+  /* Cada minuto: refresca el "hace X min"; cada 10 min se fija si el servidor tiene datos nuevos;
+     si pasaron las horas indicadas y el servidor no tiene nada más nuevo, baja de YiQi */
   if (cfg.cache) {
-    setInterval(() => {
-      if (!m.loaded || !m.savedAt || m.loading || m.refreshing || !getAuthToken()) return;
-      if (Date.now() - m.savedAt >= cacheMaxAge) m.load();
-      else if ($("banner").dataset.state === "connected") m.showSavedState();
+    let ticks = 0;
+    setInterval(async () => {
+      ticks += 1;
+      if (!m.loaded || !m.savedAt || m.loading || m.refreshing || m.syncing || !getAuthToken()) return;
+      if (Date.now() - m.savedAt >= cacheMaxAge) {
+        if (!(await m.syncFromServer()) && !m.loading && !m.refreshing && Date.now() - m.savedAt >= cacheMaxAge) m.load();
+      } else if (srvName && ticks % 10 === 0) {
+        await m.syncFromServer();
+      } else if ($("banner").dataset.state === "connected") m.showSavedState();
     }, 60000);
   }
 

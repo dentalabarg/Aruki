@@ -4,8 +4,19 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "7.2";
+const LATEST_VERSION = "7.3";
 const CHANGELOG = [
+  {
+    version: "7.3",
+    date: "2026-11-20",
+    title: "Datos guardados en el servidor",
+    items: [
+      { type: "nuevo", text: "Clientes, Artículos y Facturas quedan guardados en el servidor y una tarea automática los actualiza desde YiQi cada 3 horas. Al entrar a Aruki ya están listos, en cualquier computadora." },
+      { type: "nuevo", text: "Cuando actualizás con los botones de arriba, lo que se baja de YiQi también queda guardado para todos." },
+      { type: "mejora", text: "Facturas se guarda en la computadora como Artículos y Clientes: ya no se vuelve a bajar cada vez que entrás." },
+      { type: "nuevo", text: "Si la tarea automática deja de actualizar por más de 6 horas, aparece un aviso arriba con los pasos para reactivarla." }
+    ]
+  },
   {
     version: "7.2",
     date: "2026-11-20",

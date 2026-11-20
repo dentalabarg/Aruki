@@ -127,6 +127,7 @@ const articulosModule = createDataModule({
   endpoint: `${WORKER_BASE}/articulos`,
   viewSize: 100,
   cache: { key: "articulos", maxAgeHours: 4 },
+  serverCache: "articulos",   // v7.3
   syncTitle: "Traer los artículos actualizados desde YiQi (se hace solo cada 4 horas)",   // guardado en la computadora, se actualiza solo cada 4 h
   loadingTitle: "Cargando todos los artículos desde YiQi",
   idleText: "Aruki carga todos los artículos al abrir este módulo.",

@@ -23,6 +23,8 @@ let currentStatus = "todas";
 
 const facturasModule = createDataModule({
   endpoint: `${WORKER_BASE}/facturas`,
+  cache: { key: "facturas", maxAgeHours: 4 },   // v7.3: guardadas en la computadora y en el servidor
+  serverCache: "facturas",
   syncTitle: "Traer las facturas actualizadas desde YiQi",
   viewSize: 50,
   loadingTitle: "Cargando todas las facturas desde YiQi",

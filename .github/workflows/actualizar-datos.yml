@@ -1,0 +1,48 @@
+# ARUKI — Tarea automática: cada 3 horas baja Clientes, Artículos y Facturas de YiQi
+# (a través del conector de Cloudflare) y los deja guardados en el conector.
+# Ver .github/scripts/actualizar-datos.mjs. Se puede correr a mano desde la pestaña Actions → Run workflow.
+name: Actualizar datos de Aruki
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"   # cada 3 horas (minuto 17, hora UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: write   # solo para el archivo .github/keepalive.txt (ver el último paso)
+
+concurrency:
+  group: actualizar-datos
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bajar de YiQi y guardar en el conector
+        env:
+          ARUKI_CACHE_KEY: ${{ secrets.ARUKI_CACHE_KEY }}
+        run: node .github/scripts/actualizar-datos.mjs
+
+      # GitHub pausa las tareas programadas si el repositorio pasa 60 días sin cambios.
+      # Si el último cambio tiene 40 días o más, se anota la fecha en .github/keepalive.txt (no toca Aruki ni datos).
+      - name: Mantener activa la tarea
+        if: always()
+        run: |
+          last=$(git log -1 --format=%ct)
+          now=$(date +%s)
+          if [ $(( (now - last) / 86400 )) -ge 40 ]; then
+            date -u +"%Y-%m-%d %H:%M UTC" > .github/keepalive.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+            git add .github/keepalive.txt
+            git commit -m "Mantener activa la tarea automática"
+            git push
+          fi
