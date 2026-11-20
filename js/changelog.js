@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "7.1";
+const LATEST_VERSION = "7.2";
 const CHANGELOG = [
+  {
+    version: "7.2",
+    date: "2026-11-20",
+    title: "Nuevo modo oscuro gris cálido",
+    items: [
+      { type: "mejora", text: "El modo oscuro pasa de negro a grises cálidos (como el de Claude): se distinguen mejor el fondo, los recuadros, los cuadros de texto y los bordes. El azul es más claro para leerse bien." },
+      { type: "mejora", text: "El fondo de la página es de un solo tono, sin el degradé que tenía en una esquina (en los dos temas)." }
+    ]
+  },
   {
     version: "7.1",
     date: "2026-11-20",

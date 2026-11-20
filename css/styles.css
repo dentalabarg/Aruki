@@ -2,23 +2,24 @@
    1. TOKENS
    ============================================================ */
 :root{
-  --bg:#0a0a0b; --bg-elev:#0f1013; --bg-elev-2:#14161b; --bg-soft:#181b21;
-  --line:rgba(255,255,255,.08); --line-strong:rgba(255,255,255,.14);
-  --text:#f3f5f7; --muted:#908e8e; --muted-2:#7d7c82;
-  --cyan:#00ccff; --cyan-soft:rgba(0,204,255,.10); --cyan-soft-2:rgba(0,204,255,.16);
-  --text-cyan-muted:rgba(0,195,240,.72);
+  /* v7.2: tema oscuro "gris cálido" (estilo Claude), tonos planos */
+  --bg:#1f1e1d; --bg-elev:#2a2928; --bg-elev-2:#343331; --bg-soft:#3b3a37;
+  --line:#45433f; --line-strong:#55524d;
+  --text:#f2f0eb; --muted:#aaa69d; --muted-2:#938f86;
+  --cyan:#6aa9ec; --cyan-soft:rgba(106,169,236,.14); --cyan-soft-2:rgba(106,169,236,.22);
+  --text-cyan-muted:rgba(106,169,236,.85);
   --green:#15d49c; --green-soft:rgba(21,212,156,.10);
   --amber:#ffb020; --amber-soft:rgba(255,176,32,.10);
   --red:#ff637d; --red-soft:rgba(255,99,125,.10);
   --purple:#a78bfa; --purple-soft:rgba(167,139,250,.12);
-  --glow:0 0 0 3px rgba(0,204,255,.22);
+  --glow:0 0 0 3px rgba(106,169,236,.26);
   --sans:"Inter",system-ui,sans-serif;
   --display:"Plus Jakarta Sans","Inter",system-ui,sans-serif;
   --mono:"IBM Plex Mono",monospace;
   --radius-xs:6px; --radius-sm:10px; --radius:14px; --radius-pill:999px;
-  --shadow-sm:0 1px 3px rgba(0,18,28,.30);
-  --shadow-md:0 4px 14px rgba(0,20,30,.26);
-  --shadow-lg:0 12px 40px rgba(0,26,40,.34), 0 2px 12px rgba(0,204,255,.06);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.30);
+  --shadow-md:0 4px 14px rgba(0,0,0,.35);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.45);
   --transition-fast:120ms ease; --transition-base:180ms ease;
   --sidebar-w:240px; --sidebar-w-collapsed:72px; --topbar-h:56px;
   --text-white:#ffffff;
@@ -49,17 +50,8 @@ html,body{overflow-x:clip;}
 ::-webkit-scrollbar-thumb{background:var(--line-strong); border-radius:var(--radius-pill); border:2px solid var(--bg);}
 body{
   margin:0; font:400 14px/1.4 var(--sans); color:var(--text);
-  background:
-    radial-gradient(circle at 72% 8%, rgba(0,204,255,.07), transparent 28%),
-    radial-gradient(circle at 12% 60%, rgba(0,204,255,.04), transparent 22%),
-    var(--bg);
+  background:var(--bg);   /* v7.2: fondo plano, sin degradé */
   min-height:100vh; transition:background var(--transition-base), color var(--transition-base);
-}
-html[data-theme="light"] body{
-  background:
-    radial-gradient(circle at 72% 8%, rgba(27,96,171,.06), transparent 28%),
-    radial-gradient(circle at 12% 60%, rgba(27,96,171,.04), transparent 22%),
-    var(--bg);
 }
 h1,h2,h3{font-family:var(--display); margin:0; color:var(--text);}
 button{font-family:var(--sans);}
@@ -136,7 +128,7 @@ button{font-family:var(--sans);}
 .topbar{
   position:sticky; top:0; z-index:99; display:flex; align-items:center;
   justify-content:space-between; gap:16px; padding:0 20px; height:var(--topbar-h);
-  background:rgba(12,12,14,.82); backdrop-filter:blur(18px);
+  background:color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter:blur(18px);
   border-bottom:1px solid var(--line);
 }
 html[data-theme="light"] .topbar{background:rgba(238,236,231,.88);}
@@ -242,7 +234,7 @@ html[data-theme="light"] .topbar{background:rgba(238,236,231,.88);}
 .search-wrap{position:relative; min-width:220px; flex:1;}
 .search-icon{position:absolute; left:12px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--muted-2); pointer-events:none;}
 .search-input{width:100%; height:38px; padding:0 14px 0 36px; background:var(--bg-elev-2); border:1px solid transparent; border-radius:var(--radius-sm); color:var(--text); font:400 13px var(--sans); outline:none;}
-.search-input:focus{border-color:rgba(0,204,255,.3); box-shadow:0 0 0 3px var(--cyan-soft);}
+.search-input:focus{border-color:var(--cyan-soft-2); box-shadow:0 0 0 3px var(--cyan-soft);}
 .range-filter{display:inline-flex; align-items:center; gap:2px; padding:2px; border-radius:var(--radius-pill); background:var(--bg-elev-2); flex-shrink:0;}
 .range-btn{padding:7px 13px; font:500 12.5px var(--sans); color:var(--muted); background:transparent; border:none; border-radius:var(--radius-pill); cursor:pointer; white-space:nowrap;}
 .range-btn.is-active{background:var(--cyan-soft); color:var(--cyan); font-weight:600;}
