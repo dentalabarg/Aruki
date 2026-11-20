@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "6.9";
+const LATEST_VERSION = "7.0";
 const CHANGELOG = [
+  {
+    version: "7.0",
+    date: "2026-11-20",
+    title: "Botones de agregar sin contorno",
+    items: [
+      { type: "mejora", text: "\"+ Agregar condición\" y \"+ Nuevo equivalente\" quedan solo con el fondo celeste clarito, sin contorno azul." }
+    ]
+  },
   {
     version: "6.9",
     date: "2026-11-20",

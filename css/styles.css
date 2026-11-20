@@ -830,7 +830,7 @@ html #view-articulos input[type="checkbox"]:focus-visible{outline:2px solid var(
 .rel-result > span.sku:first-child{min-width:96px;}   /* SKU alineados (la regla de v5.9 le sacaba el ancho mínimo) */
 .rel-result.art-res, #relSkuResults .rel-result{gap:10px;}   /* v6.6: menos hueco entre SKU y nombre */
 /* v6.9: "+ Agregar condición" y "+ Nuevo equivalente" con color propio para que se vean como botones */
-.rel-reglas-foot .btn-ghost{background:var(--cyan-soft); color:var(--cyan); font-weight:600; box-shadow:inset 0 0 0 1.5px var(--cyan);}
+.rel-reglas-foot .btn-ghost{background:var(--cyan-soft); color:var(--cyan); font-weight:600; box-shadow:none;}
 @media (hover:hover){ .rel-reglas-foot .btn-ghost:hover{background:var(--cyan); color:#fff;} }
 /* v6.9: en Palabras equivalentes la Nota va a la derecha (como en los otros tipos) y "Es lo mismo que…" abajo */
 #relReemplazoWrap{order:1;}
