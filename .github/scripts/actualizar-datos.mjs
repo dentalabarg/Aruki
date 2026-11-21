@@ -71,7 +71,40 @@ async function getAll(name) {
   return { rows, columns: first.columns, total, modo: first.modo || "", motivo: first.motivo || "", failed, totalPages };
 }
 
+/* v7.5 Cobranzas: 4 partes (facturas emitidas y entregadas con saldo, saldos a favor, últimos pagos) */
+async function getParte(parte) {
+  const extra = `&parte=${parte}`;
+  const first = await getPage("cobranzas", 1, extra);
+  const pageSize = Number(first.pageSize) || first.data.length || 1;
+  const total = Number(first.total) || first.data.length;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const rows = [...first.data];
+  for (let p = 2; p <= pages; p++) rows.push(...(await getPage("cobranzas", p, extra)).data);
+  return rows;
+}
+async function getCobranzas() {
+  const [emitidas, entregadas, saldos, pagos] = [await getParte("emitidas"), await getParte("entregadas"), await getParte("saldos"), await getParte("pagos")];
+  return { facturas: [...emitidas, ...entregadas], saldos, pagos };
+}
+
 let errors = 0;
+{
+  const t0 = Date.now();
+  try {
+    const c = await getCobranzas();
+    const fecha = Date.now();
+    const gz = gzipSync(JSON.stringify({ rows: c.facturas, saldos: c.saldos, pagos: c.pagos, fecha }));
+    const res = await fetch(`${BASE}/cache/cobranzas?registros=${c.facturas.length}&fecha=${fecha}`, {
+      method: "PUT", headers: { ...headers, "Content-Type": "application/octet-stream" }, body: gz
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || out.error) throw new Error(out.error || `no se pudo guardar (HTTP ${res.status})`);
+    console.log(`✔ cobranzas: ${c.facturas.length} facturas con saldo, ${c.saldos.length} saldos a favor, ${c.pagos.length} últimos pagos, ${Math.round(gz.length / 1024)} KB, ${Math.round((Date.now() - t0) / 1000)} s`);
+  } catch (error) {
+    errors++;
+    console.error(`✘ cobranzas: ${error.message}`);
+  }
+}
 for (const name of NAMES) {
   const t0 = Date.now();
   try {

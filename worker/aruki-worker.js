@@ -109,6 +109,19 @@ export default {
         return json(await writeRelaciones(request, env, session), corsHeaders);
       }
 
+      // v7.5 Cobranzas: partes de la cuenta corriente (de a una página de YiQi por pedido)
+      if (url.pathname === "/cobranzas" && request.method === "GET") {
+        const page = normalizePage(url.searchParams.get("page"));
+        return json(await getCobranzasParte(env, String(url.searchParams.get("parte") || ""), page), corsHeaders);
+      }
+      // v7.5 Notas de seguimiento de cobranza por cliente
+      if (url.pathname === "/notas" && request.method === "GET") {
+        return json(await readNotas(env), corsHeaders);
+      }
+      if (url.pathname === "/notas" && request.method === "POST") {
+        return json(await writeNota(request, env, session), corsHeaders);
+      }
+
       if (url.pathname === "/etiquetas" && request.method === "GET") {
         return json(await readEtiquetas(env), corsHeaders);
       }
@@ -139,7 +152,7 @@ export default {
 
       throw new HttpError(
         404,
-        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas, /articulos, /clientes, /pedido, /relaciones, /etiquetas, /cache, /ia/elegir o /ia/leer."
+        "Ruta no encontrada. Usá /auth/login, /auth/session, /login-info, /facturas, /articulos, /clientes, /pedido, /relaciones, /etiquetas, /cache, /cobranzas, /notas, /ia/elegir o /ia/leer."
       );
     } catch (error) {
       const status = error instanceof HttpError ? error.status : 500;
@@ -486,7 +499,7 @@ const ETIQUETAS_KEY = "etiquetas";
 
 /* ---------- Datos guardados en el servidor (v7.3) ----------
    Se guardan comprimidos (gzip) tal cual llegan; el conector no los abre (así gasta muy poco). */
-const CACHE_NAMES = ["clientes", "articulos", "facturas"];
+const CACHE_NAMES = ["clientes", "articulos", "facturas", "cobranzas"];
 const CACHE_MAX_BYTES = 24 * 1024 * 1024;   // KV acepta hasta 25 MB por clave
 
 async function cacheMeta(env) {
@@ -530,6 +543,91 @@ async function cacheWrite(request, env, session, name, url) {
   };
   await env.ARUKI_KV.put(key, body, { metadata });
   return { ok: true, guardado: true, ...metadata };
+}
+
+/* ---------- Cobranzas (v7.5) ----------
+   La cuenta corriente sale de 4 consultas a YiQi (POST /{ENTIDAD}/query, hasta 1000 por página):
+     emitidas / entregadas → facturas en ese estado con saldo pendiente >= 1 (todas las fechas)
+     saldos                → clientes con saldo no imputado (a favor) >= 1
+     pagos                 → última fecha de recibo por cliente (MAX de FACT_FECHA_DE_ULTIMO_COBR, últimos 2 años)
+   Las exclusiones (Mercado Libre, facturas de $1, pruebas) las hace la página. */
+const COB_FACT_COLS = ["id", "CLIE_ID_CLIE", "CLIE_RAZON_SOCIAL", "CLIE_NOMBRE", "VEHA_NOMBRE", "PUVE_NOMBRE", "TIFA_NOMBRE",
+  "FACT_NUMERO", "FACT_FECHA_EMISION", "FACT_FECHA_VENCIMIENTO", "FACT_TOTAL", "FACT_PENDIENTE_CANCELACIO", "MON1_NOMBRE",
+  "COVE_DESCRIPCION", "FACT_EXTE_NOMBRE", "DESC_ESTADO"];
+const COB_OPTIONAL = new Set(["CLIE_NOMBRE", "MON1_NOMBRE", "TIFA_NOMBRE", "PUVE_NOMBRE", "COVE_DESCRIPCION"]);
+
+async function cobQuery(env, entity, page, columns, filtersVariants) {
+  let last = null;
+  for (const filters of filtersVariants) {
+    const r = await runQuery(env, entity, page, columns, filters);
+    if (r.ok) return r;
+    last = r;
+    if (r.status === 401 || r.status === 403) break;
+  }
+  return last;
+}
+
+async function getCobranzasParte(env, parte, page) {
+  const f = (columnName, operator, value) => ({ columnName, operator, value });
+  if (parte === "emitidas" || parte === "entregadas") {
+    const estado = parte === "emitidas" ? "Emitida" : "Entregada";
+    const filters = [[f("DESC_ESTADO", "=", estado), f("FACT_PENDIENTE_CANCELACIO", ">=", 1)]];
+    let fields = COB_FACT_COLS;
+    const cols = fl => fl.map(field => ({ field, ...(field === "FACT_FECHA_EMISION" ? { sortDirection: "ASC", sortOrder: 1 } : {}) }));
+    let r = await cobQuery(env, "FACTURA", page, cols(fields), filters);
+    if (!r?.ok) {   // si YiQi rechaza alguna columna optativa, se reintenta sin ellas
+      fields = COB_FACT_COLS.filter(c => !COB_OPTIONAL.has(c));
+      r = await cobQuery(env, "FACTURA", page, cols(fields), filters);
+    }
+    if (!r?.ok) throw new HttpError(502, `YiQi no devolvió las facturas pendientes (${r?.status || "?"}): ${shortErr(r || {})}`);
+    return { data: r.payload.data, total: Number(r.payload.total) || r.payload.data.length, pageSize: FAST_PAGE_SIZE };
+  }
+  if (parte === "saldos") {
+    const r = await cobQuery(env, "CLIENTE", page, [{ field: "id" }, { field: "CLIE_SALDO_CLIENTE", sortDirection: "DESC", sortOrder: 1 }],
+      [[f("CLIE_SALDO_CLIENTE", ">=", 1)]]);
+    if (!r?.ok) throw new HttpError(502, `YiQi no devolvió los saldos a favor (${r?.status || "?"}): ${shortErr(r || {})}`);
+    return { data: r.payload.data, total: Number(r.payload.total) || r.payload.data.length, pageSize: FAST_PAGE_SIZE };
+  }
+  if (parte === "pagos") {
+    const d = new Date(Date.now() - 730 * 86400000).toISOString().slice(0, 10);
+    const r = await cobQuery(env, "FACTURA", page,
+      [{ field: "CLIE_ID_CLIE", sortDirection: "ASC", sortOrder: 1 }, { field: "FACT_FECHA_DE_ULTIMO_COBR", aggregation: "MAX" }],
+      [[f("FACT_FECHA_DE_ULTIMO_COBR", ">=", d)], [f("FACT_FECHA_DE_ULTIMO_COBR", ">=", `${d}T00:00:00`)]]);
+    if (!r?.ok) throw new HttpError(502, `YiQi no devolvió los últimos pagos (${r?.status || "?"}): ${shortErr(r || {})}`);
+    return { data: r.payload.data, total: Number(r.payload.total) || r.payload.data.length, pageSize: FAST_PAGE_SIZE };
+  }
+  throw new HttpError(400, "Parte desconocida (emitidas, entregadas, saldos o pagos).");
+}
+
+/* ---------- Notas de seguimiento de cobranza (v7.5) ----------
+   KV "notas-cobranza" = { notas: { <clienteId>: [{ id, texto, recordar, autor, fecha }] }, version } */
+const NOTAS_KEY = "notas-cobranza";
+async function readNotas(env) {
+  requireKv(env);
+  const stored = await env.ARUKI_KV.get(NOTAS_KEY, "json");
+  return { notas: stored?.notas && typeof stored.notas === "object" ? stored.notas : {}, version: stored?.version || 0 };
+}
+async function writeNota(request, env, session) {
+  requireKv(env);
+  let body;
+  try { body = await request.json(); } catch { throw new HttpError(400, "Los datos enviados no tienen un formato válido."); }
+  const cliente = String(body?.clienteId || "").replace(/[^\w-]/g, "").slice(0, 40);
+  if (!cliente) throw new HttpError(400, "Falta el cliente.");
+  const current = await readNotas(env);
+  const list = Array.isArray(current.notas[cliente]) ? current.notas[cliente] : [];
+  if (body.accion === "borrar") {
+    current.notas[cliente] = list.filter(n => n.id !== String(body.id || ""));
+  } else {
+    const texto = String(body?.texto || "").trim().slice(0, 1500);
+    if (!texto) throw new HttpError(400, "La nota está vacía.");
+    const recordar = /^\d{4}-\d{2}-\d{2}$/.test(String(body?.recordar || "")) ? body.recordar : "";
+    list.unshift({ id: crypto.randomUUID(), texto, recordar, autor: String(session?.name || "").slice(0, 60), fecha: Date.now() });
+    current.notas[cliente] = list.slice(0, 100);
+  }
+  if (!current.notas[cliente].length) delete current.notas[cliente];
+  const next = { notas: current.notas, version: Date.now() };
+  await env.ARUKI_KV.put(NOTAS_KEY, JSON.stringify(next));
+  return next;
 }
 
 async function readEtiquetas(env) {

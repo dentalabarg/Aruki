@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=7.4">
+<link rel="stylesheet" href="css/styles.css?v=7.5">
 </head>
 <body>
 
@@ -133,22 +133,81 @@
         </svg>
         <span>Artículos</span>
       </div>
-      <div class="nav-item" data-module="facturas">
+      <div class="nav-kicker">Cobranzas</div>
+      <div class="nav-item" data-module="cobranzas" title="Cuentas corrientes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .9-3 2.2 0 3 6 1.6 6 4.6 0 1.3-1.3 2.2-3 2.2-1.5 0-2.6-.6-3.1-1.6M12 6.5v1.5M12 16v1.5"/>
+        </svg>
+        <span>Cuentas corrientes</span>
+      </div>
+      <div class="nav-item" data-module="facturas" title="Facturas de venta">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 3h13l3 3v15H4z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/>
         </svg>
-        <span>Control Facturas</span>
+        <span>Facturas de venta</span>
       </div>
       <div class="sidebar-foot">Aruki<br>© 2026</div>
     </nav>
 
     <main class="content">
       <div class="stale-banner hidden" id="staleBanner" role="status"></div>
+      <!-- MÓDULO: COBRANZAS › CUENTAS CORRIENTES (v7.5, js/cobranzas.js) -->
+      <section id="view-cobranzas" class="hidden">
+        <div id="cobLista">
+          <div class="page-head">
+            <div>
+              <div class="page-kicker">Cobranzas</div>
+              <h1 class="page-title">Cuentas corrientes</h1>
+              <div class="cob-sub" id="cobUpdated">—</div>
+            </div>
+            <div class="page-head-actions">
+              <button class="btn btn-secondary" id="cobRefreshBtn" type="button">Actualizar desde YiQi</button>
+              <button class="btn btn-secondary" id="cobExcelBtn" type="button">Exportar Excel</button>
+              <button class="btn btn-secondary" id="cobPdfBtn" type="button">Exportar PDF</button>
+            </div>
+          </div>
+          <div class="cob-msg hidden" id="cobMsg"></div>
+          <div class="kpi-grid" id="cobKpis"></div>
+          <div class="panel cob-aging-panel">
+            <div class="panel-head"><div class="panel-title">Antigüedad de la deuda <span class="cob-muted">(días desde la emisión · tocá un tramo para filtrar)</span></div></div>
+            <div class="cob-aging" id="cobAging"></div>
+            <div class="cob-aging-legend" id="cobAgingLegend"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head cob-filters">
+              <div class="range-filter" id="cobViewTabs">
+                <button class="range-btn is-active" data-view="clientes" type="button">Por cliente</button>
+                <button class="range-btn" data-view="facturas" type="button">Por factura</button>
+                <button class="range-btn" data-view="vendedores" type="button">Por vendedor</button>
+              </div>
+              <div class="toolbar cob-toolbar">
+                <div class="search-wrap">
+                  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input class="search-input" id="cobSearch" type="text" placeholder="Buscar cliente, CUIT o factura…">
+                </div>
+                <select class="ds-input" id="cobVendedor"><option value="">Todos los vendedores</option></select>
+                <select class="ds-input" id="cobCondicion"><option value="">Toda condición de venta</option></select>
+                <div class="range-filter" id="cobEdad">
+                  <button class="range-btn is-active" data-min="0" type="button">Todas</button>
+                  <button class="range-btn" data-min="31" type="button">+30 días</button>
+                  <button class="range-btn" data-min="61" type="button">+60</button>
+                  <button class="range-btn" data-min="91" type="button">+90</button>
+                  <button class="range-btn" data-min="181" type="button">+180</button>
+                </div>
+                <label class="cob-check"><input type="checkbox" id="cobFavor"> Con saldo a favor</label>
+              </div>
+            </div>
+            <div class="cob-table-wrap" id="cobTableWrap"></div>
+          </div>
+        </div>
+        <div id="cobDetalle" class="hidden"></div>
+      </section>
+
       <!-- MÓDULO: CONTROL FACTURAS -->
       <section id="view-facturas" class="hidden">
         <div class="page-head">
           <div>
-            <div class="page-kicker">Control Facturas</div>
+            <div class="page-kicker">Cobranzas</div>
             <h1 class="page-title">Facturas de venta</h1>
           </div>
           <div class="page-head-actions">
@@ -710,18 +769,19 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=7.4"></script>
-<script src="js/core.js?v=7.4"></script>
-<script src="js/facturas.js?v=7.4"></script>
-<script src="js/articulos.js?v=7.4"></script>
-<script src="js/relaciones.js?v=7.4"></script>
-<script src="js/clientes.js?v=7.4"></script>
-<script src="js/presupuesto-comun.js?v=7.4"></script>
-<script src="js/observaciones.js?v=7.4"></script>
-<script src="js/cotizaciones.js?v=7.4"></script>
-<script src="js/cot-archivos.js?v=7.4"></script>
-<script src="js/cot-ia.js?v=7.4"></script>
-<script src="js/manual.js?v=7.4"></script>
-<script src="js/main.js?v=7.4"></script>
+<script src="js/changelog.js?v=7.5"></script>
+<script src="js/core.js?v=7.5"></script>
+<script src="js/facturas.js?v=7.5"></script>
+<script src="js/articulos.js?v=7.5"></script>
+<script src="js/relaciones.js?v=7.5"></script>
+<script src="js/clientes.js?v=7.5"></script>
+<script src="js/presupuesto-comun.js?v=7.5"></script>
+<script src="js/observaciones.js?v=7.5"></script>
+<script src="js/cotizaciones.js?v=7.5"></script>
+<script src="js/cot-archivos.js?v=7.5"></script>
+<script src="js/cot-ia.js?v=7.5"></script>
+<script src="js/manual.js?v=7.5"></script>
+<script src="js/cobranzas.js?v=7.5"></script>
+<script src="js/main.js?v=7.5"></script>
 </body>
 </html>

@@ -159,6 +159,7 @@ document.getElementById("logoutBtn").addEventListener("click", function(){
   relacionesModule.reset();
   cotizacionesModule.reset();
   manualModule.reset();
+  if (typeof cobranzasModule !== "undefined") cobranzasModule.reset();
   clientesStore.reset();
   showModule("cotizaciones");
 });

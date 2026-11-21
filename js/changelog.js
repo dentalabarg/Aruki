@@ -4,8 +4,19 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "7.4";
+const LATEST_VERSION = "7.5";
 const CHANGELOG = [
+  {
+    version: "7.5",
+    date: "2026-11-21",
+    title: "Cobranzas: cuentas corrientes",
+    items: [
+      { type: "nuevo", text: "Nueva sección Cobranzas en el menú. «Cuentas corrientes» muestra cuánto debe cada cliente (todas las facturas con saldo, de cualquier fecha), la antigüedad desde la emisión, el saldo a favor sin imputar, el saldo neto y el último pago." },
+      { type: "nuevo", text: "Se puede ver por cliente, por factura o por vendedor, filtrar (búsqueda, vendedor, condición de venta, antigüedad, con saldo a favor) y exportar lo que se ve a Excel o PDF. Las columnas se ordenan tocando el título y se ensanchan arrastrando el borde." },
+      { type: "nuevo", text: "Estado de cuenta de cada cliente: sus facturas con saldo, PDF con el logo para mandarle (con un texto al pie elegido de las Etiquetas), Excel, texto para WhatsApp y notas de seguimiento con recordatorio." },
+      { type: "mejora", text: "Quedan afuera Mercado Libre, las facturas de $1, Consumidor Final y las pruebas. «Control Facturas» pasa a llamarse «Facturas de venta» dentro de Cobranzas." }
+    ]
+  },
   {
     version: "7.4",
     date: "2026-11-20",

@@ -11,9 +11,31 @@ Publicada con GitHub Pages: https://dentalabarg.github.io/Aruki/
 - Valora gastar pocos tokens: leer solo los archivos necesarios, editar con cambios puntuales,
   no reescribir archivos enteros.
 
-## Menú (v3.4)
+## Menú (v7.5)
 Presupuesto automático (Cotizaciones, Relaciones) → Presupuesto manual (Armar presupuesto, módulo `manual`) →
-Consultas (Artículos, Control Facturas). Al entrar se abre Cotizaciones.
+Consultas (Artículos) → Cobranzas (Cuentas corrientes = módulo `cobranzas`; Facturas de venta = módulo `facturas`, el viejo
+"Control Facturas"). Al entrar se abre Cotizaciones.
+
+## Cobranzas › Cuentas corrientes (v7.5, `js/cobranzas.js`)
+- Datos: Worker `GET /cobranzas?parte=emitidas|entregadas|saldos|pagos&page=N` (una página de YiQi `/query` de 1000 por pedido,
+  `getCobranzasParte()`): FACTURA en estado Emitida / Entregada con `FACT_PENDIENTE_CANCELACIO >= 1` (todas las fechas; columnas
+  `COB_FACT_COLS`, si YiQi rechaza alguna optativa reintenta sin `COB_OPTIONAL`), CLIENTE con `CLIE_SALDO_CLIENTE >= 1`
+  (saldo no imputado, >0 = a favor del cliente) y MAX(`FACT_FECHA_DE_ULTIMO_COBR`) por `CLIE_ID_CLIE` (últimos 2 años, prueba
+  fecha `YYYY-MM-DD` y con `T00:00:00`). La API /query no tiene IN: por eso dos partes de facturas. Respuesta `{data,total,pageSize}`.
+- Se guarda como los demás: IndexedDB `cobranzas` + servidor `/cache/cobranzas` (`{rows: facturas, saldos, pagos, fecha}`),
+  la tarea de GitHub lo sube cada 3 h (`getCobranzas()` en el script). Botón propio "Actualizar desde YiQi" (`cobRefresh()`).
+- Exclusiones (`cobExcluida()`, pedidas por el usuario): origen Mercado Libre, total ≤ 1 (facturas de $1), pendiente < 1,
+  Consumidor Final (8192), "samandjian" (pruebas). Antigüedad = **días desde la EMISIÓN** (decisión del usuario), tramos `COB_BUCKETS`.
+  Monedas: totales solo ARS; otras (hay 1 en USD) aparte ("+ US$ …").
+- Vistas por cliente / factura / vendedor (`COB_COLS`), filtros (búsqueda incl. CUIT de `clientesStore`, vendedor, condición,
+  +30/+60/+90/+180, barra de antigüedad clickeable, "Con saldo a favor"). `cobRenderTable()`: orden tocando el título y ancho
+  arrastrando `.cob-resize` (localStorage `aruki-cob-colw-<vista>`); las columnas no tocadas se ajustan al ancho del recuadro.
+  Exportar Excel/PDF de lo que se ve (`cobExcel`, `cobPdfList`, apaisado).
+- Estado de cuenta (`cobOpenDetalle(id)`): KPIs, facturas con saldo, PDF con logo (`cobPdfDetalle`, texto al pie = cuerpo de una
+  Etiqueta), Excel, "Copiar para WhatsApp", notas de seguimiento: Worker `GET /notas` / `POST /notas {accion:"agregar"|"borrar",
+  clienteId, texto, recordar, id}` (KV `notas-cobranza`); la columna Seguimiento muestra el recordatorio (rojo si ya venció).
+- Pendiente (propuesto): mejorar "Facturas de venta" (filtros por fecha/vendedor/estado, totales, exportar) y link a la factura en YiQi
+  (esperando un ejemplo de URL del usuario).
 
 ## Estructura
 ```
@@ -32,12 +54,13 @@ js/presupuesto-comun.js  Compartido: `presExcel(doc)`, `presPdf(doc)` (jsPDF 2.5
 js/observaciones.js Observaciones + Etiquetas (v5.7): `etq` (GET/PUT /etiquetas, respaldo localStorage `aruki-etiquetas`
                     si el conector da 404), ventana `#etqModal`, `obsWidget(cfg)` y `obsEmpty()` para cada módulo
 js/manual.js        Presupuesto manual (estado `man`, borrador localStorage `aruki-manual`)
+js/cobranzas.js     Cobranzas › Cuentas corrientes (v7.5, estado `cob`, `cobranzasModule`)
 js/main.js          Navegación entre módulos (MODULES) + inicio
 worker/aruki-worker.js  Copia del conector de Cloudflare (ver abajo)
 ```
 Los scripts son clásicos (no módulos ES) y comparten el ámbito global; el orden de carga en
 `index.html` importa: changelog → core → facturas → articulos → relaciones → clientes → presupuesto-comun → observaciones →
-cotizaciones → cot-archivos → cot-ia → manual → main.
+cotizaciones → cot-archivos → cot-ia → manual → cobranzas → main.
 
 ## Reglas de cada cambio (obligatorias)
 1. Subir `LATEST_VERSION` en `js/changelog.js` (1.5 → 1.6 …; después de X.9 sigue la (X+1).0, ej. 3.9 → 4.0).
