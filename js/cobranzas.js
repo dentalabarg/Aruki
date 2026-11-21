@@ -135,70 +135,9 @@ function cobVendedores(facts){
   return [...map.values()].map(v => ({ ...v, clientes: v.clientes.size }));
 }
 
-/* ---------- Tabla con orden y ancho de columnas ---------- */
-function cobColW(key){ try { return JSON.parse(localStorage.getItem(`aruki-cob-colw-${key}`) || "{}") || {}; } catch { return {}; } }
-function cobSaveColW(key, w){ try { localStorage.setItem(`aruki-cob-colw-${key}`, JSON.stringify(w)); } catch {} }
-function cobSortRows(rows, cols, st){
-  const col = cols.find(c => c.k === st.k) || cols[0];
-  const val = col.sv || (r => r[col.k]);
-  return [...rows].sort((a, b) => {
-    const x = val(a), y = val(b);
-    if (x === y) return 0;
-    if (x === null || x === undefined || x === "") return 1;
-    if (y === null || y === undefined || y === "") return -1;
-    return (typeof x === "string" ? x.localeCompare(y, "es", { numeric: true }) : (x < y ? -1 : 1)) * st.d;
-  });
-}
-/* cols: [{ k, t, w, num, html(row), sv(row), foot }]; onRow(row) al tocar una fila */
+/* ---------- Tablas (gridRender está en core.js) ---------- */
 function cobRenderTable(wrap, key, cols, rows, footHtml, onRow){
-  const st = cob.sort[key];
-  const widths = cobColW(key);
-  // Columnas que no se cambiaron a mano: se achican (o agrandan) para que la tabla entre justo en el recuadro
-  const avail = (wrap.clientWidth || 0) - 2;
-  const fixed = cols.reduce((s, c) => s + (widths[c.k] || 0), 0);
-  const free = cols.filter(c => !widths[c.k]);
-  const freeSum = free.reduce((s, c) => s + (c.w || 120), 0);
-  const k = avail > 0 && freeSum ? Math.max(0.55, (avail - fixed) / freeSum) : 1;
-  free.forEach(c => { widths[c.k] = Math.max(56, Math.floor((c.w || 120) * k)); });
-  const sorted = cobSortRows(rows, cols, st);
-  wrap.innerHTML = `<table class="table cob-table">
-    <colgroup>${cols.map(c => `<col style="width:${widths[c.k] || c.w || 120}px">`).join("")}</colgroup>
-    <thead><tr>${cols.map(c => `<th data-k="${c.k}" class="${c.num ? "num" : ""} ${st.k === c.k ? "is-sorted" : ""}" title="Ordenar">
-      <span>${escapeHtml(c.t)}</span>${st.k === c.k ? `<i class="cob-arrow">${st.d > 0 ? "▲" : "▼"}</i>` : ""}<b class="cob-resize" title="Arrastrá para cambiar el ancho"></b></th>`).join("")}</tr></thead>
-    <tbody>${sorted.length ? sorted.map((r, i) => `<tr data-i="${i}" class="${onRow ? "is-click" : ""}">${cols.map(c => `<td class="${c.num ? "num" : ""}">${c.html(r)}</td>`).join("")}</tr>`).join("")
-      : `<tr><td colspan="${cols.length}" class="cob-empty">No hay nada con esos filtros.</td></tr>`}</tbody>
-    ${footHtml && sorted.length ? `<tfoot><tr>${footHtml}</tr></tfoot>` : ""}
-  </table>`;
-  const table = wrap.querySelector("table");
-  const totalW = () => [...table.querySelectorAll("col")].reduce((s, c) => s + parseFloat(c.style.width), 0);
-  table.style.width = `${totalW()}px`;
-  table.querySelectorAll("th").forEach((th, idx) => {
-    th.addEventListener("click", e => {
-      if (e.target.closest(".cob-resize") || th.dataset.dragged) { delete th.dataset.dragged; return; }
-      const k = th.dataset.k;
-      cob.sort[key] = st.k === k ? { k, d: -st.d } : { k, d: cols[idx].num ? -1 : 1 };
-      cobRender();
-    });
-    th.querySelector(".cob-resize").addEventListener("mousedown", e => {
-      e.preventDefault(); e.stopPropagation();
-      const col = table.querySelectorAll("col")[idx];
-      const x0 = e.clientX, w0 = parseFloat(col.style.width);
-      document.body.classList.add("cob-resizing");
-      const move = ev => { col.style.width = `${Math.max(50, w0 + ev.clientX - x0)}px`; table.style.width = `${totalW()}px`; };
-      const up = () => {
-        document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up);
-        document.body.classList.remove("cob-resizing");
-        const w = cobColW(key); w[cols[idx].k] = Math.round(parseFloat(col.style.width)); cobSaveColW(key, w);
-        th.dataset.dragged = "1"; setTimeout(() => delete th.dataset.dragged, 0);
-      };
-      document.addEventListener("mousemove", move); document.addEventListener("mouseup", up);
-    });
-  });
-  if (onRow) table.querySelectorAll("tbody tr[data-i]").forEach(tr => tr.addEventListener("click", e => {
-    if (e.target.closest("a,button")) return;
-    onRow(sorted[Number(tr.dataset.i)]);
-  }));
-  return sorted;
+  return gridRender(wrap, `cob-colw-${key}`, cols, rows, footHtml, onRow, cob.sort[key], st => { cob.sort[key] = st; cobRender(); });
 }
 
 /* ---------- Columnas de cada vista ---------- */
@@ -226,7 +165,7 @@ const COB_COLS = {
   ],
   facturas: [
     { k: "emision", t: "Emisión", w: 105, sv: f => f.emision ? +f.emision : null, html: f => cobDate(f.emision) },
-    { k: "comp", t: "Comprobante", w: 190, html: f => `<b>${escapeHtml(f.comp)}</b>` },
+    { k: "comp", t: "Comprobante", w: 240, html: f => `<span class="comp-cell">${yiqiLinkHtml(f.id)}<b>${escapeHtml(f.comp)}</b></span>` },
     { k: "cliente", t: "Cliente", w: 260, html: f => `<a href="#" class="cob-link" data-cli="${escapeHtml(f.clienteId)}">${escapeHtml(f.cliente)}</a>` },
     { k: "vendedor", t: "Vendedor", w: 140, html: f => escapeHtml(f.vendedor) },
     { k: "condicion", t: "Condición", w: 130, html: f => escapeHtml(f.condicion || "—") },
@@ -245,7 +184,7 @@ const COB_COLS = {
   ],
   detalle: [
     { k: "emision", t: "Emisión", w: 105, sv: f => f.emision ? +f.emision : null, html: f => cobDate(f.emision) },
-    { k: "comp", t: "Comprobante", w: 190, html: f => `<b>${escapeHtml(f.comp)}</b>` },
+    { k: "comp", t: "Comprobante", w: 240, html: f => `<span class="comp-cell">${yiqiLinkHtml(f.id)}<b>${escapeHtml(f.comp)}</b></span>` },
     { k: "vence", t: "Vencimiento", w: 110, sv: f => f.vence ? +f.vence : null, html: f => cobDate(f.vence) },
     { k: "dias", t: "Días", w: 100, num: true, html: f => cobDiasBadge(f.dias) },
     { k: "total", t: "Total", w: 130, num: true, html: f => cobAmt(f.total, f.moneda) },
@@ -483,17 +422,24 @@ function cobFiltrosTxt(){
   if (cob.favor) f.push("Con saldo a favor");
   return f.join(" · ");
 }
-async function cobPdfList(){
+function cobPdfList(){
+  return cobPdfTable({
+    title: { clientes: "Cuentas corrientes por cliente", facturas: "Facturas con saldo pendiente", vendedores: "Saldos por vendedor" }[cob.view],
+    subtitle: `Al ${new Date().toLocaleDateString("es-AR")}${cobFiltrosTxt() ? " · " + cobFiltrosTxt() : ""}`,
+    cols: COB_COLS[cob.view].filter(c => c.k !== "recordar"), rows: cob.lastRows || [],
+    file: `Cuentas corrientes - ${new Date().toISOString().slice(0, 10)}.pdf`
+  });
+}
+/* PDF apaisado de una tabla (lo usan Cuentas corrientes y Facturas de venta) */
+async function cobPdfTable({ title, subtitle, cols, rows, file }){
   const JsPDF = await presLoadPdf(); const logo = await presLoadLogo();
-  const cols = COB_COLS[cob.view].filter(c => c.k !== "recordar");
-  const rows = cob.lastRows || [];
   const pdf = new JsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
   const W = pdf.internal.pageSize.getWidth(), M = 12, cyan = [27, 96, 171], gray = [100, 110, 120];
   if (logo) pdf.addImage(logo, "PNG", M, 9, 11 * PRES_LOGO.ratio, 11, "dentalab-logo", "FAST");
   pdf.setFont("helvetica", "bold"); pdf.setFontSize(15); pdf.setTextColor(...cyan);
-  pdf.text({ clientes: "Cuentas corrientes por cliente", facturas: "Facturas con saldo pendiente", vendedores: "Saldos por vendedor" }[cob.view], W - M, 15, { align: "right" });
+  pdf.text(title, W - M, 15, { align: "right" });
   pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(...gray);
-  pdf.text(`Al ${new Date().toLocaleDateString("es-AR")}${cobFiltrosTxt() ? " · " + cobFiltrosTxt() : ""}`, W - M, 20.5, { align: "right" });
+  pdf.text(subtitle, W - M, 20.5, { align: "right" });
   const txt = (c, r) => { const v = cobCellValue(c, r); return COB_MONEY_KEYS.has(c.k) ? (v ? cobMoney(v, r.moneda) : "—") : c.k === "dias" ? `${v} d` : String(v); };
   const body = rows.map(r => cols.map(c => txt(c, r)));
   const foot = [cols.map((c, i) => i === 0 ? "Total" : COB_MONEY_KEYS.has(c.k) ? cobMoney(cobSum(rows, c.k)) : (c.k === "facturas" || c.k === "clientes") ? String(rows.reduce((s, r) => s + (r[c.k] || 0), 0)) : "")];
@@ -504,7 +450,7 @@ async function cobPdfList(){
     didParseCell: d => { if ((d.section === "head" || d.section === "foot") && cols[d.column.index]?.num) d.cell.styles.halign = "right"; } });
   const pages = pdf.internal.getNumberOfPages();
   for (let i = 1; i <= pages; i++) { pdf.setPage(i); pdf.setFontSize(8); pdf.setTextColor(...gray); pdf.text(`Página ${i} de ${pages}`, W - M, pdf.internal.pageSize.getHeight() - 6, { align: "right" }); }
-  pdf.save(`Cuentas corrientes - ${new Date().toISOString().slice(0, 10)}.pdf`);
+  pdf.save(file);
 }
 async function cobPdfDetalle(c, rows){
   const JsPDF = await presLoadPdf(); const logo = await presLoadLogo();

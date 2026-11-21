@@ -34,8 +34,15 @@ Consultas (Artículos) → Cobranzas (Cuentas corrientes = módulo `cobranzas`; 
 - Estado de cuenta (`cobOpenDetalle(id)`): KPIs, facturas con saldo, PDF con logo (`cobPdfDetalle`, texto al pie = cuerpo de una
   Etiqueta), Excel, "Copiar para WhatsApp", notas de seguimiento: Worker `GET /notas` / `POST /notas {accion:"agregar"|"borrar",
   clienteId, texto, recordar, id}` (KV `notas-cobranza`); la columna Seguimiento muestra el recordatorio (rojo si ya venció).
-- Pendiente (propuesto): mejorar "Facturas de venta" (filtros por fecha/vendedor/estado, totales, exportar) y link a la factura en YiQi
-  (esperando un ejemplo de URL del usuario).
+- v7.6: tablas con `gridRender()` (core.js, compartida): orden tocando el título y ancho arrastrando (`aruki-<store>` en localStorage).
+  Link a YiQi: `yiqiLinkHtml(id)` / `yiqiFacturaUrl(id)` → `https://me.yiqi.com.ar/view/FACTURA?schemaId=328#/<id factura>`
+  (formato confirmado por el usuario). Export comunes: `cobExcel(name, title, cols, rows, extraTop)` y `cobPdfTable({title, subtitle, cols, rows, file})`.
+
+## Cobranzas › Facturas de venta (v7.6, `js/facturas.js`, el viejo "Control Facturas")
+- Sigue con `createDataModule` (smartie 2355, desde 01/07/2026, caché local + servidor). Filas normalizadas con `facNorm()` en un
+  `WeakMap` (no se guardan en el caché). `cfg.sortFiltered` (nuevo hook de `m.filtered()`) ordena lo filtrado con `fac.sort`.
+- Filtros: estado (`#statusFilter`), período (`#facPeriodo` + `#facDesde`/`#facHasta`), vendedor, origen, búsqueda. KPIs y fila de
+  totales sobre lo filtrado; Excel/PDF de todo lo filtrado (`facturasModule.lastFiltered`).
 
 ## Estructura
 ```

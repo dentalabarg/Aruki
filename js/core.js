@@ -502,6 +502,83 @@ function syncBtnProgress(btn, progress, error, done = true){
 /* ============================================================
    MÓDULO GENÉRICO: carga todo, busca en todo, pagina en pantalla
    ============================================================ */
+/* ============================================================
+   TABLA CON ORDEN Y ANCHO DE COLUMNAS (v7.6, la usan Cuentas corrientes y Facturas de venta)
+   gridRender(wrap, store, cols, rows, footHtml, onRow, sortState {k,d}, onSort(newState), presorted)
+   cols: [{ k, t, w, num, html(row), sv(row) }]. Anchos en localStorage "aruki-<store>".
+   ============================================================ */
+function gridColW(store){ try { return JSON.parse(localStorage.getItem(`aruki-${store}`) || "{}") || {}; } catch { return {}; } }
+function gridSaveColW(store, w){ try { localStorage.setItem(`aruki-${store}`, JSON.stringify(w)); } catch {} }
+function gridSortRows(rows, cols, st){
+  const col = cols.find(c => c.k === st.k) || cols[0];
+  const val = col.sv || (r => r[col.k]);
+  return [...rows].sort((a, b) => {
+    const x = val(a), y = val(b);
+    if (x === y) return 0;
+    if (x === null || x === undefined || x === "") return 1;
+    if (y === null || y === undefined || y === "") return -1;
+    return (typeof x === "string" ? x.localeCompare(y, "es", { numeric: true }) : (x < y ? -1 : 1)) * st.d;
+  });
+}
+/* cols: [{ k, t, w, num, html(row), sv(row), foot }]; onRow(row) al tocar una fila */
+function gridRender(wrap, key, cols, rows, footHtml, onRow, st, onSort, presorted = false){
+  const widths = gridColW(key);
+  // Columnas que no se cambiaron a mano: se achican (o agrandan) para que la tabla entre justo en el recuadro
+  const avail = (wrap.clientWidth || 0) - 2;
+  const fixed = cols.reduce((s, c) => s + (widths[c.k] || 0), 0);
+  const free = cols.filter(c => !widths[c.k]);
+  const freeSum = free.reduce((s, c) => s + (c.w || 120), 0);
+  const k = avail > 0 && freeSum ? Math.max(0.55, (avail - fixed) / freeSum) : 1;
+  free.forEach(c => { widths[c.k] = Math.max(56, Math.floor((c.w || 120) * k)); });
+  const sorted = presorted ? rows : gridSortRows(rows, cols, st);
+  wrap.innerHTML = `<table class="table cob-table">
+    <colgroup>${cols.map(c => `<col style="width:${widths[c.k] || c.w || 120}px">`).join("")}</colgroup>
+    <thead><tr>${cols.map(c => `<th data-k="${c.k}" class="${c.num ? "num" : ""} ${st.k === c.k ? "is-sorted" : ""}" title="Ordenar">
+      <span>${escapeHtml(c.t)}</span>${st.k === c.k ? `<i class="cob-arrow">${st.d > 0 ? "▲" : "▼"}</i>` : ""}<b class="cob-resize" title="Arrastrá para cambiar el ancho"></b></th>`).join("")}</tr></thead>
+    <tbody>${sorted.length ? sorted.map((r, i) => `<tr data-i="${i}" class="${onRow ? "is-click" : ""}">${cols.map(c => `<td class="${c.num ? "num" : ""}">${c.html(r)}</td>`).join("")}</tr>`).join("")
+      : `<tr><td colspan="${cols.length}" class="cob-empty">No hay nada con esos filtros.</td></tr>`}</tbody>
+    ${footHtml && sorted.length ? `<tfoot><tr>${footHtml}</tr></tfoot>` : ""}
+  </table>`;
+  const table = wrap.querySelector("table");
+  const totalW = () => [...table.querySelectorAll("col")].reduce((s, c) => s + parseFloat(c.style.width), 0);
+  table.style.width = `${totalW()}px`;
+  table.querySelectorAll("th").forEach((th, idx) => {
+    th.addEventListener("click", e => {
+      if (e.target.closest(".cob-resize") || th.dataset.dragged) { delete th.dataset.dragged; return; }
+      const k = th.dataset.k;
+      onSort(st.k === k ? { k, d: -st.d } : { k, d: cols[idx].num ? -1 : 1 });
+    });
+    th.querySelector(".cob-resize").addEventListener("mousedown", e => {
+      e.preventDefault(); e.stopPropagation();
+      const col = table.querySelectorAll("col")[idx];
+      const x0 = e.clientX, w0 = parseFloat(col.style.width);
+      document.body.classList.add("cob-resizing");
+      const move = ev => { col.style.width = `${Math.max(50, w0 + ev.clientX - x0)}px`; table.style.width = `${totalW()}px`; };
+      const up = () => {
+        document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up);
+        document.body.classList.remove("cob-resizing");
+        const w = gridColW(key); w[cols[idx].k] = Math.round(parseFloat(col.style.width)); gridSaveColW(key, w);
+        th.dataset.dragged = "1"; setTimeout(() => delete th.dataset.dragged, 0);
+      };
+      document.addEventListener("mousemove", move); document.addEventListener("mouseup", up);
+    });
+  });
+  if (onRow) table.querySelectorAll("tbody tr[data-i]").forEach(tr => tr.addEventListener("click", e => {
+    if (e.target.closest("a,button")) return;
+    onRow(sorted[Number(tr.dataset.i)]);
+  }));
+  return sorted;
+}
+
+
+/* v7.6: link para abrir una factura en YiQi (id interno de la factura) */
+const YIQI_WEB_SCHEMA = 328;
+function yiqiFacturaUrl(id){ return `https://me.yiqi.com.ar/view/FACTURA?schemaId=${YIQI_WEB_SCHEMA}#/${encodeURIComponent(id)}`; }
+function yiqiLinkHtml(id){
+  if (id === null || id === undefined || id === "") return "";
+  return `<a class="yiqi-link" href="${yiqiFacturaUrl(id)}" target="_blank" rel="noopener" title="Abrir esta factura en YiQi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>`;
+}
+
 function createDataModule(cfg){
   const $ = key => document.getElementById(cfg.ids[key]);
   const m = {
@@ -549,12 +626,13 @@ function createDataModule(cfg){
       }
       base = m.sorted;
     }
-    return base.filter(row => {
+    const out = base.filter(row => {
       if (cfg.filter && !cfg.filter(row)) return false;
       if (!terms.length) return true;
       if (row.__s === undefined) row.__s = foldText(cfg.searchText(row, m));
       return terms.every(t => row.__s.includes(t));
     });
+    return cfg.sortFiltered ? cfg.sortFiltered(out, m) : out;   // v7.6: orden elegido tocando el título (Facturas)
   };
 
   m.render = function(){

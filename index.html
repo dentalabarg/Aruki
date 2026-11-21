@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=7.5">
+<link rel="stylesheet" href="css/styles.css?v=7.6">
 </head>
 <body>
 
@@ -211,6 +211,8 @@
             <h1 class="page-title">Facturas de venta</h1>
           </div>
           <div class="page-head-actions">
+            <button class="btn btn-secondary" id="facExcelBtn" type="button">Exportar Excel</button>
+            <button class="btn btn-secondary" id="facPdfBtn" type="button">Exportar PDF</button>
           </div>
         </div>
 
@@ -253,10 +255,10 @@
         <div class="panel">
           <div class="panel-head">
             <div class="panel-title">Listado de facturas</div>
-            <div class="toolbar">
+            <div class="toolbar cob-toolbar">
               <div class="search-wrap">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input class="search-input" id="searchInput" type="text" placeholder="Buscar en todas las facturas… (cliente, número, origen, etc.)">
+                <input class="search-input" id="searchInput" type="text" placeholder="Buscar cliente, número, vendedor…">
               </div>
               <div class="range-filter" id="statusFilter" role="group" aria-label="Estado">
                 <button class="range-btn is-active" data-status="todas">Todas</button>
@@ -266,16 +268,19 @@
               </div>
             </div>
           </div>
-          <div class="table-wrap">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Factura</th><th>Cliente</th><th>Emisión</th><th>Punto de venta</th><th>Condición</th><th>Origen</th><th>Vendedor</th><th>Total</th><th>Pendiente</th><th>Estado</th>
-                </tr>
-              </thead>
-              <tbody id="facturasBody"></tbody>
-            </table>
+          <div class="fac-filters">
+            <div class="range-filter" id="facPeriodo" role="group" aria-label="Período">
+              <button class="range-btn is-active" data-per="todo" type="button">Todo</button>
+              <button class="range-btn" data-per="mes" type="button">Este mes</button>
+              <button class="range-btn" data-per="mesant" type="button">Mes anterior</button>
+              <button class="range-btn" data-per="30" type="button">Últimos 30 días</button>
+            </div>
+            <label class="fac-date">Desde <input class="ds-input" type="date" id="facDesde"></label>
+            <label class="fac-date">Hasta <input class="ds-input" type="date" id="facHasta"></label>
+            <select class="ds-input" id="facVendedor"><option value="">Todos los vendedores</option></select>
+            <select class="ds-input" id="facOrigen"><option value="">Todos los orígenes</option></select>
           </div>
+          <div class="cob-table-wrap" id="facTableWrap"></div>
           <div class="empty-state hidden" id="emptyState">No se encontraron facturas con ese filtro.</div>
           <div class="pagination">
             <div>
@@ -769,19 +774,19 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=7.5"></script>
-<script src="js/core.js?v=7.5"></script>
-<script src="js/facturas.js?v=7.5"></script>
-<script src="js/articulos.js?v=7.5"></script>
-<script src="js/relaciones.js?v=7.5"></script>
-<script src="js/clientes.js?v=7.5"></script>
-<script src="js/presupuesto-comun.js?v=7.5"></script>
-<script src="js/observaciones.js?v=7.5"></script>
-<script src="js/cotizaciones.js?v=7.5"></script>
-<script src="js/cot-archivos.js?v=7.5"></script>
-<script src="js/cot-ia.js?v=7.5"></script>
-<script src="js/manual.js?v=7.5"></script>
-<script src="js/cobranzas.js?v=7.5"></script>
-<script src="js/main.js?v=7.5"></script>
+<script src="js/changelog.js?v=7.6"></script>
+<script src="js/core.js?v=7.6"></script>
+<script src="js/facturas.js?v=7.6"></script>
+<script src="js/articulos.js?v=7.6"></script>
+<script src="js/relaciones.js?v=7.6"></script>
+<script src="js/clientes.js?v=7.6"></script>
+<script src="js/presupuesto-comun.js?v=7.6"></script>
+<script src="js/observaciones.js?v=7.6"></script>
+<script src="js/cotizaciones.js?v=7.6"></script>
+<script src="js/cot-archivos.js?v=7.6"></script>
+<script src="js/cot-ia.js?v=7.6"></script>
+<script src="js/manual.js?v=7.6"></script>
+<script src="js/cobranzas.js?v=7.6"></script>
+<script src="js/main.js?v=7.6"></script>
 </body>
 </html>

@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "7.5";
+const LATEST_VERSION = "7.6";
 const CHANGELOG = [
+  {
+    version: "7.6",
+    date: "2026-11-21",
+    title: "Facturas de venta renovado y link a YiQi",
+    items: [
+      { type: "nuevo", text: "Cada factura tiene un botoncito ↗ que la abre directamente en YiQi (en Facturas de venta y en Cuentas corrientes)." },
+      { type: "nuevo", text: "Facturas de venta: filtros por período (este mes, mes anterior, últimos 30 días o fechas a elección), vendedor y origen, además de estado y búsqueda; totales de lo filtrado y exportar a Excel o PDF." },
+      { type: "mejora", text: "Facturas de venta: las columnas se ordenan tocando el título y se ensanchan arrastrando el borde, como en Cuentas corrientes." }
+    ]
+  },
   {
     version: "7.5",
     date: "2026-11-21",
