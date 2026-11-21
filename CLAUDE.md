@@ -200,7 +200,7 @@ tarea automática (`metadata.robot`) tiene más de `SRV_STALE_HOURS` = 6 h. Cone
 Worker: `GET /cache` → `{ datos: { <name>: {fecha, registros, bytes, por, robot} } }` (KV list, prefijo `cache:`), `GET /cache/<name>`
 → gzip tal cual (octet-stream), `PUT /cache/<name>?registros=&fecha=` (cuerpo gzip, máx. 24 MB, no pisa datos más nuevos). Acepta
 `X-Aruki-Key` = secreto `CACHE_KEY` (≥ 20 caracteres) como sesión "Tarea automática". Tarea de GitHub Actions
-`.github/workflows/actualizar-datos.yml` (cron `17 */3 * * *` UTC + Run workflow a mano) corre `.github/scripts/actualizar-datos.mjs`
+`.github/workflows/actualizar-datos.yml` (v7.8: cron `17 * * * *` cada hora porque GitHub se saltea corridas; el script sale sin hacer nada si la última subida `robot` tiene < 2,75 h, salvo Run workflow a mano = `FORZAR=si`) corre `.github/scripts/actualizar-datos.mjs`
 (secreto `ARUKI_CACHE_KEY`, igual a `CACHE_KEY`): baja las 3 rutas como la página y sube cada una; **nunca imprimir datos en el log**
 (repo público). Último paso: si el último commit tiene ≥ 40 días, escribe `.github/keepalive.txt` y hace commit (GitHub pausa los
 cron tras 60 días sin actividad).

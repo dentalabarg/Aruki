@@ -5,7 +5,9 @@ name: Actualizar datos de Aruki
 
 on:
   schedule:
-    - cron: "17 */3 * * *"   # cada 3 horas (minuto 17, hora UTC)
+    # v7.8: GitHub se saltea a veces las corridas programadas, así que se intenta cada hora y el script
+    # solo trabaja si la última actualización automática tiene 2 h 45 min o más (queda ~cada 3 h).
+    - cron: "17 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -29,6 +31,7 @@ jobs:
       - name: Bajar de YiQi y guardar en el conector
         env:
           ARUKI_CACHE_KEY: ${{ secrets.ARUKI_CACHE_KEY }}
+          FORZAR: ${{ github.event_name == 'workflow_dispatch' && 'si' || '' }}
         run: node .github/scripts/actualizar-datos.mjs
 
       # GitHub pausa las tareas programadas si el repositorio pasa 60 días sin cambios.

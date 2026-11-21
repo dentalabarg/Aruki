@@ -87,6 +87,22 @@ async function getCobranzas() {
   return { facturas: [...emitidas, ...entregadas], saldos, pagos };
 }
 
+/* v7.8: la tarea se intenta cada hora; si la última actualización automática es reciente, no hace nada
+   (a mano, con "Run workflow", siempre actualiza). */
+const MIN_HORAS = 2.75;
+if (process.env.FORZAR !== "si") {
+  try {
+    const r = await fetch(`${BASE}/cache`, { headers });
+    const meta = r.ok ? (await r.json()).datos || {} : {};
+    const last = Math.max(0, ...Object.values(meta).map(d => Number(d.robot) || 0));
+    const horas = (Date.now() - last) / 3600000;
+    if (last && horas < MIN_HORAS) {
+      console.log(`Sin cambios: la última actualización automática fue hace ${horas.toFixed(1)} h (se actualiza cada ~3 h).`);
+      process.exit(0);
+    }
+  } catch { /* si no se puede saber, se actualiza igual */ }
+}
+
 let errors = 0;
 {
   const t0 = Date.now();

@@ -434,8 +434,8 @@ async function staleCheck(){
   const late = robot && Date.now() - robot > SRV_STALE_HOURS * 3600000;
   banner.classList.toggle("hidden", !late);
   if (late) banner.innerHTML = `<strong>Los datos no se actualizan solos desde ${fmtAgo(Date.now() - robot)}.</strong>
-    Puede que GitHub haya pausado la tarea automática: entrá a github.com → repositorio <b>Aruki</b> → pestaña <b>Actions</b> →
-    «Actualizar datos de Aruki» → botón <b>Enable workflow</b>. Mientras tanto podés actualizar con los botones de arriba.`;
+    Para forzarlo: github.com → repositorio <b>Aruki</b> → pestaña <b>Actions</b> → «Actualizar datos de Aruki» → <b>Run workflow</b>
+    (si arriba aparece un cartel amarillo de tarea pausada, tocá antes <b>Enable workflow</b>). Mientras tanto podés actualizar con los botones de arriba.`;
 }
 setInterval(staleCheck, 10 * 60000);
 

@@ -4,8 +4,17 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "7.7";
+const LATEST_VERSION = "7.8";
 const CHANGELOG = [
+  {
+    version: "7.8",
+    date: "2026-11-21",
+    title: "Actualización automática más confiable",
+    items: [
+      { type: "correccion", text: "GitHub a veces se saltea las corridas programadas y los datos quedaban sin actualizar más de 6 horas. Ahora la tarea se intenta cada hora y solo trabaja si pasaron casi 3 horas desde la última, así siempre queda alguna que corre." },
+      { type: "mejora", text: "El aviso de datos atrasados explica cómo forzar la actualización desde GitHub (Run workflow)." }
+    ]
+  },
   {
     version: "7.7",
     date: "2026-11-21",
