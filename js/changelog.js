@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "7.6";
+const LATEST_VERSION = "7.7";
 const CHANGELOG = [
+  {
+    version: "7.7",
+    date: "2026-11-21",
+    title: "Cobranzas con 2 decimales",
+    items: [
+      { type: "mejora", text: "En Cobranzas (Cuentas corrientes y Facturas de venta) todos los importes se muestran con 2 decimales: punto para los miles y coma para los decimales ($ 1.234,50), también en el PDF, el Excel y el texto para WhatsApp." }
+    ]
+  },
   {
     version: "7.6",
     date: "2026-11-21",

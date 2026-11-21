@@ -2,7 +2,7 @@
    COBRANZAS › FACTURAS DE VENTA (antes "Control Facturas")
    v7.6: filtros por período, vendedor, origen y estado; columnas que se ordenan (tocando el título)
    y se ensanchan (arrastrando el borde) con gridRender (core.js); totales; Excel/PDF de lo filtrado;
-   link para abrir cada factura en YiQi.
+   link para abrir cada factura en YiQi. v7.7: importes con 2 decimales (cobMoney de cobranzas.js).
    Los datos vienen de la smartie 2355 (facturas desde el 01/07/2026, sin Mercado Libre ni Consumidor Final).
    ============================================================ */
 function invoiceLabel(f){
@@ -56,8 +56,8 @@ const FAC_COLS = [
   { k: "condicion", t: "Condición", w: 120, html: f => `<span class="muted-cell">${escapeHtml(f.condicion)}</span>` },
   { k: "origen", t: "Origen", w: 120, html: f => `<span class="muted-cell">${escapeHtml(f.origen)}</span>` },
   { k: "vendedor", t: "Vendedor", w: 140, html: f => `<span class="muted-cell">${escapeHtml(f.vendedor)}</span>` },
-  { k: "total", t: "Total", w: 120, num: true, html: f => money(f.total) },
-  { k: "pendiente", t: "Pendiente", w: 120, num: true, html: f => f.pendiente ? `<b>${money(f.pendiente)}</b>` : `<span class="muted-cell">—</span>` },
+  { k: "total", t: "Total", w: 120, num: true, html: f => cobMoney(f.total) },
+  { k: "pendiente", t: "Pendiente", w: 120, num: true, html: f => f.pendiente ? `<b>${cobMoney(f.pendiente)}</b>` : `<span class="muted-cell">—</span>` },
   { k: "estado", t: "Estado", w: 120, html: f => statusBadge(f.estado) },
 ];
 
@@ -123,7 +123,7 @@ const facturasModule = createDataModule({
     const wrap = document.getElementById("facTableWrap");
     const sum = k => filtered.reduce((s, f) => s + (f[k] || 0), 0);
     const foot = FAC_COLS.map((c, i) => i === 0 ? `<td><b>Total (${numberFormatter.format(filtered.length)} facturas)</b></td>`
-      : (c.k === "total" || c.k === "pendiente") ? `<td class="num"><b>${money(sum(c.k))}</b></td>` : "<td></td>").join("");
+      : (c.k === "total" || c.k === "pendiente") ? `<td class="num"><b>${cobMoney(sum(c.k))}</b></td>` : "<td></td>").join("");
     facturasModule.lastFiltered = filtered;
     gridRender(wrap, "fac-colw", FAC_COLS, pageRows, foot, null, fac.sort, st => { fac.sort = st; m.viewPage = 1; m.render(); }, true);
 
@@ -131,15 +131,15 @@ const facturasModule = createDataModule({
     const pendingRows = filtered.filter(f => f.pendiente > 0);
     const pendingVisible = sum("pendiente");
     const avg = filtered.length ? totalVisible / filtered.length : 0;
-    document.getElementById("kpiTotal").textContent = money(totalVisible);
+    document.getElementById("kpiTotal").textContent = cobMoney(totalVisible);
     document.getElementById("kpiTotalSub").textContent = facFiltrosTxt() || "Todas las facturas cargadas";
     document.getElementById("kpiCount").textContent = numberFormatter.format(filtered.length);
     document.getElementById("kpiCountSub").textContent =
       `${numberFormatter.format(m.rows.length)} cargadas · ${m.total ? numberFormatter.format(m.total) : "—"} en YiQi`;
-    document.getElementById("kpiPending").textContent = money(pendingVisible);
+    document.getElementById("kpiPending").textContent = cobMoney(pendingVisible);
     document.getElementById("kpiPendingSub").textContent =
-      `${numberFormatter.format(pendingRows.length)} factura(s) con saldo · cobrado ${money(sum("cobrado"))}`;
-    document.getElementById("kpiAvg").textContent = money(avg);
+      `${numberFormatter.format(pendingRows.length)} factura(s) con saldo · cobrado ${cobMoney(sum("cobrado"))}`;
+    document.getElementById("kpiAvg").textContent = cobMoney(avg);
   }
 });
 

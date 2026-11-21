@@ -27,7 +27,9 @@ const cob = {
   detalle: null, notas: {}, notasLoaded: false, pieId: ""
 };
 const cobEl = id => document.getElementById(id);
-const cobMoney = (n, mon = "ARS") => (mon && mon !== "ARS" ? (mon === "USD" ? "US$ " : `${mon} `) : "$ ") + priceFormatter.format(Math.round(n * 100) / 100).replace(/^\$\s?/, "");
+/* v7.7: en Cobranzas los importes van siempre con 2 decimales (punto para miles, coma para decimales: 1.234,50) */
+const COB_NUM = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const cobMoney = (n, mon = "ARS") => (mon && mon !== "ARS" ? (mon === "USD" ? "US$ " : `${mon} `) : "$ ") + COB_NUM.format(Number(n) || 0);
 const cobDate = d => d ? d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—";
 const DAY = 86400000;
 

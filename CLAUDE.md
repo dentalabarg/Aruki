@@ -36,7 +36,8 @@ Consultas (Artículos) → Cobranzas (Cuentas corrientes = módulo `cobranzas`; 
   clienteId, texto, recordar, id}` (KV `notas-cobranza`); la columna Seguimiento muestra el recordatorio (rojo si ya venció).
 - v7.6: tablas con `gridRender()` (core.js, compartida): orden tocando el título y ancho arrastrando (`aruki-<store>` en localStorage).
   Link a YiQi: `yiqiLinkHtml(id)` / `yiqiFacturaUrl(id)` → `https://me.yiqi.com.ar/view/FACTURA?schemaId=328#/<id factura>`
-  (formato confirmado por el usuario). Export comunes: `cobExcel(name, title, cols, rows, extraTop)` y `cobPdfTable({title, subtitle, cols, rows, file})`.
+  (formato confirmado por el usuario). v7.7: en TODO Cobranzas los importes con 2 decimales siempre (`cobMoney`, `COB_NUM` es-AR,
+  1.234,50; facturas.js también usa `cobMoney`). Export comunes: `cobExcel(name, title, cols, rows, extraTop)` y `cobPdfTable({title, subtitle, cols, rows, file})`.
 
 ## Cobranzas › Facturas de venta (v7.6, `js/facturas.js`, el viejo "Control Facturas")
 - Sigue con `createDataModule` (smartie 2355, desde 01/07/2026, caché local + servidor). Filas normalizadas con `facNorm()` en un
