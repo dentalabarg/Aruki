@@ -13,16 +13,18 @@
 const COB_ENDPOINT = `${WORKER_BASE}/cobranzas`;
 const COB_PARTES = ["emitidas", "entregadas", "saldos", "pagos"];
 const COB_MAX_AGE = 4 * 3600000;
+/* v8.3: tramos pedidos por el usuario (30–59, 60–89, 90–179, 180–364, 365+), de verde a bordó */
 const COB_BUCKETS = [
-  { min: 0, max: 30, t: "0–30 días", c: "var(--green)" },
-  { min: 31, max: 60, t: "31–60 días", c: "var(--amber)" },
-  { min: 61, max: 90, t: "61–90 días", c: "#e08a3c" },
-  { min: 91, max: 180, t: "91–180 días", c: "var(--red)" },
-  { min: 181, max: Infinity, t: "Más de 180 días", c: "#9b2c2c" },
+  { min: 0, max: 29, t: "0–29 días", c: "#2f9e6e" },
+  { min: 30, max: 59, t: "30–59 días", c: "#c9a227" },
+  { min: 60, max: 89, t: "60–89 días", c: "#e07b39" },
+  { min: 90, max: 179, t: "90–179 días", c: "#d64545" },
+  { min: 180, max: 364, t: "180–364 días", c: "#a52a3a" },
+  { min: 365, max: Infinity, t: "365 días o más", c: "#5e1f33" },
 ];
 const cob = {
   raw: null, data: null, savedAt: 0, loading: false, syncing: false, loaded: false, error: "",
-  view: "clientes", search: "", vendedor: "", condicion: "", min: 0, max: Infinity, favor: false,
+  view: "clientes", search: "", vend: new Set(), min: 0, max: Infinity, favor: false,
   sort: { clientes: { k: "pendiente", d: -1 }, facturas: { k: "dias", d: -1 }, vendedores: { k: "pendiente", d: -1 }, detalle: { k: "emision", d: 1 } },
   detalle: null, notas: {}, notasLoaded: false, pieId: ""
 };
@@ -91,8 +93,7 @@ function cobFiltered(){
   const d = cob.data; if (!d) return [];
   const terms = foldText(cob.search).split(/\s+/).filter(Boolean);
   return d.facturas.filter(f =>
-    (!cob.vendedor || f.vendedor === cob.vendedor) &&
-    (!cob.condicion || f.condicion === cob.condicion) &&
+    (!cob.vend.size || cob.vend.has(f.vendedor)) &&
     f.dias >= cob.min && f.dias <= cob.max &&
     (!cob.favor || (d.saldos.get(f.clienteId) || 0) > 0) &&
     terms.every(t => f.s.includes(t)));
@@ -109,8 +110,8 @@ function cobClientes(facts){
     c.facturas++;
     if (f.moneda === "ARS") {
       c.pendiente += f.pendiente;
-      if (f.dias > 30) c.mas30 += f.pendiente;
-      if (f.dias > 90) c.mas90 += f.pendiente;
+      if (f.dias >= 30) c.mas30 += f.pendiente;
+      if (f.dias >= 90) c.mas90 += f.pendiente;
     } else c.otras[f.moneda] = (c.otras[f.moneda] || 0) + f.pendiente;
     c.dias = Math.max(c.dias, f.dias);
     const t = f.emision ? +f.emision : 0;
@@ -132,7 +133,7 @@ function cobVendedores(facts){
     let v = map.get(f.vendedor);
     if (!v) { v = { vendedor: f.vendedor, clientes: new Set(), facturas: 0, pendiente: 0, mas30: 0, mas90: 0 }; map.set(f.vendedor, v); }
     v.clientes.add(f.clienteId); v.facturas++;
-    if (f.moneda === "ARS") { v.pendiente += f.pendiente; if (f.dias > 30) v.mas30 += f.pendiente; if (f.dias > 90) v.mas90 += f.pendiente; }
+    if (f.moneda === "ARS") { v.pendiente += f.pendiente; if (f.dias >= 30) v.mas30 += f.pendiente; if (f.dias >= 90) v.mas90 += f.pendiente; }
   }
   return [...map.values()].map(v => ({ ...v, clientes: v.clientes.size }));
 }
@@ -220,28 +221,32 @@ function cobMsg(text, kind = ""){
 function cobKpis(facts, clientes){
   const ars = facts.filter(f => f.moneda === "ARS");
   const total = ars.reduce((s, f) => s + f.pendiente, 0);
-  const m30 = ars.filter(f => f.dias > 30).reduce((s, f) => s + f.pendiente, 0);
-  const m90 = ars.filter(f => f.dias > 90).reduce((s, f) => s + f.pendiente, 0);
-  const conFavor = clientes.filter(c => c.favor > 0);
-  const favor = conFavor.reduce((s, c) => s + Math.min(c.favor, c.pendiente || c.favor), 0);
+  const sum = (min, max) => ars.filter(f => f.dias >= min && f.dias <= max).reduce((s, f) => s + f.pendiente, 0);
   const otras = {};
   facts.filter(f => f.moneda !== "ARS").forEach(f => { otras[f.moneda] = (otras[f.moneda] || 0) + f.pendiente; });
   const pct = n => total ? `${Math.round(n / total * 100)} % del total` : "—";
   const otrasTxt = Object.entries(otras).map(([m, v]) => ` · + ${cobMoney(v, m)}`).join("");
+  // v8.3: cinco cuadros (pedido del usuario): total, 30–59, 60–89, 90–179 y 180 o más
+  const tramo = (t, sub, min, max) => { const v = sum(min, max); return `<div class="card"><div class="card-kicker">${t}</div>
+    <div class="kpi-value cob-red">${escapeHtml(cobMoney(v))}</div><div class="kpi-sub">${sub} · ${pct(v)}</div></div>`; };
   cobEl("cobKpis").innerHTML = `
     <div class="card"><div class="card-kicker">Total a cobrar</div><div class="kpi-value">${escapeHtml(cobMoney(total))}</div>
       <div class="kpi-sub">${numberFormatter.format(facts.length)} facturas · ${numberFormatter.format(clientes.length)} clientes${escapeHtml(otrasTxt)}</div></div>
-    <div class="card"><div class="card-kicker">Más de 30 días</div><div class="kpi-value cob-red">${escapeHtml(cobMoney(m30))}</div><div class="kpi-sub">${pct(m30)}</div></div>
-    <div class="card"><div class="card-kicker">Más de 90 días</div><div class="kpi-value cob-red">${escapeHtml(cobMoney(m90))}</div><div class="kpi-sub">${pct(m90)}</div></div>
-    <div class="card"><div class="card-kicker">Saldo a favor para aplicar</div><div class="kpi-value cob-green">${escapeHtml(cobMoney(favor))}</div>
-      <div class="kpi-sub">${conFavor.length} ${conFavor.length === 1 ? "cliente" : "clientes"} con deuda y pagos sin imputar en YiQi</div></div>`;
+    ${tramo("Más de 30 días", "30 a 59 días", 30, 59)}
+    ${tramo("Más de 60 días", "60 a 89 días", 60, 89)}
+    ${tramo("Más de 90 días", "90 a 179 días", 90, 179)}
+    ${tramo("Más de 180 días", "180 días o más", 180, Infinity)}`;
 }
 function cobAging(facts){
   const ars = facts.filter(f => f.moneda === "ARS");
   const sums = COB_BUCKETS.map(b => ars.filter(f => f.dias >= b.min && f.dias <= b.max).reduce((s, f) => s + f.pendiente, 0));
   const tot = sums.reduce((a, b) => a + b, 0) || 1;
   const active = i => cob.min === COB_BUCKETS[i].min && cob.max === COB_BUCKETS[i].max;
-  cobEl("cobAging").innerHTML = COB_BUCKETS.map((b, i) => sums[i] ? `<div data-b="${i}" class="${active(i) ? "is-active" : ""}" title="${escapeHtml(`${b.t}: ${cobMoney(sums[i])}`)}" style="width:${sums[i] / tot * 100}%;background:${b.c}"></div>` : "").join("");
+  cobEl("cobAging").innerHTML = COB_BUCKETS.map((b, i) => sums[i] ? `<div data-b="${i}" class="${active(i) ? "is-active" : ""}" title="${escapeHtml(`${b.t}: ${cobMoney(sums[i])}`)}" style="width:${sums[i] / tot * 100}%;background:${b.c}"><span>${escapeHtml(cobMoney(sums[i]))}</span></div>` : "").join("");
+  // v8.3: el importe va adentro del color; si no entra, no se muestra (está en la leyenda de abajo)
+  requestAnimationFrame(() => cobEl("cobAging").querySelectorAll("span").forEach(sp => {
+    sp.style.visibility = sp.scrollWidth > sp.parentElement.clientWidth - 12 ? "hidden" : "";
+  }));
   cobEl("cobAgingLegend").innerHTML = COB_BUCKETS.map((b, i) => `<button type="button" data-b="${i}" class="${active(i) ? "is-active" : ""}"><span style="background:${b.c}"></span>${b.t} <b>${escapeHtml(cobMoney(sums[i]))}</b></button>`).join("");
   document.querySelectorAll("#cobAging [data-b], #cobAgingLegend [data-b]").forEach(el => el.addEventListener("click", () => {
     const b = COB_BUCKETS[Number(el.dataset.b)];
@@ -270,7 +275,7 @@ function cobRender(){
   const clientes = cobClientes(facts);
   cobKpis(facts, clientes);
   cobAging(cob.data.facturas.filter(f =>
-    (!cob.vendedor || f.vendedor === cob.vendedor) && (!cob.condicion || f.condicion === cob.condicion)));
+    !cob.vend.size || cob.vend.has(f.vendedor)));
   const wrap = cobEl("cobTableWrap");
   const cols = COB_COLS[cob.view];
   if (cob.view === "clientes") {
@@ -281,7 +286,7 @@ function cobRender(){
   } else {
     const vend = cobVendedores(facts);
     cob.lastRows = cobRenderTable(wrap, "vendedores", cols, vend, cobFoot(cols, vend, "Total"), v => {
-      cob.vendedor = v.vendedor; cobEl("cobVendedor").value = v.vendedor; cobSetView("clientes");
+      cob.vend = new Set([v.vendedor]); cobVendRender(); cobSetView("clientes");
     });
   }
 }
@@ -428,9 +433,8 @@ async function cobExcel(name, title, cols, rows, extraTop = []){
 function cobFiltrosTxt(){
   const f = [];
   if (cob.search) f.push(`Búsqueda: "${cob.search}"`);
-  if (cob.vendedor) f.push(`Vendedor: ${cob.vendedor}`);
-  if (cob.condicion) f.push(`Condición: ${cob.condicion}`);
-  if (cob.min > 0 || cob.max !== Infinity) f.push(cob.max === Infinity ? `Más de ${cob.min - 1} días` : `${cob.min}–${cob.max} días`);
+  if (cob.vend.size) f.push(`${cob.vend.size === 1 ? "Vendedor" : "Vendedores"}: ${[...cob.vend].join(", ")}`);
+  if (cob.min > 0 || cob.max !== Infinity) f.push(cob.max === Infinity ? `${cob.min} días o más` : `${cob.min}–${cob.max} días`);
   if (cob.favor) f.push("Con saldo a favor");
   return f.join(" · ");
 }
@@ -531,8 +535,8 @@ async function cobCopyWhatsapp(c, rows){
 function cobApply(raw, fecha){
   cob.raw = raw; cob.savedAt = fecha; cob.loaded = true; cob.error = "";
   cob.data = cobBuild(raw);
-  cobFillSelect(cobEl("cobVendedor"), cob.data.vendedores, "Todos los vendedores");
-  cobFillSelect(cobEl("cobCondicion"), cob.data.condiciones, "Toda condición de venta");
+  cob.vend = new Set([...cob.vend].filter(v => cob.data.vendedores.includes(v)));
+  cobVendRender();
   cobMsg("");
   cobRender();
 }
@@ -624,8 +628,25 @@ cobEl("cobExcelBtn").addEventListener("click", () => {
 cobEl("cobPdfBtn").addEventListener("click", () => cobPdfList().catch(e => alert(e.message)));
 cobEl("cobViewTabs").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (b) cobSetView(b.dataset.view); });
 cobEl("cobSearch").addEventListener("input", e => { cob.search = e.target.value; cobRender(); });
-cobEl("cobVendedor").addEventListener("change", e => { cob.vendedor = e.target.value; cobRender(); });
-cobEl("cobCondicion").addEventListener("change", e => { cob.condicion = e.target.value; cobRender(); });
+/* v8.3: vendedores con selección múltiple */
+function cobVendRender(){
+  const list = cob.data ? cob.data.vendedores : [];
+  const n = cob.vend.size;
+  cobEl("cobVendTxt").textContent = !n ? "Todos los vendedores" : n === 1 ? [...cob.vend][0] : `${n} vendedores`;
+  cobEl("cobVendBtn").classList.toggle("is-set", n > 0);
+  cobEl("cobVendPop").innerHTML = `<label class="cob-multi-all"><input type="checkbox" data-all ${n ? "" : "checked"}> Todos</label>` +
+    list.map(v => `<label><input type="checkbox" data-v="${escapeHtml(v)}" ${cob.vend.has(v) ? "checked" : ""}> ${escapeHtml(v)}</label>`).join("");
+}
+cobEl("cobVendBtn").addEventListener("click", e => { e.stopPropagation(); cobEl("cobVendPop").classList.toggle("hidden"); });
+cobEl("cobVendPop").addEventListener("click", e => e.stopPropagation());
+cobEl("cobVendPop").addEventListener("change", e => {
+  const i = e.target;
+  if (i.dataset.all !== undefined) cob.vend.clear();
+  else if (i.checked) cob.vend.add(i.dataset.v); else cob.vend.delete(i.dataset.v);
+  cobVendRender(); cobRender();
+});
+document.addEventListener("click", () => cobEl("cobVendPop").classList.add("hidden"));
+document.addEventListener("keydown", e => { if (e.key === "Escape") cobEl("cobVendPop").classList.add("hidden"); });
 cobEl("cobFavor").addEventListener("change", e => { cob.favor = e.target.checked; cobRender(); });
 cobEl("cobEdad").addEventListener("click", e => {
   const b = e.target.closest("[data-min]"); if (!b) return;

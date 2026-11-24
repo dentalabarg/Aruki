@@ -4,8 +4,20 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "8.2";
+const LATEST_VERSION = "8.3";
 const CHANGELOG = [
+  {
+    version: "8.3",
+    date: "2026-11-24",
+    title: "Cuentas corrientes: tramos de antigüedad y varios vendedores",
+    items: [
+      { type: "mejora", text: "Cinco cuadros arriba: Total a cobrar, Más de 30 días (30 a 59), Más de 60 (60 a 89), Más de 90 (90 a 179) y Más de 180 días. Se sacó «Saldo a favor para aplicar» (el filtro «Con saldo a favor» sigue)." },
+      { type: "mejora", text: "La barra de antigüedad suma el tramo «365 días o más», con colores de verde a bordó, y muestra el importe adentro de cada color." },
+      { type: "nuevo", text: "Se pueden elegir varios vendedores a la vez." },
+      { type: "mejora", text: "Se sacó la lista de condición de venta. Filtro «+365» junto a +30, +60, +90 y +180." },
+      { type: "mejora", text: "Menú lateral: todo alineado a la izquierda y cada grupo separado con una línea." }
+    ]
+  },
   {
     version: "8.2",
     date: "2026-11-24",

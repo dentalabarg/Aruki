@@ -772,22 +772,22 @@ html #view-articulos input[type="checkbox"]::before{content:none; display:none;}
 .cot-table tr.is-none.box-alt td,.cot-table tr.is-none.box-alt:hover td{background:color-mix(in srgb, var(--red) 16%, transparent);}
 
 /* ---------- v5.9 Artículos: casillas con el estilo de Aruki ---------- */
-html #view-articulos input[type="checkbox"]{
+html #view-articulos input[type="checkbox"], html .cob-multi-pop input[type="checkbox"]{
   -webkit-appearance:none; appearance:none; position:relative; width:18px; height:18px; border-radius:5px;
   background:var(--bg-elev-2); box-shadow:inset 0 0 0 1.5px var(--line-strong), 0 1px 2px rgba(0,0,0,.06);
   cursor:pointer; transition:background var(--transition-fast), box-shadow var(--transition-fast);
 }
-html #view-articulos input[type="checkbox"]:hover{box-shadow:inset 0 0 0 1.5px var(--cyan), 0 1px 2px rgba(0,0,0,.06);}
-html #view-articulos input[type="checkbox"]::before{
+html #view-articulos input[type="checkbox"]:hover, html .cob-multi-pop input[type="checkbox"]:hover{box-shadow:inset 0 0 0 1.5px var(--cyan), 0 1px 2px rgba(0,0,0,.06);}
+html #view-articulos input[type="checkbox"]::before, html .cob-multi-pop input[type="checkbox"]::before{
   content:""; display:block; position:absolute; left:6.5px; top:3px; width:4px; height:8.5px;
   background:none; border-radius:0; box-shadow:none;              /* no hereda la perilla del interruptor */
   border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg) scale(0); transition:transform var(--transition-fast);
 }
-html #view-articulos input[type="checkbox"]:checked{background:var(--cyan); box-shadow:inset 0 0 0 1.5px var(--cyan);}
-html #view-articulos input[type="checkbox"]:checked::before{transform:rotate(45deg) scale(1);}
-html #view-articulos input[type="checkbox"]:indeterminate{background:var(--cyan); box-shadow:inset 0 0 0 1.5px var(--cyan);}
-html #view-articulos input[type="checkbox"]:indeterminate::before{left:4.5px; top:8px; width:9px; height:0; border-width:0 0 2px 0; border-radius:1px; transform:none;}
-html #view-articulos input[type="checkbox"]:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+html #view-articulos input[type="checkbox"]:checked, html .cob-multi-pop input[type="checkbox"]:checked{background:var(--cyan); box-shadow:inset 0 0 0 1.5px var(--cyan);}
+html #view-articulos input[type="checkbox"]:checked::before, html .cob-multi-pop input[type="checkbox"]:checked::before{transform:rotate(45deg) scale(1);}
+html #view-articulos input[type="checkbox"]:indeterminate, html .cob-multi-pop input[type="checkbox"]:indeterminate{background:var(--cyan); box-shadow:inset 0 0 0 1.5px var(--cyan);}
+html #view-articulos input[type="checkbox"]:indeterminate::before, html .cob-multi-pop input[type="checkbox"]:indeterminate::before{left:4.5px; top:8px; width:9px; height:0; border-width:0 0 2px 0; border-radius:1px; transform:none;}
+html #view-articulos input[type="checkbox"]:focus-visible, html .cob-multi-pop input[type="checkbox"]:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
 
 /* ---------- v5.9 Listas: sin barra horizontal (nombres o CUIT muy largos se cortan en renglones) ---------- */
 .rel-results{overflow-x:hidden;}
@@ -911,3 +911,28 @@ a.btn{text-decoration:none;}  /* v8.0: botones que son links (Cuenta corriente e
 #cobDetalle .page-head-actions{flex-shrink:0; margin-left:auto;}
 @media (max-width:1100px){ #cobDetalle .page-head{flex-wrap:wrap;} }
 .cob-table th:last-child .cob-resize{right:0;}  /* v8.2: no se sale de la tabla (causaba la barra horizontal) */
+
+/* ---------- v8.3 Menú lateral: todo alineado a la izquierda y grupos separados ---------- */
+.nav-item.sub{padding-left:10px;}
+.nav-kicker{padding:4px 10px 6px;}
+.nav-kicker ~ .nav-kicker{margin-top:10px; padding-top:16px; border-top:1px solid var(--line);}
+.sidebar.collapsed .nav-kicker ~ .nav-kicker{height:auto; margin:6px 4px; padding:0; border-top:1px solid var(--line); font-size:0;}
+
+/* ---------- v8.3 Cuentas corrientes ---------- */
+#cobKpis{grid-template-columns:repeat(5, minmax(0,1fr));}
+@media (max-width:1300px){ #cobKpis{grid-template-columns:repeat(3, minmax(0,1fr));} }
+@media (max-width:700px){ #cobKpis{grid-template-columns:1fr;} }
+#cobKpis .kpi-value{font-size:clamp(18px, 1.7vw, 26px);}
+.cob-aging{height:34px;}
+.cob-aging > div{display:flex; align-items:center; justify-content:flex-start; padding:0 10px; min-width:0; overflow:hidden;}
+.cob-aging > div span{color:#fff; font:600 12.5px var(--sans); white-space:nowrap; text-shadow:0 1px 2px rgba(0,0,0,.35); font-variant-numeric:tabular-nums;}
+.cob-multi{position:relative;}
+.cob-multi-btn{width:auto; min-width:200px; max-width:280px; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; text-align:left;}
+.cob-multi-btn span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.cob-multi-btn i{font-style:normal; font-size:11px; color:var(--muted);}
+.cob-multi-btn.is-set{border-color:var(--cyan); color:var(--text-cyan-muted, var(--cyan));}
+.cob-multi-pop{position:absolute; z-index:40; top:calc(100% + 6px); left:0; min-width:260px; max-height:340px; overflow:auto;
+  background:var(--bg-elev); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg, 0 12px 32px rgba(0,0,0,.18)); padding:6px;}
+.cob-multi-pop label{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; font-size:13.5px; cursor:pointer; white-space:nowrap;}
+.cob-multi-pop label:hover{background:var(--bg-soft);}
+.cob-multi-pop .cob-multi-all{border-bottom:1px solid var(--line); border-radius:8px 8px 0 0; margin-bottom:4px; font-weight:600;}
