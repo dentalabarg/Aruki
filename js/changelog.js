@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "8.4";
+const LATEST_VERSION = "8.5";
 const CHANGELOG = [
+  {
+    version: "8.5",
+    date: "2026-11-24",
+    title: "Cuadros con los colores de cada tramo",
+    items: [
+      { type: "mejora", text: "En Cuentas corrientes, los importes de los cuadros «Más de 30/60/90/180 días» tienen el mismo color que su tramo en la barra de antigüedad. «Total a cobrar» sigue en negro." }
+    ]
+  },
   {
     version: "8.4",
     date: "2026-11-24",

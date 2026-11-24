@@ -227,8 +227,10 @@ function cobKpis(facts, clientes){
   const pct = n => total ? `${Math.round(n / total * 100)} % del total` : "—";
   const otrasTxt = Object.entries(otras).map(([m, v]) => ` · + ${cobMoney(v, m)}`).join("");
   // v8.3: cinco cuadros (pedido del usuario): total, 31–60, 61–90, 91–180 y más de 180
-  const tramo = (t, sub, min, max) => { const v = sum(min, max); return `<div class="card"><div class="card-kicker">${t}</div>
-    <div class="kpi-value cob-red">${escapeHtml(cobMoney(v))}</div><div class="kpi-sub">${sub} · ${pct(v)}</div></div>`; };
+  // v8.5: el importe con el color de su tramo en la barra de antigüedad
+  const tramo = (t, sub, min, max) => { const v = sum(min, max), c = COB_BUCKETS.find(b => b.min === min).c;
+    return `<div class="card"><div class="card-kicker">${t}</div>
+    <div class="kpi-value cob-tramo" style="color:${c}">${escapeHtml(cobMoney(v))}</div><div class="kpi-sub">${sub} · ${pct(v)}</div></div>`; };
   cobEl("cobKpis").innerHTML = `
     <div class="card"><div class="card-kicker">Total a cobrar</div><div class="kpi-value">${escapeHtml(cobMoney(total))}</div>
       <div class="kpi-sub">${numberFormatter.format(facts.length)} facturas · ${numberFormatter.format(clientes.length)} clientes${escapeHtml(otrasTxt)}</div></div>
