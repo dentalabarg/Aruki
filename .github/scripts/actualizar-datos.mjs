@@ -55,6 +55,8 @@ async function getPage(name, page, extra = "") {
 async function getAll(name) {
   const first = await getPage(name, 1);
   const extra = first.modo ? `&modo=${encodeURIComponent(first.modo)}` : "";
+  // Solo cantidades y el motivo de la lectura (sin datos de YiQi)
+  console.log(`· ${name}: ${first.total} registros, lectura ${first.modo || "?"}${first.motivo ? ` (${String(first.motivo).slice(0, 400)})` : ""}`);
   const pageSize = first.data.length || 1;
   const total = Number(first.total) || first.data.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
