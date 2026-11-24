@@ -160,7 +160,7 @@ function cobNotaCell(c){
 }
 const COB_COLS = {
   clientes: [
-    { k: "cliente", t: "Cliente", w: 300, html: c => `<b>${escapeHtml(c.cliente)}</b>${yiqiCtaCteLinkHtml(c.id)}${c.cuit ? `<div class="cob-muted cob-small">${escapeHtml(c.cuit)}</div>` : ""}` },
+    { k: "cliente", t: "Cliente", w: 300, html: c => `${yiqiCtaCteLinkHtml(c.id).replace('class="yiqi-link"', 'class="yiqi-link yiqi-first"')}<b>${escapeHtml(c.cliente)}</b>${c.cuit ? `<div class="cob-muted cob-small">${escapeHtml(c.cuit)}</div>` : ""}` },
     { k: "vendedor", t: "Vendedor", w: 150, html: c => escapeHtml(c.vendedor) },
     { k: "facturas", t: "Facturas", w: 90, num: true, html: c => String(c.facturas) },
     { k: "dias", t: "Más antigua", w: 120, num: true, html: c => cobDiasBadge(c.dias) },

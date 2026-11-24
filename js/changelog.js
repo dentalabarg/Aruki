@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "8.0";
+const LATEST_VERSION = "8.1";
 const CHANGELOG = [
+  {
+    version: "8.1",
+    date: "2026-11-24",
+    title: "Ícono de cuenta corriente adelante",
+    items: [
+      { type: "mejora", text: "En Cuentas corrientes, el ícono para abrir la cuenta corriente en YiQi va antes del nombre del cliente." }
+    ]
+  },
   {
     version: "8.0",
     date: "2026-11-24",
