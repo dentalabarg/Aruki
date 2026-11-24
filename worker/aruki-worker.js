@@ -863,13 +863,13 @@ function fastFilterCandidates(entity) {
   }
   if (entity === "FACTURA") {
     // Smartie 2355: emitidas desde 01/07/2026, sin origen "Mercado Libre" y sin cliente "Consumidor Final"
+    // v7.9: también sin el otro "consumidor final" en minúsculas (id 282758). Desde el 21/11/2026 la smartie trae
+    // TODAS las fechas (66.475 facturas = sin Mercado Libre, sin 8192 y sin 282758; confirmado contando en YiQi).
+    const sinCF = [f("FACT_EXTE_NOMBRE", "!=", "Mercado Libre"), f("CLIE_ID_CLIE", "!=", 8192), f("CLIE_ID_CLIE", "!=", 282758)];
     const desde = ["2026-07-01", "2026-07-01T00:00:00", "01/07/2026"];
-    const out = [];
-    for (const d of desde) {
-      out.push([f("FACT_FECHA_EMISION", ">=", d), f("FACT_EXTE_NOMBRE", "!=", "Mercado Libre"), f("CLIE_ID_CLIE", "!=", 8192)]);
-    }
-    // v7.9: desde el 21/11/2026 la smartie trae TODAS las fechas (~66.000 facturas): sin el filtro de fecha
-    out.push([f("FACT_EXTE_NOMBRE", "!=", "Mercado Libre"), f("CLIE_ID_CLIE", "!=", 8192)]);
+    const out = [sinCF];
+    for (const d of desde) out.push([f("FACT_FECHA_EMISION", ">=", d), ...sinCF]);
+    out.push([f("FACT_EXTE_NOMBRE", "!=", "Mercado Libre"), f("CLIE_ID_CLIE", "!=", 8192)]);   // base para contar por estado
     return out;
   }
   return [[]];

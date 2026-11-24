@@ -40,7 +40,7 @@ Consultas (Artículos) → Cobranzas (Cuentas corrientes = módulo `cobranzas`; 
   1.234,50; facturas.js también usa `cobMoney`). Export comunes: `cobExcel(name, title, cols, rows, extraTop)` y `cobPdfTable({title, subtitle, cols, rows, file})`.
 
 ## Cobranzas › Facturas de venta (v7.6, `js/facturas.js`, el viejo "Control Facturas")
-- Sigue con `createDataModule` (smartie 2355, desde 01/07/2026, caché local + servidor). Filas normalizadas con `facNorm()` en un
+- Sigue con `createDataModule` (smartie 2355, todas las fechas desde v7.9, caché local + servidor). Filas normalizadas con `facNorm()` en un
   `WeakMap` (no se guardan en el caché). `cfg.sortFiltered` (nuevo hook de `m.filtered()`) ordena lo filtrado con `fac.sort`.
 - Filtros: estado (`#statusFilter`), período (`#facPeriodo` + `#facDesde`/`#facHasta`), vendedor, origen, búsqueda. KPIs y fila de
   totales sobre lo filtrado; Excel/PDF de todo lo filtrado (`facturasModule.lastFiltered`).
@@ -166,7 +166,7 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   ("rapido" | "smartie"); v3.10: pide también `{field:"id"}` (si YiQi lo rechaza, sin id; si la smartie trae id y la
   consulta no, usa la smartie). v4.1: los filtros de cada smartie NO vienen por API: se copian en `fastFilterCandidates()`
   (CLIENTE: CLIE_ACTIVO = true/1/"S"…; FACTURA: FACT_FECHA_EMISION >= 2026-07-01, FACT_EXTE_NOMBRE != "Mercado Libre",
-  CLIE_ID_CLIE != 8192; v7.9: desde 2026-11-21 la smartie 2355 trae TODAS las fechas, ~66.500 → variante sin fecha y, si no coincide, `estadoFilters(…, pre)` excluye estados sobre ML/CF) y se prueban variantes con pageSize 1 hasta que el total coincide. Si no, responde `motivo`
+  CLIE_ID_CLIE != 8192; v7.9: desde 2026-11-21 la smartie 2355 trae TODAS las fechas (el usuario sacó el filtro a propósito, 66.475) = sin ML, sin 8192 y sin el otro "consumidor final" id 282758 → esa es la primera variante; si no coincide, `estadoFilters(…, pre)` excluye estados sobre ML/CF) y se prueban variantes con pageSize 1 hasta que el total coincide. Si no, responde `motivo`
   (se ve en el tooltip del botón Actualizar vía `modoTexto()`). v4.2: ante error 500 prueba sin id y diagnostica columna
   por columna. v4.3: si no hay filtros cargados y el total no coincide, `estadoFilters()` agrupa por ESTA_CODIGO/DESC_ESTADO
   (COUNT del SKU) y excluye (!=) los estados cuya suma explica la diferencia. CONSULTA_DE_STOCK: con `id` da 500;
