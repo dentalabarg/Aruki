@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "7.8";
+const LATEST_VERSION = "7.9";
 const CHANGELOG = [
+  {
+    version: "7.9",
+    date: "2026-11-24",
+    title: "Tarea automática sin cuelgues",
+    items: [
+      { type: "correccion", text: "La tarea automática se quedaba esperando a YiQi al bajar Facturas hasta que GitHub la cortaba a los 30 minutos, así que Facturas no se guardaba. Ahora cada pedido tiene un tiempo máximo y, si YiQi no contesta, reintenta y termina en pocos minutos." },
+      { type: "nuevo", text: "El conector de Cloudflare puede despertar la tarea cada 3 horas (GitHub sola corre muy pocas veces)." },
+      { type: "mejora", text: "El aviso de datos atrasados dice cuál dato está atrasado (Clientes, Artículos, Facturas o Cuentas corrientes) y tiene en cuenta las actualizaciones hechas a mano." }
+    ]
+  },
   {
     version: "7.8",
     date: "2026-11-21",

@@ -430,10 +430,17 @@ async function staleCheck(){
   const banner = document.getElementById("staleBanner");
   if (!banner || !getAuthToken()) return;
   const meta = await srvMeta();
-  const robot = meta ? Math.max(0, ...Object.values(meta).map(d => Number(d.robot) || 0)) : 0;
-  const late = robot && Date.now() - robot > SRV_STALE_HOURS * 3600000;
+  /* v7.9: se mira cada dato por separado (antes alcanzaba con que se actualizara uno) y cuenta también
+     si alguien lo actualizó a mano (fecha). */
+  const NOMBRES = { clientes: "Clientes", articulos: "Artículos", facturas: "Facturas", cobranzas: "Cuentas corrientes" };
+  const viejos = Object.entries(meta || {})
+    .filter(([n, d]) => NOMBRES[n] && Number(d.robot))
+    .map(([n, d]) => ({ n: NOMBRES[n], t: Math.max(Number(d.robot) || 0, Number(d.fecha) || 0) }))
+    .filter(x => Date.now() - x.t > SRV_STALE_HOURS * 3600000);
+  const late = viejos.length > 0;
+  const robot = late ? Math.min(...viejos.map(x => x.t)) : 0;
   banner.classList.toggle("hidden", !late);
-  if (late) banner.innerHTML = `<strong>Los datos no se actualizan solos desde ${fmtAgo(Date.now() - robot)}.</strong>
+  if (late) banner.innerHTML = `<strong>${viejos.length < 4 ? viejos.map(x => x.n).join(", ") + ": l" : "L"}os datos no se actualizan solos desde ${fmtAgo(Date.now() - robot)}.</strong>
     Para forzarlo: github.com → repositorio <b>Aruki</b> → pestaña <b>Actions</b> → «Actualizar datos de Aruki» → <b>Run workflow</b>
     (si arriba aparece un cartel amarillo de tarea pausada, tocá antes <b>Enable workflow</b>). Mientras tanto podés actualizar con los botones de arriba.`;
 }

@@ -33,6 +33,11 @@
     Clientes, Artículos y Facturas a través de este conector y dejarlos guardados en ARUKI_KV (claves cache:*).
     La misma clave va en GitHub → Settings → Secrets and variables → Actions → ARUKI_CACHE_KEY.
 
+  Despertador de la tarea automática (v7.9, opcional): GitHub se saltea muchas corridas programadas, así que
+  el conector la "despierta" cada 3 horas con un Cron Trigger de Cloudflare (Settings → Triggers → Cron Triggers).
+  - GITHUB_TOKEN (secret): token de GitHub con permiso "Actions: Read and write" solo para el repositorio Aruki.
+  - GITHUB_REPO (opcional, por defecto dentalabarg/Aruki)
+
   Binding KV (Settings → Bindings):
   - ARUKI_KV  → guarda las Relaciones, Etiquetas, datos guardados (cache:*) y los intentos fallidos de login
   ------------------------------------------------------------
@@ -47,6 +52,11 @@ const SESSION_HOURS = 12;
 const REMEMBER_SESSION_DAYS = 30;
 
 export default {
+  // v7.9: Cron Trigger de Cloudflare → le pide a GitHub que corra la tarea "Actualizar datos de Aruki"
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(despertarTarea(env, event?.cron || ""));
+  },
+
   async fetch(request, env) {
     const corsHeaders = buildCorsHeaders(request, env);
 
@@ -507,7 +517,41 @@ async function cacheMeta(env) {
   const { keys } = await env.ARUKI_KV.list({ prefix: "cache:" });
   const datos = {};
   for (const k of keys) datos[k.name.slice(6)] = k.metadata || {};
-  return { datos };
+  const despertador = await env.ARUKI_KV.get(DESPERTADOR_KEY, "json").catch(() => null);
+  return { datos, despertador: despertador || null };
+}
+
+/* ---------- Despertador de la tarea automática (v7.9) ----------
+   GitHub corre muy pocas veces las tareas programadas (a veces 1 cada 8–12 h). El Cron Trigger de Cloudflare sí es
+   puntual: cada 3 h llama a la API de GitHub (workflow_dispatch), que arranca la tarea en el momento.
+   Gasta casi nada (un solo pedido); los datos los sigue bajando la tarea de GitHub. */
+const DESPERTADOR_KEY = "robot-despertador";
+async function despertarTarea(env, cron) {
+  const token = String(env.GITHUB_TOKEN || "").trim();
+  const repo = String(env.GITHUB_REPO || "dentalabarg/Aruki").trim();
+  let estado;
+  if (!token) {
+    estado = { ok: false, error: "Falta el secreto GITHUB_TOKEN en el conector." };
+  } else {
+    try {
+      const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/actualizar-datos.yml/dispatches`, {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+          "User-Agent": "aruki-worker",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ ref: "main" })
+      });
+      estado = res.status === 204 ? { ok: true }
+        : { ok: false, status: res.status, error: (await res.text().catch(() => "")).slice(0, 200) };
+    } catch (error) {
+      estado = { ok: false, error: String(error?.message || error).slice(0, 200) };
+    }
+  }
+  if (env.ARUKI_KV) await env.ARUKI_KV.put(DESPERTADOR_KEY, JSON.stringify({ ...estado, cron, fecha: Date.now() })).catch(() => {});
 }
 
 async function cacheRead(env, name, corsHeaders) {
