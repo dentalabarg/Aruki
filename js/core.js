@@ -514,8 +514,9 @@ function syncBtnProgress(btn, progress, error, done = true){
    gridRender(wrap, store, cols, rows, footHtml, onRow, sortState {k,d}, onSort(newState), presorted)
    cols: [{ k, t, w, num, html(row), sv(row) }]. Anchos en localStorage "aruki-<store>".
    ============================================================ */
-function gridColW(store){ try { return JSON.parse(localStorage.getItem(`aruki-${store}`) || "{}") || {}; } catch { return {}; } }
-function gridSaveColW(store, w){ try { localStorage.setItem(`aruki-${store}`, JSON.stringify(w)); } catch {} }
+/* v8.2: "-v2" para empezar de cero (los anchos viejos guardaban solo algunas columnas) */
+function gridColW(store){ try { return JSON.parse(localStorage.getItem(`aruki-${store}-v2`) || "{}") || {}; } catch { return {}; } }
+function gridSaveColW(store, w){ try { localStorage.setItem(`aruki-${store}-v2`, JSON.stringify(w)); } catch {} }
 function gridSortRows(rows, cols, st){
   const col = cols.find(c => c.k === st.k) || cols[0];
   const val = col.sv || (r => r[col.k]);
@@ -529,42 +530,54 @@ function gridSortRows(rows, cols, st){
 }
 /* cols: [{ k, t, w, num, html(row), sv(row), foot }]; onRow(row) al tocar una fila */
 function gridRender(wrap, key, cols, rows, footHtml, onRow, st, onSort, presorted = false){
-  const widths = gridColW(key);
-  // Columnas que no se cambiaron a mano: se achican (o agrandan) para que la tabla entre justo en el recuadro
-  const avail = (wrap.clientWidth || 0) - 2;
-  const fixed = cols.reduce((s, c) => s + (widths[c.k] || 0), 0);
-  const free = cols.filter(c => !widths[c.k]);
-  const freeSum = free.reduce((s, c) => s + (c.w || 120), 0);
-  const k = avail > 0 && freeSum ? Math.max(0.55, (avail - fixed) / freeSum) : 1;
-  free.forEach(c => { widths[c.k] = Math.max(56, Math.floor((c.w || 120) * k)); });
+  /* v8.2: como en Artículos. Sin anchos guardados la tabla ocupa justo el recuadro (porcentajes: nunca aparece la barra
+     horizontal). Al arrastrar un borde se fijan TODOS los anchos en píxeles y solo cambia esa columna (las demás quedan
+     quietas; si la tabla queda más ancha que el recuadro, aparece la barra). Doble clic en un borde: anchos originales. */
+  const saved = gridColW(key);
+  const has = cols.some(c => saved[c.k]);
+  const sumW = cols.reduce((s, c) => s + (c.w || 120), 0);
+  const colW = c => has ? `${saved[c.k] || c.w || 120}px` : `${((c.w || 120) / sumW * 100).toFixed(3)}%`;
   const sorted = presorted ? rows : gridSortRows(rows, cols, st);
   wrap.innerHTML = `<table class="table cob-table">
-    <colgroup>${cols.map(c => `<col style="width:${widths[c.k] || c.w || 120}px">`).join("")}</colgroup>
+    <colgroup>${cols.map(c => `<col style="width:${colW(c)}">`).join("")}</colgroup>
     <thead><tr>${cols.map(c => `<th data-k="${c.k}" class="${c.num ? "num" : ""} ${st.k === c.k ? "is-sorted" : ""}" title="Ordenar">
-      <span>${escapeHtml(c.t)}</span>${st.k === c.k ? `<i class="cob-arrow">${st.d > 0 ? "▲" : "▼"}</i>` : ""}<b class="cob-resize" title="Arrastrá para cambiar el ancho"></b></th>`).join("")}</tr></thead>
+      <span>${escapeHtml(c.t)}</span>${st.k === c.k ? `<i class="cob-arrow">${st.d > 0 ? "▲" : "▼"}</i>` : ""}<b class="cob-resize" title="Arrastrá para cambiar el ancho · doble clic: anchos originales"></b></th>`).join("")}</tr></thead>
     <tbody>${sorted.length ? sorted.map((r, i) => `<tr data-i="${i}" class="${onRow ? "is-click" : ""}">${cols.map(c => `<td class="${c.num ? "num" : ""}">${c.html(r)}</td>`).join("")}</tr>`).join("")
       : `<tr><td colspan="${cols.length}" class="cob-empty">No hay nada con esos filtros.</td></tr>`}</tbody>
     ${footHtml && sorted.length ? `<tfoot><tr>${footHtml}</tr></tfoot>` : ""}
   </table>`;
   const table = wrap.querySelector("table");
-  const totalW = () => [...table.querySelectorAll("col")].reduce((s, c) => s + parseFloat(c.style.width), 0);
-  table.style.width = `${totalW()}px`;
+  const colEls = [...table.querySelectorAll("col")];
+  const totalW = () => colEls.reduce((s, c) => s + parseFloat(c.style.width), 0);
+  table.style.width = has ? `${totalW()}px` : "100%";
   table.querySelectorAll("th").forEach((th, idx) => {
     th.addEventListener("click", e => {
       if (e.target.closest(".cob-resize") || th.dataset.dragged) { delete th.dataset.dragged; return; }
       const k = th.dataset.k;
       onSort(st.k === k ? { k, d: -st.d } : { k, d: cols[idx].num ? -1 : 1 });
     });
-    th.querySelector(".cob-resize").addEventListener("mousedown", e => {
+    const handle = th.querySelector(".cob-resize");
+    handle.addEventListener("dblclick", e => {
       e.preventDefault(); e.stopPropagation();
-      const col = table.querySelectorAll("col")[idx];
+      try { localStorage.removeItem(`aruki-${key}-v2`); } catch {}
+      onSort(st);   // vuelve a dibujar con los anchos originales
+    });
+    handle.addEventListener("mousedown", e => {
+      e.preventDefault(); e.stopPropagation();
+      // Se fijan en píxeles los anchos que se ven ahora (así las otras columnas no se mueven)
+      const ths = [...table.querySelectorAll("thead th")];
+      const now = ths.map(h => h.getBoundingClientRect().width);
+      colEls.forEach((c, i) => { c.style.width = `${Math.round(now[i])}px`; });
+      table.style.width = `${totalW()}px`;
+      const col = colEls[idx];
       const x0 = e.clientX, w0 = parseFloat(col.style.width);
       document.body.classList.add("cob-resizing");
-      const move = ev => { col.style.width = `${Math.max(50, w0 + ev.clientX - x0)}px`; table.style.width = `${totalW()}px`; };
+      const move = ev => { col.style.width = `${Math.max(50, Math.round(w0 + ev.clientX - x0))}px`; table.style.width = `${totalW()}px`; };
       const up = () => {
         document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up);
         document.body.classList.remove("cob-resizing");
-        const w = gridColW(key); w[cols[idx].k] = Math.round(parseFloat(col.style.width)); gridSaveColW(key, w);
+        const w = {}; cols.forEach((c, i) => { w[c.k] = Math.round(parseFloat(colEls[i].style.width)); });
+        gridSaveColW(key, w);
         th.dataset.dragged = "1"; setTimeout(() => delete th.dataset.dragged, 0);
       };
       document.addEventListener("mousemove", move); document.addEventListener("mouseup", up);

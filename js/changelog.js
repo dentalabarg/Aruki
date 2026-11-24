@@ -4,8 +4,19 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "8.1";
+const LATEST_VERSION = "8.2";
 const CHANGELOG = [
+  {
+    version: "8.2",
+    date: "2026-11-24",
+    title: "Cobranzas: anchos de columna y detalles de diseño",
+    items: [
+      { type: "correccion", text: "En Cobranzas, al cambiar el ancho de una columna ya no se mueven las demás (funciona como en Artículos). Doble clic en el borde de una columna vuelve a los anchos originales." },
+      { type: "correccion", text: "Ya no aparece la barra para moverse hacia los costados debajo de las tablas cuando todas las columnas entran." },
+      { type: "mejora", text: "En el estado de cuenta los botones quedan siempre a la derecha, aunque el nombre del cliente sea largo." },
+      { type: "mejora", text: "En la lista de Cuentas corrientes ya no se muestra el CUIT debajo del nombre (sigue en el estado de cuenta y en la búsqueda)." }
+    ]
+  },
   {
     version: "8.1",
     date: "2026-11-24",

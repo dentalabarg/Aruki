@@ -861,7 +861,7 @@ html #view-articulos input[type="checkbox"]:focus-visible{outline:2px solid var(
 .cob-toolbar select.ds-input{width:auto; min-width:170px;}
 .cob-check{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); cursor:pointer;}
 .cob-table-wrap{overflow-x:auto;}
-.cob-table{table-layout:fixed; min-width:100%;}
+.cob-table{table-layout:fixed;}
 .cob-table th, .cob-table td{width:auto !important; white-space:normal;}
 .cob-table th{position:relative; cursor:pointer; user-select:none;}
 .cob-table th.num, .cob-table td.num{text-align:right;}
@@ -905,3 +905,9 @@ body.cob-resizing{cursor:col-resize; user-select:none;}
 .cob-table td{vertical-align:middle;}
 a.btn{text-decoration:none;}  /* v8.0: botones que son links (Cuenta corriente en YiQi) */
 .yiqi-link.yiqi-first{margin:0 8px 0 0; vertical-align:-5px;}  /* v8.1: ícono antes del nombre */
+/* v8.2: estado de cuenta: botones siempre a la derecha aunque el nombre sea largo (el nombre baja de renglón) */
+#cobDetalle .page-head{flex-wrap:nowrap;}
+#cobDetalle .page-head > div:first-child{min-width:0; flex:1 1 auto;}
+#cobDetalle .page-head-actions{flex-shrink:0; margin-left:auto;}
+@media (max-width:1100px){ #cobDetalle .page-head{flex-wrap:wrap;} }
+.cob-table th:last-child .cob-resize{right:0;}  /* v8.2: no se sale de la tabla (causaba la barra horizontal) */
