@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "7.9";
+const LATEST_VERSION = "8.0";
 const CHANGELOG = [
+  {
+    version: "8.0",
+    date: "2026-11-24",
+    title: "Cuentas corrientes: link a YiQi y volver al mismo lugar",
+    items: [
+      { type: "nuevo", text: "Ícono al lado del nombre de cada cliente y botón «Cuenta corriente en YiQi» en el estado de cuenta, que abren el reporte de cuenta corriente del cliente en YiQi." },
+      { type: "mejora", text: "Al volver del estado de cuenta, la lista queda en el mismo lugar donde estabas." },
+      { type: "mejora", text: "«Último pago» dice hace cuántos días fue (hoy, hace 1 día, hace 12 días) en vez de horas." }
+    ]
+  },
   {
     version: "7.9",
     date: "2026-11-24",

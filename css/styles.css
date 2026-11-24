@@ -903,3 +903,4 @@ body.cob-resizing{cursor:col-resize; user-select:none;}
 .comp-cell .yiqi-link{margin-left:0;}
 .cob-table td{overflow:hidden;}
 .cob-table td{vertical-align:middle;}
+a.btn{text-decoration:none;}  /* v8.0: botones que son links (Cuenta corriente en YiQi) */

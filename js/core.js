@@ -581,9 +581,15 @@ function gridRender(wrap, key, cols, rows, footHtml, onRow, st, onSort, presorte
 /* v7.6: link para abrir una factura en YiQi (id interno de la factura) */
 const YIQI_WEB_SCHEMA = 328;
 function yiqiFacturaUrl(id){ return `https://me.yiqi.com.ar/view/FACTURA?schemaId=${YIQI_WEB_SCHEMA}#/${encodeURIComponent(id)}`; }
-function yiqiLinkHtml(id){
+/* v8.0: reporte de cuenta corriente de un cliente (reportId 68, instanceId = id del cliente; formato dado por el usuario) */
+function yiqiCtaCteUrl(clienteId){ return `https://me.yiqi.com.ar/report/view?schemaId=${YIQI_WEB_SCHEMA}&reportId=68&instanceId=${encodeURIComponent(clienteId)}`; }
+function yiqiCtaCteLinkHtml(clienteId){
+  if (clienteId === null || clienteId === undefined || clienteId === "") return "";
+  return yiqiLinkHtml(clienteId, yiqiCtaCteUrl(clienteId), "Abrir la cuenta corriente en YiQi");
+}
+function yiqiLinkHtml(id, url, title = "Abrir esta factura en YiQi"){
   if (id === null || id === undefined || id === "") return "";
-  return `<a class="yiqi-link" href="${yiqiFacturaUrl(id)}" target="_blank" rel="noopener" title="Abrir esta factura en YiQi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>`;
+  return `<a class="yiqi-link" href="${url || yiqiFacturaUrl(id)}" target="_blank" rel="noopener" title="${title}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>`;
 }
 
 function createDataModule(cfg){

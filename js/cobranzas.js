@@ -143,6 +143,12 @@ function cobRenderTable(wrap, key, cols, rows, footHtml, onRow){
 }
 
 /* ---------- Columnas de cada vista ---------- */
+/* v8.0: "hoy", "hace 1 día", "hace 12 días" (días de calendario) */
+function cobHaceDias(d){
+  const dia = x => { const t = new Date(x); return Date.UTC(t.getFullYear(), t.getMonth(), t.getDate()); };
+  const n = Math.max(0, Math.round((dia(Date.now()) - dia(d)) / 86400000));
+  return n === 0 ? "hoy" : n === 1 ? "hace 1 día" : `hace ${n.toLocaleString("es-AR")} días`;
+}
 const cobDiasBadge = d => `<span class="badge ${d > 90 ? "badge-red" : d > 30 ? "badge-amber" : "badge-green"}">${d} días</span>`;
 const cobAmt = (n, mon) => n ? escapeHtml(cobMoney(n, mon)) : `<span class="cob-muted">—</span>`;
 function cobOtras(o){ return Object.entries(o || {}).map(([m, v]) => `<div class="cob-muted cob-small">+ ${escapeHtml(cobMoney(v, m))}</div>`).join(""); }
@@ -154,7 +160,7 @@ function cobNotaCell(c){
 }
 const COB_COLS = {
   clientes: [
-    { k: "cliente", t: "Cliente", w: 300, html: c => `<b>${escapeHtml(c.cliente)}</b>${c.cuit ? `<div class="cob-muted cob-small">${escapeHtml(c.cuit)}</div>` : ""}` },
+    { k: "cliente", t: "Cliente", w: 300, html: c => `<b>${escapeHtml(c.cliente)}</b>${yiqiCtaCteLinkHtml(c.id)}${c.cuit ? `<div class="cob-muted cob-small">${escapeHtml(c.cuit)}</div>` : ""}` },
     { k: "vendedor", t: "Vendedor", w: 150, html: c => escapeHtml(c.vendedor) },
     { k: "facturas", t: "Facturas", w: 90, num: true, html: c => String(c.facturas) },
     { k: "dias", t: "Más antigua", w: 120, num: true, html: c => cobDiasBadge(c.dias) },
@@ -162,7 +168,7 @@ const COB_COLS = {
     { k: "mas30", t: "+30 días", w: 130, num: true, html: c => c.mas30 ? `<span class="cob-red">${cobAmt(c.mas30)}</span>` : cobAmt(0) },
     { k: "favor", t: "Saldo a favor", w: 130, num: true, html: c => c.favor ? `<span class="cob-green">${cobAmt(c.favor)}</span>` : cobAmt(0) },
     { k: "neto", t: "Saldo neto", w: 140, num: true, html: c => `<b>${escapeHtml(cobMoney(c.neto))}</b>` },
-    { k: "pago", t: "Último pago", w: 120, sv: c => c.pago ? +c.pago : null, html: c => c.pago ? `${cobDate(c.pago)}<div class="cob-muted cob-small">${fmtAgo(Date.now() - c.pago)}</div>` : `<span class="cob-muted">—</span>` },
+    { k: "pago", t: "Último pago", w: 120, sv: c => c.pago ? +c.pago : null, html: c => c.pago ? `${cobDate(c.pago)}<div class="cob-muted cob-small">${cobHaceDias(c.pago)}</div>` : `<span class="cob-muted">—</span>` },
     { k: "recordar", t: "Seguimiento", w: 200, sv: c => c.recordar || (c.nota ? "~" : null), html: cobNotaCell },
   ],
   facturas: [
@@ -288,6 +294,7 @@ function cobSetView(v){
 /* ---------- Estado de cuenta de un cliente ---------- */
 function cobOpenDetalle(id){
   cob.detalle = String(id);
+  cob.scrollY = window.scrollY;   // v8.0: al volver se queda donde estaba
   cobEl("cobLista").classList.add("hidden");
   cobEl("cobDetalle").classList.remove("hidden");
   window.scrollTo({ top: 0 });
@@ -298,6 +305,8 @@ function cobCloseDetalle(){
   cobEl("cobDetalle").classList.add("hidden");
   cobEl("cobLista").classList.remove("hidden");
   cobRender();
+  const y = cob.scrollY || 0;
+  requestAnimationFrame(() => window.scrollTo({ top: y }));
 }
 function cobClienteData(id){
   const facts = cob.data.facturas.filter(f => f.clienteId === id);
@@ -319,6 +328,7 @@ function cobRenderDetalle(){
         <div class="cob-sub">${escapeHtml(datos)}</div></div>
       <div class="page-head-actions">
         <button class="btn btn-secondary" id="cobBackBtn" type="button">‹ Volver</button>
+        <a class="btn btn-secondary" href="${yiqiCtaCteUrl(cob.detalle)}" target="_blank" rel="noopener" title="Abrir el reporte de cuenta corriente de este cliente en YiQi">Cuenta corriente en YiQi ↗</a>
         <button class="btn btn-secondary" id="cobWaBtn" type="button">Copiar para WhatsApp</button>
         <button class="btn btn-secondary" id="cobDetExcel" type="button">Excel</button>
         <button class="btn btn-new" id="cobDetPdf" type="button">PDF estado de cuenta</button>
@@ -328,7 +338,7 @@ function cobRenderDetalle(){
       <div class="card"><div class="card-kicker">Saldo pendiente</div><div class="kpi-value">${escapeHtml(cobMoney(c.pendiente))}</div><div class="kpi-sub">${c.facturas} facturas${escapeHtml(Object.entries(c.otras || {}).map(([m, v]) => ` · + ${cobMoney(v, m)}`).join(""))}</div></div>
       <div class="card"><div class="card-kicker">Más de 30 días</div><div class="kpi-value cob-red">${escapeHtml(cobMoney(c.mas30))}</div><div class="kpi-sub">La más antigua tiene ${c.dias || 0} días</div></div>
       <div class="card"><div class="card-kicker">Saldo a favor sin imputar</div><div class="kpi-value cob-green">${escapeHtml(cobMoney(c.favor))}</div><div class="kpi-sub">${c.favor > 0 ? `Saldo neto ${escapeHtml(cobMoney(c.pendiente - c.favor))} · aplicarlo en YiQi` : "No tiene pagos sin aplicar"}</div></div>
-      <div class="card"><div class="card-kicker">Último pago</div><div class="kpi-value">${c.pago ? cobDate(c.pago) : "—"}</div><div class="kpi-sub">${c.pago ? fmtAgo(Date.now() - c.pago) : "Sin recibos en los últimos 2 años"}</div></div>
+      <div class="card"><div class="card-kicker">Último pago</div><div class="kpi-value">${c.pago ? cobDate(c.pago) : "—"}</div><div class="kpi-sub">${c.pago ? cobHaceDias(c.pago) : "Sin recibos en los últimos 2 años"}</div></div>
     </div>
     <div class="cob-det-grid">
       <div class="panel"><div class="panel-head"><div class="panel-title">Facturas con saldo</div>
