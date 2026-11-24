@@ -916,7 +916,7 @@ a.btn{text-decoration:none;}  /* v8.0: botones que son links (Cuenta corriente e
 .nav-item.sub{padding-left:10px;}
 .nav-kicker{padding:4px 10px 6px;}
 .nav-kicker ~ .nav-kicker{margin-top:10px; padding-top:16px; border-top:1px solid var(--line);}
-.sidebar.collapsed .nav-kicker ~ .nav-kicker{height:auto; margin:6px 4px; padding:0; border-top:1px solid var(--line); font-size:0;}
+.sidebar.collapsed .nav-kicker ~ .nav-kicker{opacity:1; height:0; margin:8px 6px; padding:0; border-top:1px solid var(--line); font-size:0; color:transparent;}  /* v8.4: línea también con el menú contraído */
 
 /* ---------- v8.3 Cuentas corrientes ---------- */
 #cobKpis{grid-template-columns:repeat(5, minmax(0,1fr));}
@@ -936,3 +936,8 @@ a.btn{text-decoration:none;}  /* v8.0: botones que son links (Cuenta corriente e
 .cob-multi-pop label{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; font-size:13.5px; cursor:pointer; white-space:nowrap;}
 .cob-multi-pop label:hover{background:var(--bg-soft);}
 .cob-multi-pop .cob-multi-all{border-bottom:1px solid var(--line); border-radius:8px 8px 0 0; margin-bottom:4px; font-weight:600;}
+
+/* v8.4: nombre del cliente centrado con el ícono y con el resto de la fila; si no entra, "…" */
+.cob-cli{display:flex; align-items:center; gap:8px; min-width:0;}
+.cob-cli .yiqi-link.yiqi-first{margin:0; vertical-align:0; flex-shrink:0;}
+.cob-cli b{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}

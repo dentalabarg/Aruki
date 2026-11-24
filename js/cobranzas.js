@@ -13,14 +13,14 @@
 const COB_ENDPOINT = `${WORKER_BASE}/cobranzas`;
 const COB_PARTES = ["emitidas", "entregadas", "saldos", "pagos"];
 const COB_MAX_AGE = 4 * 3600000;
-/* v8.3: tramos pedidos por el usuario (30–59, 60–89, 90–179, 180–364, 365+), de verde a bordó */
+/* v8.4: tramos como antes (0–30, 31–60…; decisión del usuario) + "más de 365", de verde a bordó */
 const COB_BUCKETS = [
-  { min: 0, max: 29, t: "0–29 días", c: "#2f9e6e" },
-  { min: 30, max: 59, t: "30–59 días", c: "#c9a227" },
-  { min: 60, max: 89, t: "60–89 días", c: "#e07b39" },
-  { min: 90, max: 179, t: "90–179 días", c: "#d64545" },
-  { min: 180, max: 364, t: "180–364 días", c: "#a52a3a" },
-  { min: 365, max: Infinity, t: "365 días o más", c: "#5e1f33" },
+  { min: 0, max: 30, t: "0–30 días", c: "#2f9e6e" },
+  { min: 31, max: 60, t: "31–60 días", c: "#c9a227" },
+  { min: 61, max: 90, t: "61–90 días", c: "#e07b39" },
+  { min: 91, max: 180, t: "91–180 días", c: "#d64545" },
+  { min: 181, max: 365, t: "181–365 días", c: "#a52a3a" },
+  { min: 366, max: Infinity, t: "Más de 365 días", c: "#5e1f33" },
 ];
 const cob = {
   raw: null, data: null, savedAt: 0, loading: false, syncing: false, loaded: false, error: "",
@@ -110,8 +110,8 @@ function cobClientes(facts){
     c.facturas++;
     if (f.moneda === "ARS") {
       c.pendiente += f.pendiente;
-      if (f.dias >= 30) c.mas30 += f.pendiente;
-      if (f.dias >= 90) c.mas90 += f.pendiente;
+      if (f.dias > 30) c.mas30 += f.pendiente;
+      if (f.dias > 90) c.mas90 += f.pendiente;
     } else c.otras[f.moneda] = (c.otras[f.moneda] || 0) + f.pendiente;
     c.dias = Math.max(c.dias, f.dias);
     const t = f.emision ? +f.emision : 0;
@@ -133,7 +133,7 @@ function cobVendedores(facts){
     let v = map.get(f.vendedor);
     if (!v) { v = { vendedor: f.vendedor, clientes: new Set(), facturas: 0, pendiente: 0, mas30: 0, mas90: 0 }; map.set(f.vendedor, v); }
     v.clientes.add(f.clienteId); v.facturas++;
-    if (f.moneda === "ARS") { v.pendiente += f.pendiente; if (f.dias >= 30) v.mas30 += f.pendiente; if (f.dias >= 90) v.mas90 += f.pendiente; }
+    if (f.moneda === "ARS") { v.pendiente += f.pendiente; if (f.dias > 30) v.mas30 += f.pendiente; if (f.dias > 90) v.mas90 += f.pendiente; }
   }
   return [...map.values()].map(v => ({ ...v, clientes: v.clientes.size }));
 }
@@ -161,7 +161,7 @@ function cobNotaCell(c){
 }
 const COB_COLS = {
   clientes: [
-    { k: "cliente", t: "Cliente", w: 300, html: c => `${yiqiCtaCteLinkHtml(c.id).replace('class="yiqi-link"', 'class="yiqi-link yiqi-first"')}<b>${escapeHtml(c.cliente)}</b>` },
+    { k: "cliente", t: "Cliente", w: 300, html: c => `<span class="cob-cli">${yiqiCtaCteLinkHtml(c.id).replace('class="yiqi-link"', 'class="yiqi-link yiqi-first"')}<b title="${escapeHtml(c.cliente)}">${escapeHtml(c.cliente)}</b></span>` },
     { k: "vendedor", t: "Vendedor", w: 150, html: c => escapeHtml(c.vendedor) },
     { k: "facturas", t: "Facturas", w: 90, num: true, html: c => String(c.facturas) },
     { k: "dias", t: "Más antigua", w: 120, num: true, html: c => cobDiasBadge(c.dias) },
@@ -226,16 +226,16 @@ function cobKpis(facts, clientes){
   facts.filter(f => f.moneda !== "ARS").forEach(f => { otras[f.moneda] = (otras[f.moneda] || 0) + f.pendiente; });
   const pct = n => total ? `${Math.round(n / total * 100)} % del total` : "—";
   const otrasTxt = Object.entries(otras).map(([m, v]) => ` · + ${cobMoney(v, m)}`).join("");
-  // v8.3: cinco cuadros (pedido del usuario): total, 30–59, 60–89, 90–179 y 180 o más
+  // v8.3: cinco cuadros (pedido del usuario): total, 31–60, 61–90, 91–180 y más de 180
   const tramo = (t, sub, min, max) => { const v = sum(min, max); return `<div class="card"><div class="card-kicker">${t}</div>
     <div class="kpi-value cob-red">${escapeHtml(cobMoney(v))}</div><div class="kpi-sub">${sub} · ${pct(v)}</div></div>`; };
   cobEl("cobKpis").innerHTML = `
     <div class="card"><div class="card-kicker">Total a cobrar</div><div class="kpi-value">${escapeHtml(cobMoney(total))}</div>
       <div class="kpi-sub">${numberFormatter.format(facts.length)} facturas · ${numberFormatter.format(clientes.length)} clientes${escapeHtml(otrasTxt)}</div></div>
-    ${tramo("Más de 30 días", "30 a 59 días", 30, 59)}
-    ${tramo("Más de 60 días", "60 a 89 días", 60, 89)}
-    ${tramo("Más de 90 días", "90 a 179 días", 90, 179)}
-    ${tramo("Más de 180 días", "180 días o más", 180, Infinity)}`;
+    ${tramo("Más de 30 días", "31 a 60 días", 31, 60)}
+    ${tramo("Más de 60 días", "61 a 90 días", 61, 90)}
+    ${tramo("Más de 90 días", "91 a 180 días", 91, 180)}
+    ${tramo("Más de 180 días", "181 días o más", 181, Infinity)}`;
 }
 function cobAging(facts){
   const ars = facts.filter(f => f.moneda === "ARS");
@@ -434,7 +434,7 @@ function cobFiltrosTxt(){
   const f = [];
   if (cob.search) f.push(`Búsqueda: "${cob.search}"`);
   if (cob.vend.size) f.push(`${cob.vend.size === 1 ? "Vendedor" : "Vendedores"}: ${[...cob.vend].join(", ")}`);
-  if (cob.min > 0 || cob.max !== Infinity) f.push(cob.max === Infinity ? `${cob.min} días o más` : `${cob.min}–${cob.max} días`);
+  if (cob.min > 0 || cob.max !== Infinity) f.push(cob.max === Infinity ? `Más de ${cob.min - 1} días` : `${cob.min}–${cob.max} días`);
   if (cob.favor) f.push("Con saldo a favor");
   return f.join(" · ");
 }

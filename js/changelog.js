@@ -4,8 +4,18 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "8.3";
+const LATEST_VERSION = "8.4";
 const CHANGELOG = [
+  {
+    version: "8.4",
+    date: "2026-11-24",
+    title: "Cuentas corrientes: tramos como antes",
+    items: [
+      { type: "mejora", text: "Los tramos de antigüedad vuelven a ser 0–30, 31–60, 61–90, 91–180, 181–365 y más de 365 días (cuadros, barra y filtros)." },
+      { type: "correccion", text: "El nombre del cliente queda centrado con el ícono y con el resto de la fila; si es muy largo termina en «…»." },
+      { type: "mejora", text: "Con el menú lateral contraído también se ven las líneas que separan los grupos." }
+    ]
+  },
   {
     version: "8.3",
     date: "2026-11-24",
