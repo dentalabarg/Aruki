@@ -868,6 +868,8 @@ function fastFilterCandidates(entity) {
     for (const d of desde) {
       out.push([f("FACT_FECHA_EMISION", ">=", d), f("FACT_EXTE_NOMBRE", "!=", "Mercado Libre"), f("CLIE_ID_CLIE", "!=", 8192)]);
     }
+    // v7.9: desde el 21/11/2026 la smartie trae TODAS las fechas (~66.000 facturas): sin el filtro de fecha
+    out.push([f("FACT_EXTE_NOMBRE", "!=", "Mercado Libre"), f("CLIE_ID_CLIE", "!=", 8192)]);
     return out;
   }
   return [[]];
@@ -969,9 +971,11 @@ async function buildFastPlan(env, entity, smartieId) {
   // 3) Sin filtros cargados: muchas smarties esconden solo los registros dados de baja (estado). Se cuentan los
   //    registros por estado y, si sacando algunos estados el total coincide, se usan esos filtros.
   let porEstado = "";
-  if (fastFilterCandidates(entity).every(c => !c.length)) {
+  // v7.9: en Facturas se prueba también sacando estados, con los filtros de Mercado Libre y Consumidor Final
+  const pre = entity === "FACTURA" ? fastFilterCandidates(entity).at(-1) : null;
+  if (pre || fastFilterCandidates(entity).every(c => !c.length)) {
     try {
-      const est = await estadoFilters(env, entity, smartie, base, total);
+      const est = await estadoFilters(env, entity, smartie, base, total, pre || []);
       porEstado = est.resumen;
       if (est.filters) {
         const r = await runQuery(env, entity, 1, cols, est.filters, 1);
@@ -989,9 +993,10 @@ async function buildFastPlan(env, entity, smartieId) {
 }
 
 /* Cuenta registros por estado (ESTA_CODIGO / DESC_ESTADO) y busca qué estados excluir para llegar al total de la smartie */
-async function estadoFilters(env, entity, smartie, base, total) {
-  const key = (smartie.columns || []).find(c => /sku|c[oó]digo/i.test(String(c.title || "")))?.field || base[0].field;
-  const r = await runQuery(env, entity, 1, [{ field: "ESTA_CODIGO" }, { field: "DESC_ESTADO" }, { field: key, aggregation: "COUNT" }], [], 100);
+async function estadoFilters(env, entity, smartie, base, total, pre = []) {
+  const key = entity === "FACTURA" ? "id"
+    : (smartie.columns || []).find(c => /sku|c[oó]digo/i.test(String(c.title || "")))?.field || base[0].field;
+  const r = await runQuery(env, entity, 1, [{ field: "ESTA_CODIGO" }, { field: "DESC_ESTADO" }, { field: key, aggregation: "COUNT" }], pre, 100);
   if (!r.ok) return { resumen: `error ${r.status} ${shortErr(r)}`.slice(0, 120) };
   const grupos = r.payload.data.map(g => ({ code: g.ESTA_CODIGO, name: g.DESC_ESTADO, n: Number(g[key]) || 0 }));
   const resumen = grupos.map(g => `${g.name ?? g.code}=${g.n}`).join(", ");
@@ -1006,9 +1011,9 @@ async function estadoFilters(env, entity, smartie, base, total) {
   if (!mejor) return { resumen };
   return {
     resumen,
-    filters: mejor.map(g => (g.code !== undefined && g.code !== null)
+    filters: [...pre, ...mejor.map(g => (g.code !== undefined && g.code !== null)
       ? { columnName: "ESTA_CODIGO", operator: "!=", value: g.code }
-      : { columnName: "DESC_ESTADO", operator: "!=", value: g.name }),
+      : { columnName: "DESC_ESTADO", operator: "!=", value: g.name })],
   };
 }
 

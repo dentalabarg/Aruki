@@ -166,7 +166,7 @@ URL: `https://aruki.dentalabarg.workers.dev` (constante `WORKER_BASE` en `js/cor
   ("rapido" | "smartie"); v3.10: pide también `{field:"id"}` (si YiQi lo rechaza, sin id; si la smartie trae id y la
   consulta no, usa la smartie). v4.1: los filtros de cada smartie NO vienen por API: se copian en `fastFilterCandidates()`
   (CLIENTE: CLIE_ACTIVO = true/1/"S"…; FACTURA: FACT_FECHA_EMISION >= 2026-07-01, FACT_EXTE_NOMBRE != "Mercado Libre",
-  CLIE_ID_CLIE != 8192) y se prueban variantes con pageSize 1 hasta que el total coincide. Si no, responde `motivo`
+  CLIE_ID_CLIE != 8192; v7.9: desde 2026-11-21 la smartie 2355 trae TODAS las fechas, ~66.500 → variante sin fecha y, si no coincide, `estadoFilters(…, pre)` excluye estados sobre ML/CF) y se prueban variantes con pageSize 1 hasta que el total coincide. Si no, responde `motivo`
   (se ve en el tooltip del botón Actualizar vía `modoTexto()`). v4.2: ante error 500 prueba sin id y diagnostica columna
   por columna. v4.3: si no hay filtros cargados y el total no coincide, `estadoFilters()` agrupa por ESTA_CODIGO/DESC_ESTADO
   (COUNT del SKU) y excluye (!=) los estados cuya suma explica la diferencia. CONSULTA_DE_STOCK: con `id` da 500;

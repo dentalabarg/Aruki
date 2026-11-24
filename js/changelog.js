@@ -12,6 +12,7 @@ const CHANGELOG = [
     title: "Tarea automática sin cuelgues",
     items: [
       { type: "correccion", text: "La tarea automática se quedaba esperando a YiQi al bajar Facturas hasta que GitHub la cortaba a los 30 minutos, así que Facturas no se guardaba. Ahora cada pedido tiene un tiempo máximo y, si YiQi no contesta, reintenta y termina en pocos minutos." },
+      { type: "correccion", text: "La lista de Facturas de YiQi ahora trae todas las fechas (unas 66.000 facturas): el conector la lee de a 1000 en vez de a 50 (hay que actualizar el conector en Cloudflare)." },
       { type: "nuevo", text: "El conector de Cloudflare puede despertar la tarea cada 3 horas (GitHub sola corre muy pocas veces)." },
       { type: "mejora", text: "El aviso de datos atrasados dice cuál dato está atrasado (Clientes, Artículos, Facturas o Cuentas corrientes) y tiene en cuenta las actualizaciones hechas a mano." }
     ]
