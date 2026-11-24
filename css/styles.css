@@ -943,3 +943,6 @@ a.btn{text-decoration:none;}  /* v8.0: botones que son links (Cuenta corriente e
 .cob-cli b{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 /* v8.5: en tema oscuro los colores de los tramos se aclaran un poco para que se lean */
 html:not([data-theme="light"]) #cobKpis .cob-tramo{filter:brightness(1.45) saturate(1.1);}
+/* v8.6: en Cobranzas, títulos de los cuadros y "N días" un punto más grandes (pedido del usuario) */
+#view-cobranzas .card-kicker{font-size:11px;}
+#view-cobranzas .cob-table .badge{font-size:12px;}

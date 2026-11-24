@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "8.5";
+const LATEST_VERSION = "8.6";
 const CHANGELOG = [
+  {
+    version: "8.6",
+    date: "2026-11-24",
+    title: "Cuentas corrientes: letra un poco más grande",
+    items: [
+      { type: "mejora", text: "Los títulos de los cuadros (Total a cobrar, Más de 30 días…) y la cantidad de días de la columna «Más antigua» van un punto más grandes." }
+    ]
+  },
   {
     version: "8.5",
     date: "2026-11-24",
