@@ -985,3 +985,13 @@ function createDataModule(cfg){
     setTimeout(() => { if (drag) { drag.el.classList.remove("is-dragging"); drag.el.style.removeProperty("--knob"); drag = null; } }, 0);
   }, true);
 })();
+
+/* v8.7: "x" para borrar la búsqueda (Cuentas corrientes y Facturas de venta), igual que en Artículos */
+document.querySelectorAll(".search-clear[data-for]").forEach(btn => {
+  const input = document.getElementById(btn.dataset.for);
+  if (!input) return;
+  const sync = () => btn.classList.toggle("hidden", !input.value);
+  input.addEventListener("input", sync);
+  btn.addEventListener("click", () => { input.value = ""; input.dispatchEvent(new Event("input")); input.focus(); sync(); });
+  sync();
+});

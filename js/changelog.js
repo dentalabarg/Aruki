@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "8.6";
+const LATEST_VERSION = "8.7";
 const CHANGELOG = [
+  {
+    version: "8.7",
+    date: "2026-11-25",
+    title: "Borrar la búsqueda con la «x»",
+    items: [
+      { type: "mejora", text: "Los buscadores de Cuentas corrientes y Facturas de venta tienen la «x» para borrar la búsqueda, como en Artículos." }
+    ]
+  },
   {
     version: "8.6",
     date: "2026-11-24",

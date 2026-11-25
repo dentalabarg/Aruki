@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/styles.css?v=8.6">
+<link rel="stylesheet" href="css/styles.css?v=8.7">
 </head>
 <body>
 
@@ -183,7 +183,8 @@
               <div class="toolbar cob-toolbar">
                 <div class="search-wrap">
                   <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  <input class="search-input" id="cobSearch" type="text" placeholder="Buscar cliente, CUIT o factura…">
+                  <input class="search-input has-clear" id="cobSearch" type="text" placeholder="Buscar cliente, CUIT o factura…">
+                <button type="button" class="search-clear hidden" id="cobSearchClear" data-for="cobSearch" title="Borrar búsqueda" aria-label="Borrar búsqueda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 </div>
                 <div class="cob-multi" id="cobVendWrap">
                   <button class="ds-input cob-multi-btn" id="cobVendBtn" type="button" title="Elegí uno o varios vendedores"><span id="cobVendTxt">Todos los vendedores</span><i>▾</i></button>
@@ -261,7 +262,8 @@
             <div class="toolbar cob-toolbar">
               <div class="search-wrap">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input class="search-input" id="searchInput" type="text" placeholder="Buscar cliente, número, vendedor…">
+                <input class="search-input has-clear" id="searchInput" type="text" placeholder="Buscar cliente, número, vendedor…">
+                <button type="button" class="search-clear hidden" id="facSearchClear" data-for="searchInput" title="Borrar búsqueda" aria-label="Borrar búsqueda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
               <div class="range-filter" id="statusFilter" role="group" aria-label="Estado">
                 <button class="range-btn is-active" data-status="todas">Todas</button>
@@ -777,19 +779,19 @@
   </div>
 </div>
 
-<script src="js/changelog.js?v=8.6"></script>
-<script src="js/core.js?v=8.6"></script>
-<script src="js/facturas.js?v=8.6"></script>
-<script src="js/articulos.js?v=8.6"></script>
-<script src="js/relaciones.js?v=8.6"></script>
-<script src="js/clientes.js?v=8.6"></script>
-<script src="js/presupuesto-comun.js?v=8.6"></script>
-<script src="js/observaciones.js?v=8.6"></script>
-<script src="js/cotizaciones.js?v=8.6"></script>
-<script src="js/cot-archivos.js?v=8.6"></script>
-<script src="js/cot-ia.js?v=8.6"></script>
-<script src="js/manual.js?v=8.6"></script>
-<script src="js/cobranzas.js?v=8.6"></script>
-<script src="js/main.js?v=8.6"></script>
+<script src="js/changelog.js?v=8.7"></script>
+<script src="js/core.js?v=8.7"></script>
+<script src="js/facturas.js?v=8.7"></script>
+<script src="js/articulos.js?v=8.7"></script>
+<script src="js/relaciones.js?v=8.7"></script>
+<script src="js/clientes.js?v=8.7"></script>
+<script src="js/presupuesto-comun.js?v=8.7"></script>
+<script src="js/observaciones.js?v=8.7"></script>
+<script src="js/cotizaciones.js?v=8.7"></script>
+<script src="js/cot-archivos.js?v=8.7"></script>
+<script src="js/cot-ia.js?v=8.7"></script>
+<script src="js/manual.js?v=8.7"></script>
+<script src="js/cobranzas.js?v=8.7"></script>
+<script src="js/main.js?v=8.7"></script>
 </body>
 </html>
