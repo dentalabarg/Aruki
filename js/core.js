@@ -90,7 +90,7 @@ function enterApp(name){
   document.getElementById("userName").textContent = name;
   document.getElementById("userAvatar").textContent =
     name.split(" ").map(p => p[0]).join("").slice(0,2).toUpperCase();
-  showModule("cotizaciones");
+  showModule("cobranzas");   // v8.9: Cobranzas es el primer módulo
   setTimeout(staleCheck, 4000);
 }
 
@@ -161,7 +161,7 @@ document.getElementById("logoutBtn").addEventListener("click", function(){
   manualModule.reset();
   if (typeof cobranzasModule !== "undefined") cobranzasModule.reset();
   clientesStore.reset();
-  showModule("cotizaciones");
+  showModule("cobranzas");   // v8.9: Cobranzas es el primer módulo
 });
 
 /* ============================================================

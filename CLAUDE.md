@@ -11,10 +11,10 @@ Publicada con GitHub Pages: https://dentalabarg.github.io/Aruki/
 - Valora gastar pocos tokens: leer solo los archivos necesarios, editar con cambios puntuales,
   no reescribir archivos enteros.
 
-## Menú (v7.5)
-Presupuesto automático (Cotizaciones, Relaciones) → Presupuesto manual (Armar presupuesto, módulo `manual`) →
-Consultas (Artículos) → Cobranzas (Cuentas corrientes = módulo `cobranzas`; Facturas de venta = módulo `facturas`, el viejo
-"Control Facturas"). Al entrar se abre Cotizaciones.
+## Menú (v8.9)
+Cobranzas (Cuentas corrientes = módulo `cobranzas`; Facturas de venta = módulo `facturas`, el viejo "Control Facturas") →
+Presupuesto automático (Cotizaciones, Relaciones) → Presupuesto manual (Armar presupuesto, módulo `manual`) → Consultas (Artículos).
+Al entrar se abre Cuentas corrientes (`showModule("cobranzas")` en core.js tras login/sesión; `#view-cobranzas` visible de entrada).
 
 ## Cobranzas › Cuentas corrientes (v7.5, `js/cobranzas.js`)
 - Datos: Worker `GET /cobranzas?parte=emitidas|entregadas|saldos|pagos&page=N` (una página de YiQi `/query` de 1000 por pedido,

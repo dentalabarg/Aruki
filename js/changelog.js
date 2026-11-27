@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "8.8";
+const LATEST_VERSION = "8.9";
 const CHANGELOG = [
+  {
+    version: "8.9",
+    date: "2026-11-27",
+    title: "Cobranzas primero",
+    items: [
+      { type: "mejora", text: "Cobranzas pasa a ser el primer grupo del menú lateral y Aruki abre directo en Cuentas corrientes." }
+    ]
+  },
   {
     version: "8.8",
     date: "2026-11-27",
