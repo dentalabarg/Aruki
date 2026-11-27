@@ -1008,3 +1008,10 @@ html:not([data-theme="light"]) #cobKpis .cob-tramo{filter:brightness(1.45) satur
 .fac-head .drp-btn{min-width:168px;}
 .fac-head .cob-multi-btn:not(.is-set) span{color:var(--muted);}
 .fac-head .range-filter .range-btn{padding:6px 10px;}
+
+/* ---------- v9.0 Cobranzas: cada fila en un solo renglón; si no entra, se corta con "…" (pasando el mouse se ve completo) ---------- */
+.cob-table th, .cob-table td{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; overflow-wrap:normal;}
+.cob-table td > *, .cob-table th > span{max-width:100%;}
+.cob-table td > div, .cob-table td > b, .cob-table td > span:not(.badge):not(.comp-cell):not(.cob-cli){overflow:hidden; text-overflow:ellipsis;}
+.cob-table td > div{display:block;}
+.cob-table .comp-cell{max-width:100%; overflow:hidden;}

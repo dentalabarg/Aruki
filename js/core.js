@@ -547,6 +547,16 @@ function gridRender(wrap, key, cols, rows, footHtml, onRow, st, onSort, presorte
     ${footHtml && sorted.length ? `<tfoot><tr>${footHtml}</tr></tfoot>` : ""}
   </table>`;
   const table = wrap.querySelector("table");
+  // v9.0: lo que quedó cortado con "…" se ve completo pasando el mouse
+  if (!wrap.dataset.tipTrunc) {
+    wrap.dataset.tipTrunc = "1";
+    wrap.addEventListener("mouseover", e => {
+      const cell = e.target.closest("td, th");
+      if (!cell || cell.title) return;
+      const cut = [cell, ...cell.querySelectorAll("b, div, span")].some(el => el.scrollWidth > el.clientWidth + 1);
+      if (cut) cell.title = cell.innerText.replace(/\s*\n\s*/g, " · ").trim();
+    });
+  }
   const colEls = [...table.querySelectorAll("col")];
   const totalW = () => colEls.reduce((s, c) => s + parseFloat(c.style.width), 0);
   table.style.width = has ? `${totalW()}px` : "100%";

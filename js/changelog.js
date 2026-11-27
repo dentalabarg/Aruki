@@ -4,8 +4,16 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "8.9";
+const LATEST_VERSION = "9.0";
 const CHANGELOG = [
+  {
+    version: "9.0",
+    date: "2026-11-27",
+    title: "Cobranzas: textos en un solo renglón",
+    items: [
+      { type: "mejora", text: "En Cuentas corrientes y Facturas de venta, al achicar una columna el texto ya no baja a otro renglón: queda en una sola línea y se corta con «…». Pasando el mouse por encima se ve completo." }
+    ]
+  },
   {
     version: "8.9",
     date: "2026-11-27",
