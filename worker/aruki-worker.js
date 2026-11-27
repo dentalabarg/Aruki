@@ -124,6 +124,10 @@ export default {
         const page = normalizePage(url.searchParams.get("page"));
         return json(await getCobranzasParte(env, String(url.searchParams.get("parte") || ""), page), corsHeaders);
       }
+      // v8.8 Artículos de una factura (solo lectura)
+      if (url.pathname === "/factura-detalle" && request.method === "GET") {
+        return json(await getFacturaDetalle(env, url.searchParams.get("id")), corsHeaders);
+      }
       // v7.5 Notas de seguimiento de cobranza por cliente
       if (url.pathname === "/notas" && request.method === "GET") {
         return json(await readNotas(env), corsHeaders);
@@ -609,6 +613,20 @@ async function cobQuery(env, entity, page, columns, filtersVariants) {
     if (r.status === 401 || r.status === 403) break;
   }
   return last;
+}
+
+/* v8.8 Detalle de una factura: renglones de FACTURA_DETALLE (SKU = código del concepto de facturación) */
+const FADE_COLS = ["COFA_CODIGO", "FADE_CONCEPTO_COMPLETO", "FADE_CANTIDAD", "FADE_NRO_SERIE", "FADE_PRECIO_UNITARIO", "FADE_SUBTOTAL", "FADE_TEXTO_ADICIONAL", "id"];
+const FADE_OPTIONAL = new Set(["FADE_TEXTO_ADICIONAL", "FADE_PRECIO_UNITARIO", "FADE_NRO_SERIE", "id"]);
+async function getFacturaDetalle(env, rawId) {
+  const id = Number(rawId);
+  if (!Number.isInteger(id) || id <= 0) throw new HttpError(400, "Falta el número interno de la factura.");
+  const filters = [{ columnName: "FACT_ID_FACT", operator: "=", value: id }];
+  const cols = fl => fl.map(field => ({ field, ...(field === "id" ? { sortDirection: "ASC", sortOrder: 1 } : {}) }));
+  let r = await runQuery(env, "FACTURA_DETALLE", 1, cols(FADE_COLS), filters, 500);
+  if (!r.ok) r = await runQuery(env, "FACTURA_DETALLE", 1, cols(FADE_COLS.filter(c => !FADE_OPTIONAL.has(c))), filters, 500);
+  if (!r.ok) throw new HttpError(502, `YiQi no devolvió el detalle de la factura (${r.status || "?"}): ${shortErr(r)}`);
+  return { id, renglones: r.payload.data, total: r.payload.total ?? r.payload.data.length };
 }
 
 async function getCobranzasParte(env, parte, page) {

@@ -304,7 +304,8 @@ html[data-theme="light"] .topbar{background:rgba(238,236,231,.88);}
    ============================================================ */
 .aruki-logo{
   display:block; width:100%; height:100%; object-fit:contain;
-  filter:invert(1); transition:filter var(--transition-base);
+  transition:filter var(--transition-base);
+  filter:brightness(1.55) saturate(1.1);   /* v8.8: logo azul (#1b60ab, como el favicon); en tema oscuro un poco más claro */
 }
 html[data-theme="light"] .aruki-logo{filter:none;}
 .login-mark{
@@ -927,11 +928,11 @@ a.btn{text-decoration:none;}  /* v8.0: botones que son links (Cuenta corriente e
 .cob-aging > div{display:flex; align-items:center; justify-content:flex-start; padding:0 10px; min-width:0; overflow:hidden;}
 .cob-aging > div span{color:#fff; font:600 12.5px var(--sans); white-space:nowrap; text-shadow:0 1px 2px rgba(0,0,0,.35); font-variant-numeric:tabular-nums;}
 .cob-multi{position:relative;}
-.cob-multi-btn{width:auto; min-width:200px; max-width:280px; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; text-align:left;}
+.cob-multi-btn{width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; text-align:left;}
 .cob-multi-btn span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .cob-multi-btn i{font-style:normal; font-size:11px; color:var(--muted);}
 .cob-multi-btn.is-set{border-color:var(--cyan); color:var(--text-cyan-muted, var(--cyan));}
-.cob-multi-pop{position:absolute; z-index:40; top:calc(100% + 6px); left:0; min-width:260px; max-height:340px; overflow:auto;
+.cob-multi-pop{position:absolute; z-index:40; top:calc(100% + 6px); left:0; right:0; max-height:340px; overflow-y:auto; overflow-x:hidden;
   background:var(--bg-elev); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg, 0 12px 32px rgba(0,0,0,.18)); padding:6px;}
 .cob-multi-pop label{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; font-size:13.5px; cursor:pointer; white-space:nowrap;}
 .cob-multi-pop label:hover{background:var(--bg-soft);}
@@ -946,3 +947,64 @@ html:not([data-theme="light"]) #cobKpis .cob-tramo{filter:brightness(1.45) satur
 /* v8.6: en Cobranzas, títulos de los cuadros y "N días" un punto más grandes (pedido del usuario) */
 #view-cobranzas .card-kicker{font-size:11px;}
 #view-cobranzas .cob-table .badge{font-size:12px;}
+
+/* ---------- v8.8 Listas con casillas: mismo ancho que el botón ---------- */
+.cob-multi{flex:0 0 auto;}
+.cob-multi-pop label > span{overflow:hidden; text-overflow:ellipsis; min-width:0;}
+.cob-multi-pop input[type="checkbox"]{flex:0 0 auto;}
+
+/* ---------- v8.8 Facturas de venta: filtros en una fila (buscador a la izquierda) ---------- */
+.fac-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+.fac-head .fac-search{flex:1 1 220px; min-width:200px; max-width:340px;}
+.fac-head .fac-filters{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin:0 0 0 auto;}
+.fac-head .fac-filters .range-btn{padding-left:11px; padding-right:11px;}
+.comp-cell{font-variant-numeric:tabular-nums;}
+
+/* ---------- v8.8 Calendario desde–hasta ---------- */
+.drp{position:relative; flex:0 0 auto;}
+.drp-btn{display:flex; align-items:center; gap:8px; width:auto; min-width:190px; cursor:pointer; text-align:left; padding-right:34px; white-space:nowrap;}
+.drp-btn svg{width:16px; height:16px; color:var(--muted); flex:0 0 auto;}
+.drp-btn.is-set{border-color:var(--cyan); color:var(--text-cyan-muted, var(--cyan));}
+.drp-btn.is-set svg{color:var(--cyan);}
+.drp-x{position:absolute; right:7px; top:50%; transform:translateY(-50%); width:22px; height:22px; border:0; background:transparent; border-radius:999px;
+  display:inline-flex; align-items:center; justify-content:center; color:var(--muted); cursor:pointer;}
+.drp-x svg{width:13px; height:13px;}
+.drp-x:hover{background:var(--bg-soft); color:var(--text);}
+.drp-pop{position:absolute; z-index:45; top:calc(100% + 6px); right:0; background:var(--bg-elev); border-radius:16px;
+  box-shadow:var(--shadow-lg, 0 12px 32px rgba(0,0,0,.18)); padding:14px 16px 16px; user-select:none;}
+.drp-head{display:flex; align-items:center; gap:4px; margin-bottom:8px;}
+.drp-hint{flex:1; text-align:center; font-size:12.5px; color:var(--muted);}
+.drp-nav{width:30px; height:30px; border:0; background:transparent; border-radius:999px; cursor:pointer; color:var(--text); font-size:16px; line-height:1;}
+.drp-nav:hover{background:var(--bg-soft);}
+.drp-months{display:flex; gap:22px;}
+.drp-month{width:252px;}
+.drp-mtitle{text-align:center; font:700 14px var(--display); margin:2px 0 8px;}
+.drp-week, .drp-grid{display:grid; grid-template-columns:repeat(7, 1fr);}
+.drp-week span{text-align:center; font:600 11px var(--mono); color:var(--muted-2); padding-bottom:6px; text-transform:uppercase;}
+.drp-day{position:relative; height:34px; border:0; background:transparent; padding:0; cursor:pointer; color:var(--text); font:500 13px var(--sans);}
+.drp-day.is-empty{cursor:default;}
+.drp-day span{position:relative; z-index:1; display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:999px; transition:background .12s;}
+.drp-day:not(.is-empty):hover span{background:var(--bg-soft);}
+.drp-day.is-today span{box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--cyan) 55%, transparent);}
+.drp-day.in-range::before, .drp-day.in-preview::before, .drp-day.is-start::before, .drp-day.is-end::before{content:""; position:absolute; top:1px; bottom:1px; left:0; right:0;}
+.drp-day.in-range::before, .drp-day.is-start::before, .drp-day.is-end::before{background:color-mix(in srgb, var(--cyan) 16%, transparent);}
+.drp-day.in-preview::before, .drp-day.is-start.pv::before, .drp-day.is-end.pv::before{background:color-mix(in srgb, var(--cyan) 9%, transparent);}
+.drp-day.is-start::before{left:50%;}
+.drp-day.is-end::before{right:50%;}
+.drp-grid .drp-day:nth-child(7n+1)::before{border-top-left-radius:999px; border-bottom-left-radius:999px;}
+.drp-grid .drp-day:nth-child(7n)::before{border-top-right-radius:999px; border-bottom-right-radius:999px;}
+.drp-day.is-edge span{background:var(--cyan); color:#fff; font-weight:700;}
+.drp-day.is-edge:hover span{background:var(--cyan);}
+
+/* ---------- v8.8 Detalle de factura ---------- */
+.modal.fad-modal{max-width:1000px; max-height:86vh; padding:22px 24px;}
+.fad-head{align-items:flex-start; gap:16px;}
+.fad-head h3{font:700 19px var(--display); margin:2px 0 4px;}
+.fad-actions{display:flex; align-items:center; gap:8px; flex:0 0 auto;}
+.fad-extra{margin-top:10px; font-size:13px; color:var(--muted);}
+.mono{font-family:var(--mono); font-size:12.5px;}
+.fac-head .fac-search{flex:1 1 180px; min-width:170px;}
+.fac-head .fac-filters{gap:6px;}
+.fac-head .drp-btn{min-width:168px;}
+.fac-head .cob-multi-btn:not(.is-set) span{color:var(--muted);}
+.fac-head .range-filter .range-btn{padding:6px 10px;}

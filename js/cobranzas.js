@@ -283,12 +283,12 @@ function cobRender(){
   if (cob.view === "clientes") {
     cob.lastRows = cobRenderTable(wrap, "clientes", cols, clientes, cobFoot(cols, clientes, `Total (${clientes.length} clientes)`), c => cobOpenDetalle(c.id));
   } else if (cob.view === "facturas") {
-    cob.lastRows = cobRenderTable(wrap, "facturas", cols, facts, cobFoot(cols, facts, `Total (${facts.length} facturas)`));
+    cob.lastRows = cobRenderTable(wrap, "facturas", cols, facts, cobFoot(cols, facts, `Total (${facts.length} facturas)`), f => facDetOpen(f));
     wrap.querySelectorAll(".cob-link").forEach(a => a.addEventListener("click", e => { e.preventDefault(); cobOpenDetalle(a.dataset.cli); }));
   } else {
     const vend = cobVendedores(facts);
     cob.lastRows = cobRenderTable(wrap, "vendedores", cols, vend, cobFoot(cols, vend, "Total"), v => {
-      cob.vend = new Set([v.vendedor]); cobVendRender(); cobSetView("clientes");
+      cob.vend.clear(); cob.vend.add(v.vendedor); cobVendRender(); cobSetView("clientes");
     });
   }
 }
@@ -363,7 +363,7 @@ function cobRenderDetalle(){
       </div>
     </div>`;
   const cols = COB_COLS.detalle;
-  cob.detRows = cobRenderTable(cobEl("cobDetTable"), "detalle", cols, facts, cobFoot(cols, facts, "Total"));
+  cob.detRows = cobRenderTable(cobEl("cobDetTable"), "detalle", cols, facts, cobFoot(cols, facts, "Total"), f => facDetOpen(f));   // v8.8: ver artículos
   const back = e => { e?.preventDefault(); cobCloseDetalle(); };
   cobEl("cobBack").addEventListener("click", back);
   cobEl("cobBackBtn").addEventListener("click", back);
@@ -537,7 +537,7 @@ async function cobCopyWhatsapp(c, rows){
 function cobApply(raw, fecha){
   cob.raw = raw; cob.savedAt = fecha; cob.loaded = true; cob.error = "";
   cob.data = cobBuild(raw);
-  cob.vend = new Set([...cob.vend].filter(v => cob.data.vendedores.includes(v)));
+  [...cob.vend].forEach(v => { if (!cob.data.vendedores.includes(v)) cob.vend.delete(v); });
   cobVendRender();
   cobMsg("");
   cobRender();
@@ -630,25 +630,11 @@ cobEl("cobExcelBtn").addEventListener("click", () => {
 cobEl("cobPdfBtn").addEventListener("click", () => cobPdfList().catch(e => alert(e.message)));
 cobEl("cobViewTabs").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (b) cobSetView(b.dataset.view); });
 cobEl("cobSearch").addEventListener("input", e => { cob.search = e.target.value; cobRender(); });
-/* v8.3: vendedores con selección múltiple */
-function cobVendRender(){
-  const list = cob.data ? cob.data.vendedores : [];
-  const n = cob.vend.size;
-  cobEl("cobVendTxt").textContent = !n ? "Todos los vendedores" : n === 1 ? [...cob.vend][0] : `${n} vendedores`;
-  cobEl("cobVendBtn").classList.toggle("is-set", n > 0);
-  cobEl("cobVendPop").innerHTML = `<label class="cob-multi-all"><input type="checkbox" data-all ${n ? "" : "checked"}> Todos</label>` +
-    list.map(v => `<label><input type="checkbox" data-v="${escapeHtml(v)}" ${cob.vend.has(v) ? "checked" : ""}> ${escapeHtml(v)}</label>`).join("");
-}
-cobEl("cobVendBtn").addEventListener("click", e => { e.stopPropagation(); cobEl("cobVendPop").classList.toggle("hidden"); });
-cobEl("cobVendPop").addEventListener("click", e => e.stopPropagation());
-cobEl("cobVendPop").addEventListener("change", e => {
-  const i = e.target;
-  if (i.dataset.all !== undefined) cob.vend.clear();
-  else if (i.checked) cob.vend.add(i.dataset.v); else cob.vend.delete(i.dataset.v);
-  cobVendRender(); cobRender();
-});
-document.addEventListener("click", () => cobEl("cobVendPop").classList.add("hidden"));
-document.addEventListener("keydown", e => { if (e.key === "Escape") cobEl("cobVendPop").classList.add("hidden"); });
+/* v8.3: vendedores con selección múltiple (v8.8: componente común multiSelect de core.js) */
+const cobVendMS = multiSelect(cobEl("cobVendWrap"), { set: cob.vend, allText: "Todos los vendedores", manyText: n => `${n} vendedores`,
+  title: "Elegí uno o varios vendedores", onChange: () => cobRender() });
+function cobVendRender(){ cobVendMS.render(cob.data ? cob.data.vendedores : []); }
+cobVendRender();
 cobEl("cobFavor").addEventListener("change", e => { cob.favor = e.target.checked; cobRender(); });
 cobEl("cobEdad").addEventListener("click", e => {
   const b = e.target.closest("[data-min]"); if (!b) return;

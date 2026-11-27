@@ -995,3 +995,152 @@ document.querySelectorAll(".search-clear[data-for]").forEach(btn => {
   btn.addEventListener("click", () => { input.value = ""; input.dispatchEvent(new Event("input")); input.focus(); sync(); });
   sync();
 });
+
+/* ============================================================
+   v8.8 Lista desplegable con casillas (varios a la vez) — Cuentas corrientes y Facturas de venta.
+   La lista tiene el mismo ancho que el botón; el botón se ensancha para que entre el nombre más largo.
+   ms = multiSelect(wrap, { set, allText, manyText:n=>"", title, onChange }); ms.render(items)
+   ============================================================ */
+const _msCanvas = document.createElement("canvas").getContext("2d");
+function _msTextW(text, font){ _msCanvas.font = font; return _msCanvas.measureText(String(text)).width; }
+function multiSelect(wrap, opt){
+  const set = opt.set || new Set();
+  let items = [];
+  wrap.classList.add("cob-multi");
+  wrap.innerHTML = `<button class="ds-input cob-multi-btn" type="button" title="${escapeHtml(opt.title || "Elegí uno o varios")}"><span></span><i>▾</i></button><div class="cob-multi-pop hidden"></div>`;
+  const btn = wrap.querySelector(".cob-multi-btn"), pop = wrap.querySelector(".cob-multi-pop"), txt = btn.querySelector("span");
+  const fit = () => {
+    const fam = getComputedStyle(document.body).fontFamily || "sans-serif";
+    const itemW = Math.max(_msTextW("Todos", `600 13.5px ${fam}`), ...items.map(v => _msTextW(v, `400 13.5px ${fam}`)));
+    const scroll = items.length > 8 ? 12 : 0;   // barra de la lista si es larga
+    const need = Math.max(_msTextW(opt.allText, `500 14px ${fam}`) + 54, itemW + 66 + scroll);
+    wrap.style.width = `${Math.ceil(Math.min(380, Math.max(opt.minWidth || 120, need)))}px`;
+  };
+  const ms = {
+    set,
+    render(list){
+      if (list) { items = list; fit(); }
+      const n = set.size;
+      txt.textContent = !n ? opt.allText : n === 1 ? [...set][0] : opt.manyText(n);
+      btn.classList.toggle("is-set", n > 0);
+      pop.innerHTML = `<label class="cob-multi-all"><input type="checkbox" data-all ${n ? "" : "checked"}> Todos</label>` +
+        items.map(v => `<label title="${escapeHtml(v)}"><input type="checkbox" data-v="${escapeHtml(v)}" ${set.has(v) ? "checked" : ""}> <span>${escapeHtml(v)}</span></label>`).join("");
+    },
+    close(){ pop.classList.add("hidden"); },
+  };
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    const open = pop.classList.contains("hidden");
+    document.querySelectorAll(".cob-multi-pop, .drp-pop").forEach(p => p.classList.add("hidden"));
+    pop.classList.toggle("hidden", !open);
+  });
+  pop.addEventListener("click", e => e.stopPropagation());
+  pop.addEventListener("change", e => {
+    const i = e.target;
+    if (i.dataset.all !== undefined) set.clear();
+    else if (i.checked) set.add(i.dataset.v); else set.delete(i.dataset.v);
+    ms.render(); opt.onChange && opt.onChange(set);
+  });
+  return ms;
+}
+document.addEventListener("click", () => document.querySelectorAll(".cob-multi-pop, .drp-pop").forEach(p => p.classList.add("hidden")));
+document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelectorAll(".cob-multi-pop, .drp-pop").forEach(p => p.classList.add("hidden")); });
+
+/* ============================================================
+   v8.8 Calendario de rango (un solo cuadro "desde – hasta"): primer clic = desde, segundo = hasta;
+   entre los dos se pinta suave mientras se mueve el mouse; la X borra. Fechas en formato AAAA-MM-DD.
+   dr = dateRange(wrap, { placeholder, onChange:(desde, hasta)=>{} }); dr.desde / dr.hasta / dr.clear()
+   ============================================================ */
+const DR_MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+function _drIso(d){ return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+function _drFmt(iso){ return iso ? iso.split("-").reverse().join("/") : ""; }
+function dateRange(wrap, opt){
+  const calIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><line x1="3" y1="9.5" x2="21" y2="9.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="16" y1="2.5" x2="16" y2="6.5"/></svg>`;
+  wrap.classList.add("drp");
+  wrap.innerHTML = `<button class="ds-input drp-btn" type="button" title="Elegí desde qué día y hasta qué día">${calIcon}<span></span></button>
+    <button type="button" class="drp-x hidden" title="Borrar las fechas" aria-label="Borrar las fechas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="drp-pop hidden"></div>`;
+  const btn = wrap.querySelector(".drp-btn"), x = wrap.querySelector(".drp-x"), pop = wrap.querySelector(".drp-pop");
+  const st = { desde: "", hasta: "", anchor: "", hover: "", view: null };
+  const today = _drIso(new Date());
+  const label = () => {
+    const t = st.desde && st.hasta ? (st.desde === st.hasta ? _drFmt(st.desde) : `${_drFmt(st.desde)} – ${_drFmt(st.hasta)}`)
+      : st.desde ? `Desde ${_drFmt(st.desde)}` : "";
+    btn.querySelector("span").textContent = t || opt.placeholder;
+    btn.classList.toggle("is-set", !!t);
+    x.classList.toggle("hidden", !t);
+  };
+  const month = (y, m) => {
+    const first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate();
+    const lead = (first.getDay() + 6) % 7;   // semana empieza el lunes
+    let lo = st.desde, hi = st.hasta;
+    if (st.anchor && st.hover) { lo = st.anchor < st.hover ? st.anchor : st.hover; hi = st.anchor < st.hover ? st.hover : st.anchor; }
+    const preview = !!(st.anchor && st.hover);
+    let cells = "";
+    for (let i = 0; i < lead; i++) cells += `<span class="drp-day is-empty"></span>`;
+    for (let d = 1; d <= days; d++) {
+      const iso = _drIso(new Date(y, m, d));
+      const cls = ["drp-day"];
+      if (lo && hi && iso > lo && iso < hi) cls.push(preview ? "in-preview" : "in-range");
+      if (iso === lo && hi && lo !== hi) cls.push("is-start", preview ? "pv" : "");
+      if (iso === hi && lo && lo !== hi) cls.push("is-end", preview ? "pv" : "");
+      if (iso === lo || iso === hi || iso === st.anchor) cls.push("is-edge");
+      if (iso === today) cls.push("is-today");
+      cells += `<button type="button" class="${cls.join(" ")}" data-d="${iso}"><span>${d}</span></button>`;
+    }
+    return `<div class="drp-month"><div class="drp-mtitle">${DR_MESES[m]} ${y}</div>
+      <div class="drp-week">${["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"].map(w => `<span>${w}</span>`).join("")}</div>
+      <div class="drp-grid">${cells}</div></div>`;
+  };
+  const render = () => {
+    const v = st.view;
+    const v2 = new Date(v.getFullYear(), v.getMonth() + 1, 1);
+    pop.innerHTML = `<div class="drp-head">
+        <button type="button" class="drp-nav" data-nav="-12" title="Un año antes">«</button>
+        <button type="button" class="drp-nav" data-nav="-1" title="Mes anterior">‹</button>
+        <span class="drp-hint">${st.anchor ? "Ahora elegí la fecha hasta" : "Elegí la fecha desde"}</span>
+        <button type="button" class="drp-nav" data-nav="1" title="Mes siguiente">›</button>
+        <button type="button" class="drp-nav" data-nav="12" title="Un año después">»</button>
+      </div>
+      <div class="drp-months">${month(v.getFullYear(), v.getMonth())}${month(v2.getFullYear(), v2.getMonth())}</div>`;
+  };
+  const apply = () => { label(); opt.onChange && opt.onChange(st.desde, st.hasta); };
+  const close = () => {
+    pop.classList.add("hidden");
+    if (st.anchor) { st.desde = st.anchor; st.hasta = ""; st.anchor = ""; apply(); }   // solo eligió "desde"
+  };
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    if (!pop.classList.contains("hidden")) { close(); return; }
+    document.querySelectorAll(".cob-multi-pop, .drp-pop").forEach(p => p.classList.add("hidden"));
+    st.anchor = "";
+    const base = st.hasta || st.desde ? new Date((st.hasta || st.desde) + "T12:00:00") : new Date();
+    st.view = new Date(base.getFullYear(), base.getMonth() - 1, 1);
+    st.anchor = ""; st.hover = "";
+    render(); pop.classList.remove("hidden");
+  });
+  pop.addEventListener("click", e => {
+    e.stopPropagation();
+    const nav = e.target.closest("[data-nav]");
+    if (nav) { st.view = new Date(st.view.getFullYear(), st.view.getMonth() + Number(nav.dataset.nav), 1); render(); return; }
+    const day = e.target.closest("[data-d]");
+    if (!day) return;
+    const d = day.dataset.d;
+    if (!st.anchor) { st.anchor = d; st.hover = d; render(); return; }
+    st.desde = d < st.anchor ? d : st.anchor; st.hasta = d < st.anchor ? st.anchor : d;
+    st.anchor = ""; st.hover = "";
+    pop.classList.add("hidden"); apply();
+  });
+  pop.addEventListener("mouseover", e => {
+    if (!st.anchor) return;
+    const day = e.target.closest("[data-d]");
+    if (day && day.dataset.d !== st.hover) { st.hover = day.dataset.d; render(); }
+  });
+  x.addEventListener("click", e => { e.stopPropagation(); st.desde = st.hasta = st.anchor = ""; pop.classList.add("hidden"); apply(); });
+  document.addEventListener("click", () => close());
+  label();
+  return {
+    get desde(){ return st.desde; }, get hasta(){ return st.hasta; },
+    clear(){ st.desde = st.hasta = st.anchor = ""; label(); },
+  };
+}

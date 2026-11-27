@@ -4,8 +4,20 @@
    Se actualiza en cada cambio pedido: subir LATEST_VERSION y
    agregar un bloque nuevo AL PRINCIPIO del array.
    ============================================================ */
-const LATEST_VERSION = "8.7";
+const LATEST_VERSION = "8.8";
 const CHANGELOG = [
+  {
+    version: "8.8",
+    date: "2026-11-27",
+    title: "Detalle de factura y nuevos filtros en Facturas de venta",
+    items: [
+      { type: "nuevo", text: "Tocando una factura (en Facturas de venta o en Cuentas corrientes) se ven sus artículos: SKU, concepto, cantidad, número de serie y subtotal, con el total y un botón para abrirla en YiQi. Necesita el conector actualizado." },
+      { type: "mejora", text: "Facturas de venta: todos los filtros en una fila, el buscador a la izquierda; vendedor, origen, tipo de factura y punto de venta se pueden elegir de a varios." },
+      { type: "nuevo", text: "Facturas de venta: un solo calendario para elegir desde y hasta (con la X para borrar), en lugar de los dos cuadros de fecha y los botones de período." },
+      { type: "mejora", text: "Facturas de venta: el cliente va primero y en negrita, la factura al lado con su ícono de YiQi, y una columna nueva «Antigüedad» con los días desde la emisión." },
+      { type: "mejora", text: "Las listas desplegables con casillas tienen el mismo ancho que su botón. El logo de Aruki es azul, como el ícono de la pestaña." }
+    ]
+  },
   {
     version: "8.7",
     date: "2026-11-25",

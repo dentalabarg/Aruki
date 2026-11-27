@@ -44,8 +44,16 @@ Consultas (Artículos) → Cobranzas (Cuentas corrientes = módulo `cobranzas`; 
 ## Cobranzas › Facturas de venta (v7.6, `js/facturas.js`, el viejo "Control Facturas")
 - Sigue con `createDataModule` (smartie 2355, todas las fechas desde v7.9, caché local + servidor). Filas normalizadas con `facNorm()` en un
   `WeakMap` (no se guardan en el caché). `cfg.sortFiltered` (nuevo hook de `m.filtered()`) ordena lo filtrado con `fac.sort`.
-- Filtros: estado (`#statusFilter`), período (`#facPeriodo` + `#facDesde`/`#facHasta`), vendedor, origen, búsqueda. KPIs y fila de
-  totales sobre lo filtrado; Excel/PDF de todo lo filtrado (`facturasModule.lastFiltered`).
+- v8.8: una fila `.fac-head`: buscador a la izquierda, a la derecha estado (`#statusFilter`), calendario desde–hasta `dateRange()`
+  (`facMS.fechas`, core.js: 2 meses, 1.er clic desde / 2.º hasta, vista previa suave al mover el mouse, X borra; sin chips de período) y
+  `multiSelect()` (core.js; lista = ancho del botón, el botón se ensancha al nombre más largo) para vendedor / origen / tipo (TIFA_NOMBRE) /
+  punto de venta (PUVE_NOMBRE): sets `fac.vend/orig/tipo/pv`, placeholders cortos "Vendedor", "Origen", "Tipo", "Punto de venta".
+  Columnas: Cliente (negrita) → Factura (ícono YiQi) → Emisión → Antigüedad (`cobDiasBadge`) → … KPIs y fila de totales sobre lo filtrado;
+  Excel/PDF de todo lo filtrado (`facturasModule.lastFiltered`).
+- v8.8 Detalle de factura: `facDetOpen(f)` (facturas.js, ventana `#facDetModal`) al tocar una fila en Facturas de venta, en Cuentas corrientes
+  "Por factura" y en el estado de cuenta. Worker `GET /factura-detalle?id=<id factura>` → `FACTURA_DETALLE` filtrado por `FACT_ID_FACT`
+  (SKU = `COFA_CODIGO`, `FADE_CONCEPTO_COMPLETO`, `FADE_CANTIDAD`, `FADE_NRO_SERIE`, `FADE_SUBTOTAL`); se recuerda en `facDetCache`.
+  Logo `.aruki-logo` = mismo SVG azul que el favicon (en tema oscuro `brightness(1.55)`).
 
 ## Estructura
 ```
